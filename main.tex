@@ -1,0 +1,176 @@
+\documentclass[11pt,a4paper]{article}
+
+% Basic math and symbols
+\usepackage{amsmath, amssymb}
+
+% Better font and encoding support
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% Page margins
+\usepackage{geometry}
+\geometry{margin=1in}
+
+% Allow graphics
+\usepackage{graphicx}
+
+% For creating plots and charts
+% Note: Uncomment the following lines if pgfplots is installed:
+% \usepackage{pgfplots}
+% \pgfplotsset{compat=1.18}
+
+% Hyperlinks
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
+
+\title{Tomer Tomer Is The King!}
+\author{Your Name}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+Congratulations! Your \LaTeX{} environment is working.
+
+This is a minimal example compiled using:
+\begin{itemize}
+    \item \texttt{pdflatex}, or
+    \item \texttt{xelatex}, or
+    \item \texttt{lualatex}.
+\end{itemize}
+
+If you see this PDF, your system is correctly configured.
+
+\section{Math Test}
+Here is some math to test the setup:
+\[
+    E = mc^2
+\]
+
+\section{Smart Contracts}
+
+Smart contracts are self-executing contracts with the terms of the agreement directly written into code. They run on blockchain platforms, most notably Ethereum, and automatically execute when predetermined conditions are met.
+
+\subsection{Key Characteristics}
+
+Smart contracts exhibit several important characteristics:
+
+\begin{itemize}
+    \item \textbf{Autonomy}: Once deployed, smart contracts operate independently without requiring intermediaries.
+    \item \textbf{Immutability}: Once deployed to the blockchain, smart contract code cannot be easily modified, ensuring trust and predictability.
+    \item \textbf{Transparency}: All transactions and contract states are publicly visible on the blockchain.
+    \item \textbf{Decentralization}: Smart contracts run on distributed networks, eliminating single points of failure.
+\end{itemize}
+
+\subsection{Common Use Cases}
+
+Smart contracts have found applications across various domains:
+
+\begin{enumerate}
+    \item \textbf{DeFi (Decentralized Finance)}: Automated lending, borrowing, and trading protocols that operate without traditional financial intermediaries.
+    \item \textbf{NFTs (Non-Fungible Tokens)}: Unique digital assets representing ownership of digital or physical items.
+    \item \textbf{Supply Chain Management}: Tracking goods and automating payments throughout the supply chain.
+    \item \textbf{Governance}: Decentralized autonomous organizations (DAOs) use smart contracts for voting and decision-making.
+\end{enumerate}
+
+\subsection{Example: ERC-721 Token Contract}
+
+A common example of a smart contract is the ERC-721 standard for NFTs. The following code snippet demonstrates a simplified version:
+
+\begin{verbatim}
+contract ERC721 {
+    mapping(uint256 => address) private _owners;
+    mapping(address => uint256) private _balances;
+    
+    function transferFrom(address from, address to, uint256 tokenId) public {
+        require(_owners[tokenId] == from, "Not owner");
+        _owners[tokenId] = to;
+        _balances[from]--;
+        _balances[to]++;
+    }
+}
+\end{verbatim}
+
+This contract implements a basic NFT transfer mechanism, where ownership of tokens is tracked through mappings and transfers are validated before execution.
+
+\section{Cryptocurrency Market Trends}
+
+The cryptocurrency market has experienced significant growth and volatility since the introduction of Bitcoin in 2009. Figure~\ref{fig:crypto_trend} illustrates a representative trend in cryptocurrency market capitalization over time, showing the rapid expansion of the digital asset ecosystem.
+
+\begin{figure}[h]
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        \textbf{Year} & \textbf{Total Market Cap} & \textbf{Bitcoin Market Cap} \\
+        & \textbf{(Billions USD)} & \textbf{(Billions USD)} \\
+        \hline
+        2015 & 5 & 3 \\
+        2016 & 15 & 10 \\
+        2017 & 600 & 200 \\
+        2018 & 130 & 70 \\
+        2019 & 200 & 130 \\
+        2020 & 350 & 200 \\
+        2021 & 2,300 & 900 \\
+        2022 & 800 & 300 \\
+        2023 & 1,200 & 500 \\
+        2024 & 2,500 & 1,000 \\
+        \hline
+    \end{tabular}
+    \caption{Historical trend of cryptocurrency market capitalization from 2015 to 2024. The table shows total market capitalization of all cryptocurrencies and Bitcoin's market capitalization. The data demonstrates significant growth periods, particularly in 2017 and 2021, followed by corrections in 2018 and 2022.}
+    \label{fig:crypto_trend}
+\end{figure}
+
+% Alternative: If you have pgfplots installed, uncomment the following for a graphical chart:
+% \begin{figure}[h]
+%     \centering
+%     \begin{tikzpicture}
+%         \begin{axis}[
+%             width=0.9\textwidth,
+%             height=0.6\textwidth,
+%             xlabel={Year},
+%             ylabel={Market Capitalization (Billions USD)},
+%             title={Cryptocurrency Market Capitalization Trend},
+%             grid=major,
+%             legend pos=north west,
+%             xmin=2015, xmax=2024,
+%             ymin=0, ymax=3000,
+%             xtick={2015,2016,2017,2018,2019,2020,2021,2022,2023,2024},
+%             ytick={0,500,1000,1500,2000,2500,3000}
+%         ]
+%         \addplot[color=blue, mark=*, line width=2pt] coordinates {
+%             (2015, 5) (2016, 15) (2017, 600) (2018, 130) (2019, 200)
+%             (2020, 350) (2021, 2300) (2022, 800) (2023, 1200) (2024, 2500)
+%         };
+%         \addplot[color=red, mark=square, dashed, line width=1.5pt] coordinates {
+%             (2015, 3) (2016, 10) (2017, 200) (2018, 70) (2019, 130)
+%             (2020, 200) (2021, 900) (2022, 300) (2023, 500) (2024, 1000)
+%         };
+%         \legend{Total Market Cap, Bitcoin Market Cap}
+%         \end{axis}
+%     \end{tikzpicture}
+%     \caption{Historical trend of cryptocurrency market capitalization from 2015 to 2024.}
+%     \label{fig:crypto_trend_chart}
+% \end{figure}
+
+As shown in Figure~\ref{fig:crypto_trend}, the cryptocurrency market has experienced several distinct phases:
+
+\begin{itemize}
+    \item \textbf{Early Growth (2015-2017)}: Initial adoption and rapid expansion, with market cap growing from \$5 billion to over \$600 billion.
+    \item \textbf{Correction (2018-2019)}: Market correction following the 2017 peak, with values stabilizing around \$130-200 billion.
+    \item \textbf{Institutional Adoption (2020-2021)}: Renewed interest from institutional investors drove market cap to over \$2.3 trillion.
+    \item \textbf{Recent Volatility (2022-2024)}: Market experienced corrections but maintained higher baseline values, with continued growth in 2024.
+\end{itemize}
+
+This trend reflects the evolving nature of the cryptocurrency ecosystem, influenced by factors such as regulatory developments, technological advances, institutional adoption, and broader economic conditions.
+
+\section{Image Test}
+If you want to test images, place a PDF/PNG in the same folder and uncomment below:
+
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=0.4\textwidth]{example-image-a}
+%     \caption{Example image}
+% \end{figure}
+
+\end{document}
