@@ -5,6 +5,7 @@ Uses the public API at api.u--1.com to fetch operator information.
 """
 
 import logging
+import os
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 import requests
@@ -24,18 +25,39 @@ class PublicAPIFetcher:
     def __init__(
         self,
         base_url: str = "https://api.u--1.com",
+        api_key: Optional[str] = None,
         timeout: int = 30,
         max_retries: int = 3,
         retry_delay: float = 1.0
     ):
-        """Initialize the public API fetcher."""
+        """
+        Initialize the public API fetcher.
+        
+        Args:
+            base_url: Base URL for the API
+            api_key: API key for authentication (can also be set via EIGENLAYER_API_KEY env var)
+            timeout: Request timeout in seconds
+            max_retries: Maximum number of retry attempts
+            retry_delay: Delay between retries in seconds
+        """
         self.base_url = base_url.rstrip('/')
+        # Get API key from parameter or environment variable
+        self.api_key = api_key or os.getenv("EIGENLAYER_API_KEY")
         self.timeout = timeout
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         
         # Setup session with retry strategy
         self.session = requests.Session()
+        
+        # Add API key to headers if provided
+        if self.api_key:
+            self.session.headers.update({
+                "Authorization": f"Bearer {self.api_key}",
+                # Or use API key header if that's what the API expects:
+                # "X-API-Key": self.api_key,
+            })
+        
         retry_strategy = Retry(
             total=max_retries,
             backoff_factor=retry_delay,
@@ -47,6 +69,8 @@ class PublicAPIFetcher:
         self.session.mount("https://", adapter)
         
         logger.info(f"Initialized PublicAPIFetcher with base URL: {base_url}")
+        if self.api_key:
+            logger.debug("API key configured for authentication")
     
     def get_all_operators(self, skip: int = 0, first: int = 1000) -> List[Dict[str, Any]]:
         """

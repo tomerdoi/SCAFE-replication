@@ -49,6 +49,7 @@ class DatasetConfig:
     max_retries: int = 3
     retry_delay: float = 1.0
     batch_size: int = 100  # Operators per batch
+    api_key: Optional[str] = None  # API key for EigenLayer API (or set EIGENLAYER_API_KEY env var)
     
     # Feature flags
     include_market_data: bool = False  # Optional: CoinGecko integration

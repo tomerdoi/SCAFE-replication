@@ -43,6 +43,7 @@ class OperatorReliabilityDatasetGenerator:
         # Initialize components - try public API first, fallback to subgraph
         try:
             self.fetcher = PublicAPIFetcher(
+                api_key=self.config.api_key,
                 timeout=self.config.request_timeout,
                 max_retries=self.config.max_retries,
                 retry_delay=self.config.retry_delay
