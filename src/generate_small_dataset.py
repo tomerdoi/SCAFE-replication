@@ -43,13 +43,21 @@ def main():
     data_dir = Path("data")
     data_dir.mkdir(exist_ok=True)
     
-    # Configure for small dataset
-    # Using EigenLayer subgraph from The Graph decentralized network
-    # Subgraph ID: 68g9WSC4QTUJmMpuSbgLNENrcYha4mPmXhWGCoupM7kB (Eigenlayer Ethereum mainnet)
+    # Configure for small dataset with real API keys
+    import os
+    dune_key = os.getenv("DUNE_API_KEY", "6MNlQuZPLMwwDEmkRt63lLbXg2pJTcP7")
+    etherscan_key = os.getenv("ETHERSCAN_API_KEY", "Y2X5Z21WJP6M9SP5UM6PWD7AHJZJDY6AEA")
+    
     config = DatasetConfig(
-        # Using The Graph decentralized network subgraph
+        # API keys for free tier services
+        dune_api_key=dune_key,
+        etherscan_api_key=etherscan_key,
+        use_dune=False,  # Dune endpoints not available
+        use_etherscan=False,  # Etherscan v1 deprecated, use public API with enriched data
+        
+        # Subgraph endpoints (fallback)
         eigenlayer_subgraph_url="https://gateway.thegraph.com/api/subgraphs/id/68g9WSC4QTUJmMpuSbgLNENrcYha4mPmXhWGCoupM7kB",
-        avs_subgraph_url="https://gateway.thegraph.com/api/subgraphs/id/68g9WSC4QTUJmMpuSbgLNENrcYha4mPmXhWGCoupM7kB",  # Using same for now
+        avs_subgraph_url="https://gateway.thegraph.com/api/subgraphs/id/68g9WSC4QTUJmMpuSbgLNENrcYha4mPmXhWGCoupM7kB",
         
         # Small time range for testing
         time_window_days=7,  # Weekly windows

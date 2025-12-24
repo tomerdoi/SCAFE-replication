@@ -14,6 +14,8 @@ from pathlib import Path
 from .config import DatasetConfig
 from .subgraph_fetcher import SubgraphDataFetcher
 from .public_api_fetcher import PublicAPIFetcher
+from .dune_fetcher import DuneAPIFetcher
+from .etherscan_fetcher import EtherscanAPIFetcher
 from .feature_engineer import FeatureEngineer
 from .label_generator import LabelGenerator
 
@@ -40,26 +42,74 @@ class OperatorReliabilityDatasetGenerator:
         # Setup logging
         self._setup_logging()
         
-        # Initialize components - try public API first, fallback to subgraph
-        try:
-            self.fetcher = PublicAPIFetcher(
-                api_key=self.config.api_key,
-                timeout=self.config.request_timeout,
-                max_retries=self.config.max_retries,
-                retry_delay=self.config.retry_delay
-            )
-            self.use_public_api = True
-            logger.info("Using Public API fetcher")
-        except Exception as e:
-            logger.warning(f"Public API not available, using subgraph: {e}")
-            self.fetcher = SubgraphDataFetcher(
-                eigenlayer_url=self.config.eigenlayer_subgraph_url,
-                avs_url=self.config.avs_subgraph_url,
-                timeout=self.config.request_timeout,
-                max_retries=self.config.max_retries,
-                retry_delay=self.config.retry_delay
-            )
-            self.use_public_api = False
+        # Initialize components - try Dune API first, then Etherscan, then public API, then subgraph
+        self.use_public_api = False
+        self.use_dune = False
+        self.use_etherscan = False
+        
+        # Get API keys from config or environment
+        import os
+        dune_key = self.config.dune_api_key or os.getenv("DUNE_API_KEY")
+        etherscan_key = self.config.etherscan_api_key or os.getenv("ETHERSCAN_API_KEY")
+        
+        # Try Dune API first (if configured)
+        if self.config.use_dune and dune_key:
+            try:
+                from .dune_fetcher import DuneAPIFetcher
+                self.fetcher = DuneAPIFetcher(
+                    api_key=dune_key,
+                    timeout=self.config.request_timeout,
+                    max_retries=self.config.max_retries,
+                    retry_delay=self.config.retry_delay
+                )
+                self.use_dune = True
+                logger.info("Using Dune Analytics API fetcher")
+            except Exception as e:
+                logger.warning(f"Dune API not available: {e}")
+        
+        # Try Etherscan API (if Dune failed and Etherscan is enabled)
+        if not self.use_dune and self.config.use_etherscan and etherscan_key:
+            try:
+                from .etherscan_fetcher import EtherscanAPIFetcher
+                self.fetcher = EtherscanAPIFetcher(
+                    api_key=etherscan_key,
+                    timeout=self.config.request_timeout,
+                    max_retries=self.config.max_retries,
+                    retry_delay=self.config.retry_delay
+                )
+                self.use_etherscan = True
+                logger.info("Using Etherscan API fetcher")
+            except Exception as e:
+                logger.warning(f"Etherscan API not available: {e}")
+        
+        # Try public API (u--1.com) as fallback
+        if not self.use_dune and not self.use_etherscan:
+            try:
+                self.fetcher = PublicAPIFetcher(
+                    api_key=self.config.api_key,
+                    timeout=self.config.request_timeout,
+                    max_retries=self.config.max_retries,
+                    retry_delay=self.config.retry_delay
+                )
+                self.use_public_api = True
+                logger.info("Using Public API fetcher (u--1.com)")
+            except Exception as e:
+                logger.warning(f"Public API not available: {e}")
+        
+        # Final fallback to subgraph
+        if not self.use_dune and not self.use_etherscan and not self.use_public_api:
+            try:
+                self.fetcher = SubgraphDataFetcher(
+                    eigenlayer_url=self.config.eigenlayer_subgraph_url,
+                    avs_url=self.config.avs_subgraph_url,
+                    timeout=self.config.request_timeout,
+                    max_retries=self.config.max_retries,
+                    retry_delay=self.config.retry_delay
+                )
+                logger.info("Using Subgraph fetcher")
+            except Exception as e:
+                logger.error(f"All data sources failed: {e}")
+                raise
         
         self.feature_engineer = FeatureEngineer(
             min_stake_threshold=self.config.min_stake_threshold,

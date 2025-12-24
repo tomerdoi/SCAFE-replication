@@ -50,6 +50,10 @@ class DatasetConfig:
     retry_delay: float = 1.0
     batch_size: int = 100  # Operators per batch
     api_key: Optional[str] = None  # API key for EigenLayer API (or set EIGENLAYER_API_KEY env var)
+    dune_api_key: Optional[str] = None  # Dune Analytics API key (or set DUNE_API_KEY env var)
+    etherscan_api_key: Optional[str] = None  # Etherscan API key (or set ETHERSCAN_API_KEY env var)
+    use_dune: bool = False  # Use Dune API as primary data source (currently not working)
+    use_etherscan: bool = True  # Use Etherscan as primary data source
     
     # Feature flags
     include_market_data: bool = False  # Optional: CoinGecko integration
