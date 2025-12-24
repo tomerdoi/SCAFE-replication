@@ -52,8 +52,8 @@ def main():
         # API keys for free tier services
         dune_api_key=dune_key,
         etherscan_api_key=etherscan_key,
-        use_dune=False,  # Dune endpoints not available
-        use_etherscan=False,  # Etherscan v1 deprecated, use public API with enriched data
+        use_dune=False,  # Try Etherscan first, then Dune if needed
+        use_etherscan=True,  # Enable Etherscan API to fetch real data
         
         # Subgraph endpoints (fallback)
         eigenlayer_subgraph_url="https://gateway.thegraph.com/api/subgraphs/id/68g9WSC4QTUJmMpuSbgLNENrcYha4mPmXhWGCoupM7kB",

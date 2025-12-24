@@ -233,9 +233,14 @@ class OperatorReliabilityDatasetGenerator:
             )
             
             # Get current stake (from most recent history or default)
+            # Convert from wei to ETH
             current_stake = 0.0
             if stake_history:
-                current_stake = float(stake_history[-1].get("totalStake", 0))
+                stake_wei = stake_history[-1].get("totalStake", 0)
+                if isinstance(stake_wei, str):
+                    current_stake = float(stake_wei) / 1e18  # Convert wei to ETH
+                else:
+                    current_stake = float(stake_wei) / 1e18  # Convert wei to ETH
             
             return {
                 "operator_id": operator_id,
