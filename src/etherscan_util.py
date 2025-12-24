@@ -13,7 +13,12 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from .global_conf import CONF
+try:
+    # Preferred: package import (works with `python -m src.etherscan_util`)
+    from .global_conf import CONF
+except ImportError:  # pragma: no cover
+    # Fallback: direct script execution from within `src/` (IDE "Run file")
+    from global_conf import CONF  # type: ignore
 
 
 class EtherscanError(RuntimeError):
