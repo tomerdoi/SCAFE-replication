@@ -2,13 +2,53 @@
 Global configuration (keys, secrets, runtime settings).
 
 This repo intentionally keeps configuration in ONE place.
-Secrets should be provided via environment variables and never committed.
+Secrets are loaded from repo-root `secrets.json` (not committed).
 """
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass
+from pathlib import Path
+
+
+def _repo_root() -> Path:
+    # src/global_conf.py -> repo root is one level up from src/
+    return Path(__file__).resolve().parents[1]
+
+
+def _load_secrets() -> dict:
+    """
+    Load secrets from repo-root secrets file.
+    Expected keys: ETHERSCAN_API_KEY, EIGEN_EXPLORER_API_KEY, DUNE_API_KEY
+    """
+    root = _repo_root()
+    for filename in ("secrets.json", "secrets.local.json"):
+        path = root / filename
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            return data if isinstance(data, dict) else {}
+        except FileNotFoundError:
+            continue
+        except Exception:
+            # Fail closed: if secrets file exists but is malformed, treat as missing.
+            return {}
+    return {}
+
+
+_SECRETS = _load_secrets()
+
+
+def _secret(name: str, default: str | None = None) -> str | None:
+    value = _SECRETS.get(name, default)
+    if value is None:
+        return default
+    if not isinstance(value, str):
+        return default
+    value = value.strip()
+    return value or default
 
 
 def _env(name: str, default: str | None = None) -> str | None:
@@ -23,11 +63,15 @@ def _env(name: str, default: str | None = None) -> str | None:
 @dataclass(frozen=True, slots=True)
 class GlobalConf:
     # --- Etherscan API v2 ---
-    # NOTE: This is a secret. Prefer using env vars for real projects.
-    # Kept here per repo workflow request.
-    ETHERSCAN_API_KEY: str = "Y2X5Z21WJP6M9SP5UM6PWD7AHJZJDY6AEA"
+    ETHERSCAN_API_KEY: str | None = _secret("ETHERSCAN_API_KEY") or _env("ETHERSCAN_API_KEY")
     ETHERSCAN_BASE_URL: str = _env("ETHERSCAN_BASE_URL", "https://api.etherscan.io") or "https://api.etherscan.io"
     ETHERSCAN_CHAIN_ID: int = int(_env("ETHERSCAN_CHAIN_ID", "1") or "1")  # 1=Ethereum mainnet
+
+    # --- Eigen Explorer / EigenLayer ecosystem APIs (if used later) ---
+    EIGEN_EXPLORER_API_KEY: str | None = _secret("EIGEN_EXPLORER_API_KEY") or _env("EIGEN_EXPLORER_API_KEY")
+
+    # --- Dune Analytics ---
+    DUNE_API_KEY: str | None = _secret("DUNE_API_KEY") or _env("DUNE_API_KEY")
 
     # --- HTTP / retries ---
     HTTP_TIMEOUT_SECS: int = int(_env("HTTP_TIMEOUT_SECS", "30") or "30")
