@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -77,11 +77,21 @@ class EigenExplorerClient:
         Response shape (per docs):
           {"data":[{"address":...,"name":...,"logo":...}], "meta": {...}}
         """
+        rows, _meta = self.list_operator_addresses_page(skip=skip, take=take)
+        return rows
+
+    def list_operator_addresses_page(self, skip: int = 0, take: int = 100) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+        """
+        Fetch a single page of operator address rows + meta.
+        """
         payload = self.get("/operators/addresses", params={"skip": skip, "take": take})
         rows = payload.get("data", [])
+        meta = payload.get("meta", {})
         if not isinstance(rows, list):
             raise EigenExplorerError("Unexpected 'data' field in response")
-        return rows
+        if not isinstance(meta, dict):
+            meta = {}
+        return rows, meta
 
 
 def _ensure_data_dir() -> Path:
@@ -116,10 +126,58 @@ def main_generate_100_rows() -> None:
         print(f"- {addr}  {name}")
 
 
+def main_generate_all_rows(page_size: int = 100) -> None:
+    """
+    Fetch ALL operator rows from EigenExplorer by paging, and write them to data/.
+    """
+    key = (CONF.EIGEN_EXPLORER_API_KEY or "").strip()
+    if not key:
+        raise EigenExplorerError("Missing EIGEN_EXPLORER_API_KEY (expected in secrets.json)")
+
+    client = EigenExplorerClient(api_key=key)
+
+    all_rows: List[Dict[str, Any]] = []
+    skip = 0
+    total: Optional[int] = None
+
+    while True:
+        rows, meta = client.list_operator_addresses_page(skip=skip, take=page_size)
+        if not rows:
+            break
+        all_rows.extend(rows)
+
+        # meta expected: {total, skip, take}
+        if total is None:
+            t = meta.get("total")
+            if isinstance(t, int):
+                total = t
+
+        skip += len(rows)
+        if total is not None and skip >= total:
+            break
+
+    out_dir = _ensure_data_dir()
+    out_json = out_dir / "eigenexplorer_operator_addresses_all.json"
+    with out_json.open("w", encoding="utf-8") as f:
+        json.dump(all_rows, f, indent=2)
+
+    print(f"wrote {len(all_rows)} rows to {out_json}")
+    if total is not None:
+        print(f"meta.total reported: {total}")
+
+
 if __name__ == "__main__":
     # Run:
     #   python3 -m src.eigen_explorer_util
     # or:
     #   python3 src/eigen_explorer_util.py
-    main_generate_100_rows()
+    #
+    # Toggle behavior here (no argparse):
+    FETCH_ALL = True
+    PAGE_SIZE = 100  # used only when FETCH_ALL=True
+
+    if FETCH_ALL:
+        main_generate_all_rows(page_size=max(1, int(PAGE_SIZE)))
+    else:
+        main_generate_100_rows()
 
