@@ -5,9 +5,10 @@ This util is designed to complement the EigenExplorer snapshot datasets you alre
 - AVS registry: data/eigenexplorer_avs_all.json
 - Operator↔AVS edges: data/eigenexplorer_operator_avs_edges.json
 
-It runs Dune SQL queries (via API) to extract on-chain "governance risk" signals for AVS contracts:
+It runs Dune SQL queries (via API) to extract on-chain "governance/incident risk" signals for AVS contracts:
 - Proxy upgrades: Upgraded(address)
 - Ownership transfers: OwnershipTransferred(address,address)
+- Pause/unpause: Paused(address), Unpaused(address)
 
 Outputs are written into data/ as JSON for reproducibility.
 """
@@ -16,6 +17,7 @@ from __future__ import annotations
 
 import json
 import time
+from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -169,6 +171,10 @@ def build_sql_avs_governance_events(
     topic_upgraded = "0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b"
     # OwnershipTransferred(address,address)
     topic_ownership = "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0"
+    # Paused(address)
+    topic_paused = "0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258"
+    # Unpaused(address)
+    topic_unpaused = "0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa"
 
     return f"""
 WITH avs(address) AS (
@@ -185,13 +191,15 @@ logs AS (
   JOIN avs a ON l.contract_address = a.address
   WHERE l.block_time >= TIMESTAMP '{start_date}'
     AND l.block_time <  TIMESTAMP '{end_date}'
-    AND l.topic0 IN ({topic_upgraded}, {topic_ownership})
+    AND l.topic0 IN ({topic_upgraded}, {topic_ownership}, {topic_paused}, {topic_unpaused})
 )
 SELECT
   date_trunc('week', block_time) AS week,
   contract_address AS avs_address,
   SUM(CASE WHEN topic0 = {topic_upgraded} THEN 1 ELSE 0 END) AS n_upgraded_events,
   SUM(CASE WHEN topic0 = {topic_ownership} THEN 1 ELSE 0 END) AS n_ownership_transfers,
+  SUM(CASE WHEN topic0 = {topic_paused} THEN 1 ELSE 0 END) AS n_paused_events,
+  SUM(CASE WHEN topic0 = {topic_unpaused} THEN 1 ELSE 0 END) AS n_unpaused_events,
   COUNT(*) AS n_total_events,
   COUNT(DISTINCT tx_hash) AS n_distinct_txs
 FROM logs
@@ -229,12 +237,15 @@ if __name__ == "__main__":
     # Toggle behavior here (no argparse):
     # - FETCH_ALL=True will include all AVS addresses (currently 49).
     # - FETCH_ALL=False uses a smaller subset for cheaper/faster iteration.
-    FETCH_ALL = False
+    FETCH_ALL = True
     SMALL_N = 5
 
     # Time range for event extraction
-    START_DATE = "2024-01-01"
-    END_DATE = "2025-12-31"
+    # Use a rolling 1-year window ending "today" (UTC) for free-tier feasibility.
+    _end = datetime.now(timezone.utc).date()
+    _start = _end - timedelta(days=365)
+    START_DATE = _start.isoformat()
+    END_DATE = _end.isoformat()
 
     key = (CONF.DUNE_API_KEY or "").strip()
     if not key:
