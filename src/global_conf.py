@@ -73,6 +73,10 @@ class GlobalConf:
     # --- Dune Analytics ---
     DUNE_API_KEY: str | None = _secret("DUNE_API_KEY") or _env("DUNE_API_KEY")
 
+    # --- u--1 (EigenLayer live API) ---
+    U1_API_KEY: str | None = _secret("U1_API_KEY") or _secret("U--1_API_KEY") or _env("U1_API_KEY")
+    U1_BASE_URL: str = _env("U1_BASE_URL", "https://api.u--1.com") or "https://api.u--1.com"
+
     # --- HTTP / retries ---
     HTTP_TIMEOUT_SECS: int = int(_env("HTTP_TIMEOUT_SECS", "30") or "30")
     HTTP_MAX_RETRIES: int = int(_env("HTTP_MAX_RETRIES", "3") or "3")
