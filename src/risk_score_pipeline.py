@@ -401,7 +401,8 @@ class RiskScorePipeline:
             plt.title("Top AVSs by average model risk (time series)")
             plt.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0)
             plt.tight_layout()
-            plt.savefig(out, dpi=200)
+            # legend is outside the axes; ensure it isn't cropped in the saved PNG
+            plt.savefig(out, dpi=200, bbox_inches="tight")
             plt.close()
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during plot_top_avs_timeseries", exc_info=True)
