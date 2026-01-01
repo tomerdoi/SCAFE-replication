@@ -77,6 +77,11 @@ class GlobalConf:
     U1_API_KEY: str | None = _secret("U1_API_KEY") or _secret("U--1_API_KEY") or _env("U1_API_KEY")
     U1_BASE_URL: str = _env("U1_BASE_URL", "https://api.u--1.com") or "https://api.u--1.com"
 
+    # --- GitHub (for incident/case-study mining) ---
+    # Optional but strongly recommended to avoid very small unauthenticated rate limits.
+    GITHUB_TOKEN: str | None = _secret("GITHUB_TOKEN") or _env("GITHUB_TOKEN")
+    GITHUB_API_BASE_URL: str = _env("GITHUB_API_BASE_URL", "https://api.github.com") or "https://api.github.com"
+
     # --- HTTP / retries ---
     HTTP_TIMEOUT_SECS: int = int(_env("HTTP_TIMEOUT_SECS", "30") or "30")
     HTTP_MAX_RETRIES: int = int(_env("HTTP_MAX_RETRIES", "3") or "3")
