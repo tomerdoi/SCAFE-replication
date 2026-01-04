@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -22,7 +23,12 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from global_conf import CONF
+try:
+    # When run as a module: python -m src.github_incidents_util
+    from .global_conf import CONF
+except Exception:  # pragma: no cover
+    # When run directly: python src/github_incidents_util.py
+    from global_conf import CONF
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -85,12 +91,52 @@ class GitHubIncidentsUtil:
             logger.addHandler(h)
         self.logger = logger
         self.client = GitHubClient()
+        if not self.client.token:
+            self.logger.warning(
+                "No GITHUB_TOKEN configured. This will work, but GitHub search rate limits are very small; "
+                "for many repos you may hit rate limits."
+            )
 
     def ensure_dirs(self) -> None:
         try:
             DATA_DIR.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during ensure_dirs", exc_info=True)
+            raise
+
+    def discover_repos_from_u1_metadata(self, u1_latest_avs_balances_path: Optional[Path] = None) -> List[str]:
+        """
+        Best-effort discovery of GitHub repos from existing u--1 AVS metadata.
+
+        Note: u--1 metadata often includes logo URLs on raw.githubusercontent.com which embed owner/repo.
+        We extract those as a starting list of likely AVS-related repos.
+        """
+        try:
+            if u1_latest_avs_balances_path is None:
+                u1_latest_avs_balances_path = DATA_DIR / "u1_latest_avs_balances.json"
+            if not u1_latest_avs_balances_path.exists():
+                return []
+
+            text = u1_latest_avs_balances_path.read_text(encoding="utf-8", errors="ignore")
+            repos: set[str] = set()
+
+            # raw.githubusercontent.com/<owner>/<repo>/...
+            for m in re.finditer(
+                r"https?://raw\.githubusercontent\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/", text
+            ):
+                owner, repo = m.group(1), m.group(2)
+                if owner and repo:
+                    repos.add(f"{owner}/{repo}")
+
+            # github.com/<owner>/<repo>(/...)
+            for m in re.finditer(r"https?://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)", text):
+                owner, repo = m.group(1), m.group(2)
+                if owner and repo:
+                    repos.add(f"{owner}/{repo}")
+
+            return sorted(repos)
+        except Exception as e:
+            self.logger.error(f"Exception {e} occurred during discover_repos_from_u1_metadata", exc_info=True)
             raise
 
     def _iso_date_days_ago(self, days: int) -> str:
@@ -276,14 +322,21 @@ class GitHubIncidentsUtil:
                 raise ValueError("No repos provided. Use owner/repo strings.")
 
             bundles = []
+            errors: List[Dict[str, Any]] = []
             for r in repos:
                 self.logger.info(f"Fetching GitHub case-study signals for {r}")
-                bundles.append(self.fetch_repo_case_study_bundle(r, since_days=since_days))
+                try:
+                    bundles.append(self.fetch_repo_case_study_bundle(r, since_days=since_days))
+                except Exception as e:
+                    # Keep going: repo might be missing/private/renamed, or rate-limited.
+                    self.logger.error(f"Exception {e} occurred while fetching {r}", exc_info=True)
+                    errors.append({"repo": r, "error": str(e)})
 
             payload = {
                 "generated_at": datetime.now(timezone.utc).isoformat(),
                 "since_days": since_days,
                 "repos": bundles,
+                "errors": errors,
             }
 
             if out_path is None:
@@ -299,10 +352,20 @@ class GitHubIncidentsUtil:
 if __name__ == "__main__":
     # Edit these locally (kept intentionally simple; no argparse).
     SINCE_DAYS = 365
-    REPOS = [
-        # Examples (replace with AVS repos you care about):
-        "ethereum/go-ethereum",
+    # Base repos to scan for EigenLayer restaking risk case studies (core + operator tooling).
+    BASE_REPOS = [
+        # EigenLayer / Layr Labs core + AVS code
+        "Layr-Labs/eigenlayer-contracts",
+        "Layr-Labs/eigensdk-go",
+        "Layr-Labs/eigenda",
+        # Common dependencies frequently used by AVSs (security/event context)
+        "OpenZeppelin/openzeppelin-contracts",
     ]
 
-    GitHubIncidentsUtil().run(REPOS, since_days=int(SINCE_DAYS))
+    util = GitHubIncidentsUtil()
+    # Auto-discover additional AVS-related repos from your existing u--1 metadata file (logo/links).
+    DISCOVERED = util.discover_repos_from_u1_metadata()
+    REPOS = sorted(set(BASE_REPOS + DISCOVERED))
+
+    util.run(REPOS, since_days=int(SINCE_DAYS))
 
