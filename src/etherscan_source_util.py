@@ -17,10 +17,11 @@ import json
 import logging
 import re
 import time
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -259,6 +260,61 @@ class EtherscanAVSSourceUtil:
             self.logger.error(f"Exception {e} occurred during fetch_one", exc_info=True)
             raise
 
+    def _extract_implementation_address(self, etherscan_resp: Dict[str, Any]) -> Optional[str]:
+        """
+        If the fetched address is a proxy, Etherscan may provide the implementation address.
+        """
+        try:
+            if not isinstance(etherscan_resp, dict):
+                return None
+            result = etherscan_resp.get("result", [])
+            if not isinstance(result, list) or not result:
+                return None
+            row = result[0] if isinstance(result[0], dict) else {}
+            impl = row.get("Implementation")
+            proxy_flag = row.get("Proxy")
+            if isinstance(proxy_flag, str) and proxy_flag.strip() == "1" and isinstance(impl, str):
+                impl = impl.strip().lower()
+                if impl.startswith("0x") and len(impl) == 42 and impl != "0x0000000000000000000000000000000000000000":
+                    return impl
+            return None
+        except Exception as e:
+            self.logger.error(f"Exception {e} occurred during _extract_implementation_address", exc_info=True)
+            raise
+
+    def fetch_one_with_implementation(self, address: str, visited: Set[str]) -> None:
+        """
+        Fetch a contract address and, if it's a proxy, also fetch its implementation.
+        """
+        try:
+            addr = address.lower()
+            if addr in visited:
+                return
+            visited.add(addr)
+
+            data = self.client.get_sourcecode(addr)
+            contracts = self.parse_contract_sources(data, addr)
+            payload = {
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+                "address": addr,
+                "etherscan": data,
+                "parsed_sources": {
+                    "n_contracts": len(contracts),
+                    "contracts": contracts,
+                },
+            }
+            out = OUT_DIR / f"{addr}.json"
+            out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            time.sleep(0.25)
+
+            impl = self._extract_implementation_address(data)
+            if impl and impl not in visited:
+                self.logger.info(f"Fetching implementation for {addr}: {impl}")
+                self.fetch_one_with_implementation(impl, visited)
+        except Exception as e:
+            self.logger.error(f"Exception {e} occurred during fetch_one_with_implementation", exc_info=True)
+            raise
+
     def run(self, *, fetch_all: bool, limit: int = 5) -> None:
         try:
             self.ensure_dirs()
@@ -266,9 +322,10 @@ class EtherscanAVSSourceUtil:
             if not fetch_all:
                 addrs = addrs[: max(0, int(limit))]
             self.logger.info(f"Fetching Etherscan sources for {len(addrs)} AVS addresses")
+            visited: Set[str] = set()
             for a in addrs:
                 self.logger.info(f"Fetching {a}")
-                self.fetch_one(a)
+                self.fetch_one_with_implementation(a, visited)
             self.logger.info(f"Done. Wrote per-address payloads under: {OUT_DIR}")
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during run", exc_info=True)
@@ -277,8 +334,10 @@ class EtherscanAVSSourceUtil:
 
 if __name__ == "__main__":
     # Keep this simple (edit locally; no argparse).
-    FETCH_ALL = False
-    LIMIT = 5
+    # You can also override from the environment:
+    #   ETHERSCAN_FETCH_ALL=1 python -m src.etherscan_source_util
+    FETCH_ALL = str(os.getenv("ETHERSCAN_FETCH_ALL", "0")).strip() in ("1", "true", "True", "yes", "YES")
+    LIMIT = int(os.getenv("ETHERSCAN_LIMIT", "5"))
 
     EtherscanAVSSourceUtil().run(fetch_all=bool(FETCH_ALL), limit=int(LIMIT))
 

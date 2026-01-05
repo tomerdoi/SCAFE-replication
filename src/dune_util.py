@@ -990,6 +990,126 @@ def build_avs_contract_mapping_pairs(
     return out
 
 
+def run_full_year_panels(
+    *,
+    fetch_all: bool = True,
+    small_n: int = 5,
+    lookback_days: int = 365,
+    performance: str = "medium",
+    top_k_related_contracts: int = 10,
+    timeout_secs: float = 900.0,
+) -> None:
+    """
+    In-process "main" runner for Dune extraction (same logic as the __main__ block).
+
+    This is intended for orchestration from src.main_pipeline without spawning subprocesses.
+    """
+    try:
+        # Time range: rolling window ending today (UTC)
+        _end = datetime.now(timezone.utc).date()
+        _start = _end - timedelta(days=int(lookback_days))
+        start_date = _start.isoformat()
+        end_date = _end.isoformat()
+
+        key = (CONF.DUNE_API_KEY or "").strip()
+        if not key:
+            raise DuneError("Missing DUNE_API_KEY (expected in secrets.json)")
+
+        avs_all = _load_avs_addresses()
+        avs = avs_all if fetch_all else avs_all[: max(1, int(small_n))]
+
+        dune = DuneClient(api_key=key)
+        run_avs_governance_events(
+            dune,
+            avs_addresses=avs,
+            start_date=start_date,
+            end_date=end_date,
+            performance=performance,
+            out_name="dune_avs_governance_events_all.json" if fetch_all else "dune_avs_governance_events_small.json",
+        )
+
+        run_avs_governance_events_panel(
+            dune,
+            avs_addresses=avs,
+            start_date=start_date,
+            end_date=end_date,
+            performance=performance,
+            out_name="dune_avs_governance_events_panel_all.json"
+            if fetch_all
+            else "dune_avs_governance_events_panel_small.json",
+        )
+
+        # Discover related contracts and compute expanded panels
+        related_sql = build_sql_avs_related_contracts(avs, start_date=start_date, end_date=end_date)
+        related_path = run_sql_to_data(
+            dune,
+            sql=related_sql,
+            out_name="dune_avs_related_contracts_all.json" if fetch_all else "dune_avs_related_contracts_small.json",
+            performance=performance,
+            timeout_secs=timeout_secs,
+        )
+
+        activity_sql = build_sql_avs_activity_panel(avs, start_date=start_date, end_date=end_date)
+        run_sql_to_data(
+            dune,
+            sql=activity_sql,
+            out_name="dune_avs_activity_panel_all.json" if fetch_all else "dune_avs_activity_panel_small.json",
+            performance=performance,
+            timeout_secs=timeout_secs,
+        )
+
+        related_rows = _load_dune_rows(related_path)
+        pairs = build_avs_contract_mapping_pairs(avs, related_rows, top_k_per_avs=int(top_k_related_contracts))
+
+        expanded_sql = build_sql_avs_governance_events_panel_expanded(
+            avs_addresses=avs,
+            start_date=start_date,
+            end_date=end_date,
+            mapping_pairs=pairs,
+        )
+        run_sql_to_data(
+            dune,
+            sql=expanded_sql,
+            out_name="dune_avs_governance_events_panel_expanded_all.json"
+            if fetch_all
+            else "dune_avs_governance_events_panel_expanded_small.json",
+            performance=performance,
+            timeout_secs=timeout_secs,
+        )
+
+        tokenflow_sql = build_sql_avs_tokenflow_panel_expanded(avs, start_date=start_date, end_date=end_date, mapping_pairs=pairs)
+        run_sql_to_data(
+            dune,
+            sql=tokenflow_sql,
+            out_name="dune_avs_tokenflow_panel_expanded_all.json"
+            if fetch_all
+            else "dune_avs_tokenflow_panel_expanded_small.json",
+            performance=performance,
+            timeout_secs=timeout_secs,
+        )
+
+        ethflow_sql = build_sql_avs_ethflow_panel_expanded(avs, start_date=start_date, end_date=end_date, mapping_pairs=pairs)
+        run_sql_to_data(
+            dune,
+            sql=ethflow_sql,
+            out_name="dune_avs_ethflow_panel_expanded_all.json" if fetch_all else "dune_avs_ethflow_panel_expanded_small.json",
+            performance=performance,
+            timeout_secs=timeout_secs,
+        )
+
+        # Operator activity panel (operators in exposure graph)
+        operator_sql = build_sql_operator_activity_panel(start_date=start_date, end_date=end_date)
+        run_sql_to_data(
+            dune,
+            sql=operator_sql,
+            out_name="dune_operator_activity_panel_all.json" if fetch_all else "dune_operator_activity_panel_small.json",
+            performance=performance,
+            timeout_secs=timeout_secs,
+        )
+    except Exception as e:
+        raise DuneError(f"run_full_year_panels failed: {e}") from e
+
+
 if __name__ == "__main__":
     # Toggle behavior here (no argparse):
     # - FETCH_ALL=True will include all AVS addresses (currently 49).

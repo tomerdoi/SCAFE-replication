@@ -62,6 +62,7 @@ class RiskScorePipeline:
         self.path_operator_avs_edges = self.data_dir / "eigenexplorer_operator_avs_edges.json"
         self.path_u1_avs_risks_summary = self.data_dir / "u1_avs_risks_summary.json"
         self.path_u1_latest_avs_balances = self.data_dir / "u1_latest_avs_balances.json"
+        self.path_avs_code_risk = self.derived_dir / "avs_code_risk.csv"
 
     # ---------------- helpers ----------------
     def _read_json(self, path: Path) -> Any:
@@ -193,6 +194,19 @@ class RiskScorePipeline:
             self.logger.error(f"Exception {e} occurred during load_operator_edges", exc_info=True)
             raise
 
+    def load_code_risk(self) -> pd.DataFrame:
+        try:
+            if not self.path_avs_code_risk.exists():
+                self.logger.warning(f"Code risk file missing: {self.path_avs_code_risk} (continuing with zeros)")
+                return pd.DataFrame(columns=["avs_address", "code_risk_z"])
+            df = pd.read_csv(self.path_avs_code_risk)
+            if "avs_address" in df.columns:
+                df["avs_address"] = df["avs_address"].astype(str).str.lower()
+            return df
+        except Exception as e:
+            self.logger.error(f"Exception {e} occurred during load_code_risk", exc_info=True)
+            raise
+
     # ---------------- scoring ----------------
     def build_avs_week_risk(self, panels: Dict[str, pd.DataFrame], mode: str) -> pd.DataFrame:
         try:
@@ -254,6 +268,29 @@ class RiskScorePipeline:
             ].copy()
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during build_avs_week_risk", exc_info=True)
+            raise
+
+    def apply_code_risk(self, avs_week: pd.DataFrame, code_risk: pd.DataFrame, alpha: float = 0.8) -> pd.DataFrame:
+        """
+        Merge time-invariant code risk into the weekly behavioral risk.
+
+        final_score = alpha * behavioral + (1-alpha) * code_risk_z
+        """
+        try:
+            df = avs_week.copy()
+            if "avs_address" in df.columns:
+                df["avs_address"] = df["avs_address"].astype(str).str.lower()
+            cr = code_risk[["avs_address", "code_risk_z"]].copy() if not code_risk.empty else pd.DataFrame(
+                columns=["avs_address", "code_risk_z"]
+            )
+            df = df.merge(cr, on="avs_address", how="left")
+            df["code_risk_z"] = pd.to_numeric(df.get("code_risk_z", 0), errors="coerce").fillna(0.0)
+            df["avs_risk_behavior"] = pd.to_numeric(df["avs_risk_score"], errors="coerce").fillna(0.0)
+            a = float(alpha)
+            df["avs_risk_score"] = a * df["avs_risk_behavior"] + (1.0 - a) * df["code_risk_z"]
+            return df
+        except Exception as e:
+            self.logger.error(f"Exception {e} occurred during apply_code_risk", exc_info=True)
             raise
 
     def lift_to_operator_week(self, avs_week: pd.DataFrame, edges: pd.DataFrame) -> pd.DataFrame:
@@ -417,10 +454,14 @@ class RiskScorePipeline:
             u1_map = self.load_u1_avs_name_map()
             panels = self.load_dune_panels()
             edges = self.load_operator_edges()
+            code_risk = self.load_code_risk()
 
             avs_baseline = self.build_avs_week_risk(panels, mode="baseline")
             avs_expanded = self.build_avs_week_risk(panels, mode="expanded")
             avs_expanded_flows = self.build_avs_week_risk(panels, mode="expanded+flows")
+
+            # Integrate code risk into the main model (keep baseline/expanded as pure behavioral for ablations)
+            avs_expanded_flows = self.apply_code_risk(avs_expanded_flows, code_risk, alpha=0.8)
 
             avs_expanded_flows.to_csv(self.derived_dir / "avs_week_risk_expanded_flows.csv", index=False)
             op_week = self.lift_to_operator_week(avs_expanded_flows, edges)
