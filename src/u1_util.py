@@ -23,10 +23,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-try:
-    from .global_conf import CONF
-except ImportError:  # pragma: no cover
-    from global_conf import CONF  # type: ignore
+from src.global_conf import CONF
 
 
 class U1Error(RuntimeError):

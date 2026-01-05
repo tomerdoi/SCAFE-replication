@@ -20,10 +20,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-try:
-    from .global_conf import CONF
-except ImportError:  # pragma: no cover
-    from global_conf import CONF  # type: ignore
+from src.global_conf import CONF
 
 
 class EigenExplorerError(RuntimeError):
@@ -152,7 +149,12 @@ def _extract_operator_addresses(payload: Dict[str, Any]) -> Set[str]:
     return out
 
 
-def main_generate_operator_avs_edges(page_size: int = 100, limit_avs: Optional[int] = None) -> None:
+def main_generate_operator_avs_edges(
+    page_size: int = 100,
+    limit_avs: Optional[int] = None,
+    *,
+    progress_every_avs: int = 1,
+) -> None:
     key = (CONF.EIGEN_EXPLORER_API_KEY or "").strip()
     if not key:
         raise EigenExplorerError("Missing EIGEN_EXPLORER_API_KEY (expected in secrets.json)")
@@ -183,10 +185,15 @@ def main_generate_operator_avs_edges(page_size: int = 100, limit_avs: Optional[i
     edges: List[Dict[str, Any]] = []
     avs_operators_payloads: List[Dict[str, Any]] = []
 
-    for avs in avs_rows:
+    total_avs = len(avs_rows)
+    for i_avs, avs in enumerate(avs_rows, start=1):
         avs_addr = _extract_first_address(avs)
         if not avs_addr:
             continue
+
+        if i_avs == 1 or i_avs % max(1, int(progress_every_avs)) == 0 or i_avs == total_avs:
+            pct = int(round(100.0 * i_avs / max(1, total_avs)))
+            print(f"[eigenexplorer exposure] AVS {i_avs}/{total_avs} ({pct}%)")
 
         # 2) Fetch operators for this AVS
         operators: List[Dict[str, Any]] = []
@@ -202,6 +209,11 @@ def main_generate_operator_avs_edges(page_size: int = 100, limit_avs: Optional[i
                 if isinstance(t, int):
                     op_total = t
             op_skip += len(batch)
+            if op_total is not None and op_total > 0:
+                pct_op = int(round(100.0 * op_skip / max(1, op_total)))
+                # only print occasionally to avoid spam
+                if op_skip == len(batch) or op_skip == op_total:
+                    print(f"  [avs operators] {op_skip}/{op_total} ({pct_op}%) for {avs_addr[:10]}")
             if op_total is not None and op_skip >= op_total:
                 break
 

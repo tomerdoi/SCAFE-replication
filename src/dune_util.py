@@ -35,10 +35,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-try:
-    from .global_conf import CONF
-except ImportError:  # pragma: no cover
-    from global_conf import CONF  # type: ignore
+from src.global_conf import CONF
 
 
 class DuneError(RuntimeError):
@@ -148,6 +145,24 @@ def _load_avs_addresses() -> List[str]:
             if isinstance(addr, str) and addr.startswith("0x") and len(addr) == 42:
                 out.append(addr.lower())
     return out
+
+
+def _load_operator_addresses_from_edges() -> List[str]:
+    """
+    Load operator addresses from data/eigenexplorer_operator_avs_edges.json.
+    """
+    p = _repo_root() / "data" / "eigenexplorer_operator_avs_edges.json"
+    obj = _read_json(p)
+    if not isinstance(obj, list):
+        return []
+    ops: set[str] = set()
+    for e in obj:
+        if not isinstance(e, dict):
+            continue
+        a = e.get("operator_address")
+        if isinstance(a, str) and a.startswith("0x") and len(a) == 42:
+            ops.add(a.lower())
+    return sorted(ops)
 
 
 def _as_dune_addr_literals(addresses: Sequence[str]) -> str:
@@ -998,6 +1013,7 @@ def run_full_year_panels(
     performance: str = "medium",
     top_k_related_contracts: int = 10,
     timeout_secs: float = 900.0,
+    progress_logger: Optional[Any] = None,
 ) -> None:
     """
     In-process "main" runner for Dune extraction (same logic as the __main__ block).
@@ -1019,6 +1035,17 @@ def run_full_year_panels(
         avs = avs_all if fetch_all else avs_all[: max(1, int(small_n))]
 
         dune = DuneClient(api_key=key)
+
+        step = 0
+        total_steps = 7
+
+        def _log(msg: str) -> None:
+            if progress_logger:
+                pct = int(round(100.0 * step / max(1, total_steps)))
+                progress_logger.info(f"[dune {pct:3d}%] {msg}")
+
+        step = 1
+        _log("Governance events (sparse)")
         run_avs_governance_events(
             dune,
             avs_addresses=avs,
@@ -1028,6 +1055,8 @@ def run_full_year_panels(
             out_name="dune_avs_governance_events_all.json" if fetch_all else "dune_avs_governance_events_small.json",
         )
 
+        step = 2
+        _log("Governance events panel (AVS×week)")
         run_avs_governance_events_panel(
             dune,
             avs_addresses=avs,
@@ -1040,6 +1069,8 @@ def run_full_year_panels(
         )
 
         # Discover related contracts and compute expanded panels
+        step = 3
+        _log("Related contracts discovery")
         related_sql = build_sql_avs_related_contracts(avs, start_date=start_date, end_date=end_date)
         related_path = run_sql_to_data(
             dune,
@@ -1049,6 +1080,8 @@ def run_full_year_panels(
             timeout_secs=timeout_secs,
         )
 
+        step = 4
+        _log("AVS activity panel (txs/senders)")
         activity_sql = build_sql_avs_activity_panel(avs, start_date=start_date, end_date=end_date)
         run_sql_to_data(
             dune,
@@ -1061,11 +1094,13 @@ def run_full_year_panels(
         related_rows = _load_dune_rows(related_path)
         pairs = build_avs_contract_mapping_pairs(avs, related_rows, top_k_per_avs=int(top_k_related_contracts))
 
+        step = 5
+        _log("Expanded governance panel (AVS×week, expanded attribution)")
         expanded_sql = build_sql_avs_governance_events_panel_expanded(
             avs_addresses=avs,
+            avs_contract_pairs=pairs,
             start_date=start_date,
             end_date=end_date,
-            mapping_pairs=pairs,
         )
         run_sql_to_data(
             dune,
@@ -1077,7 +1112,14 @@ def run_full_year_panels(
             timeout_secs=timeout_secs,
         )
 
-        tokenflow_sql = build_sql_avs_tokenflow_panel_expanded(avs, start_date=start_date, end_date=end_date, mapping_pairs=pairs)
+        step = 6
+        _log("Token flow panel (ERC20 in/out)")
+        tokenflow_sql = build_sql_avs_tokenflow_panel_expanded(
+            avs_addresses=avs,
+            avs_contract_pairs=pairs,
+            start_date=start_date,
+            end_date=end_date,
+        )
         run_sql_to_data(
             dune,
             sql=tokenflow_sql,
@@ -1088,7 +1130,14 @@ def run_full_year_panels(
             timeout_secs=timeout_secs,
         )
 
-        ethflow_sql = build_sql_avs_ethflow_panel_expanded(avs, start_date=start_date, end_date=end_date, mapping_pairs=pairs)
+        step = 7
+        _log("ETH flow panel + operator activity panel")
+        ethflow_sql = build_sql_avs_ethflow_panel_expanded(
+            avs_addresses=avs,
+            avs_contract_pairs=pairs,
+            start_date=start_date,
+            end_date=end_date,
+        )
         run_sql_to_data(
             dune,
             sql=ethflow_sql,
@@ -1098,7 +1147,8 @@ def run_full_year_panels(
         )
 
         # Operator activity panel (operators in exposure graph)
-        operator_sql = build_sql_operator_activity_panel(start_date=start_date, end_date=end_date)
+        operator_addresses = _load_operator_addresses_from_edges()
+        operator_sql = build_sql_operator_activity_panel(operator_addresses, start_date=start_date, end_date=end_date)
         run_sql_to_data(
             dune,
             sql=operator_sql,

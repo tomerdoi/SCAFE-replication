@@ -20,10 +20,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-try:
-    from .global_conf import CONF
-except ImportError:  # pragma: no cover
-    from global_conf import CONF  # type: ignore
+from src.global_conf import CONF
 
 
 class EigenExplorerError(RuntimeError):
@@ -93,7 +90,17 @@ def _load_edges_operators() -> List[str]:
     return sorted(ops)
 
 
-def main_fetch_operator_rewards(limit: Optional[int] = None) -> None:
+def main_fetch_operator_rewards(
+    limit: Optional[int] = None,
+    *,
+    progress_logger: Optional[Any] = None,
+    progress_every: int = 25,
+) -> None:
+    """
+    Fetch operator rewards and write data/eigenexplorer_operator_rewards.json.
+
+    progress_logger: optional logger with .info(...) for percent progress
+    """
     key = (CONF.EIGEN_EXPLORER_API_KEY or "").strip()
     if not key:
         raise EigenExplorerError("Missing EIGEN_EXPLORER_API_KEY (expected in secrets.json)")
@@ -105,6 +112,7 @@ def main_fetch_operator_rewards(limit: Optional[int] = None) -> None:
     client = EigenExplorerClient(api_key=key)
     out: List[Dict[str, Any]] = []
 
+    total = len(ops)
     for i, op in enumerate(ops, start=1):
         try:
             payload = client.get_operator_rewards(op)
@@ -112,6 +120,11 @@ def main_fetch_operator_rewards(limit: Optional[int] = None) -> None:
             out.append(payload)
         except Exception as e:
             out.append({"operator_address": op, "error": str(e)})
+
+        if progress_logger and (i == 1 or i % max(1, int(progress_every)) == 0 or i == total):
+            pct = int(round(100.0 * i / max(1, total)))
+            progress_logger.info(f"[operator rewards] {i}/{total} ({pct}%)")
+
         # gentle pacing
         if i % 20 == 0:
             time.sleep(0.25)

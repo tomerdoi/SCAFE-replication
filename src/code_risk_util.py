@@ -274,7 +274,7 @@ class AVSCodeRiskUtil:
             self.logger.error(f"Exception {e} occurred during score_contract", exc_info=True)
             raise
 
-    def run(self) -> Path:
+    def run(self, *, progress_logger: Optional[Any] = None, progress_every: int = 5) -> Path:
         try:
             self.ensure_dirs()
 
@@ -286,7 +286,8 @@ class AVSCodeRiskUtil:
             missing_payloads: int = 0
             total_contracts: int = 0
 
-            for avs, contracts in avs_contracts.items():
+            total_avs = len(avs_contracts)
+            for i, (avs, contracts) in enumerate(avs_contracts.items(), start=1):
                 total_contracts += len(contracts)
                 contract_scores: List[float] = []
                 contract_with_src: int = 0
@@ -311,6 +312,9 @@ class AVSCodeRiskUtil:
                         "code_risk_raw_mean": avs_code_raw_mean,
                     }
                 )
+                if progress_logger and (i == 1 or i % max(1, int(progress_every)) == 0 or i == total_avs):
+                    pct = int(round(100.0 * i / max(1, total_avs)))
+                    progress_logger.info(f"[code risk] {i}/{total_avs} ({pct}%)")
 
             df = pd.DataFrame(rows_avs)
             if df.empty:

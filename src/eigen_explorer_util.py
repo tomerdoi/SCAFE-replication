@@ -22,12 +22,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-try:
-    # Preferred: package import (works with `python -m src.eigen_explorer_util`)
-    from .global_conf import CONF
-except ImportError:  # pragma: no cover
-    # Fallback: direct script execution from within `src/` (IDE "Run file")
-    from global_conf import CONF  # type: ignore
+from src.global_conf import CONF
 
 
 class EigenExplorerError(RuntimeError):
@@ -153,6 +148,9 @@ def main_generate_all_rows(page_size: int = 100) -> None:
                 total = t
 
         skip += len(rows)
+        if total is not None:
+            pct = int(round(100.0 * skip / max(1, total)))
+            print(f"[eigenexplorer operators] {skip}/{total} ({pct}%)")
         if total is not None and skip >= total:
             break
 

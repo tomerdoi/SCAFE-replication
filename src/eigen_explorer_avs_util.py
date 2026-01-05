@@ -18,10 +18,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-try:
-    from .global_conf import CONF
-except ImportError:  # pragma: no cover
-    from global_conf import CONF  # type: ignore
+from src.global_conf import CONF
 
 
 class EigenExplorerError(RuntimeError):
@@ -124,6 +121,9 @@ def main_generate_all_rows(page_size: int = 100) -> None:
                 total = t
 
         skip += len(rows)
+        if total is not None:
+            pct = int(round(100.0 * skip / max(1, total)))
+            print(f"[eigenexplorer avs] {skip}/{total} ({pct}%)")
         if total is not None and skip >= total:
             break
 

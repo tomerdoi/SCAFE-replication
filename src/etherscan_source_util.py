@@ -27,12 +27,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-try:
-    # When run as a module: python -m src.etherscan_source_util
-    from .global_conf import CONF
-except Exception:  # pragma: no cover
-    # When run directly: python src/etherscan_source_util.py
-    from global_conf import CONF  # type: ignore
+from src.global_conf import CONF
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -315,17 +310,28 @@ class EtherscanAVSSourceUtil:
             self.logger.error(f"Exception {e} occurred during fetch_one_with_implementation", exc_info=True)
             raise
 
-    def run(self, *, fetch_all: bool, limit: int = 5) -> None:
+    def run(
+        self,
+        *,
+        fetch_all: bool,
+        limit: int = 5,
+        progress_logger: Optional[Any] = None,
+        progress_every: int = 5,
+    ) -> None:
         try:
             self.ensure_dirs()
             addrs = self.load_avs_addresses()
             if not fetch_all:
                 addrs = addrs[: max(0, int(limit))]
-            self.logger.info(f"Fetching Etherscan sources for {len(addrs)} AVS addresses")
+            total_base = len(addrs)
+            self.logger.info(f"Fetching Etherscan sources for {total_base} AVS addresses")
             visited: Set[str] = set()
-            for a in addrs:
+            for i, a in enumerate(addrs, start=1):
                 self.logger.info(f"Fetching {a}")
                 self.fetch_one_with_implementation(a, visited)
+                if progress_logger and (i == 1 or i % max(1, int(progress_every)) == 0 or i == total_base):
+                    pct = int(round(100.0 * i / max(1, total_base)))
+                    progress_logger.info(f"[etherscan sources] base {i}/{total_base} ({pct}%) | total_fetched={len(visited)}")
             self.logger.info(f"Done. Wrote per-address payloads under: {OUT_DIR}")
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during run", exc_info=True)

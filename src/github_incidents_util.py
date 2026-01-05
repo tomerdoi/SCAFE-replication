@@ -23,12 +23,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-try:
-    # When run as a module: python -m src.github_incidents_util
-    from .global_conf import CONF
-except Exception:  # pragma: no cover
-    # When run directly: python src/github_incidents_util.py
-    from global_conf import CONF
+from src.global_conf import CONF
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
