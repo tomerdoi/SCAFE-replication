@@ -131,7 +131,9 @@ class EtherscanAVSSourceUtil:
     def load_avs_addresses(self, path: Optional[Path] = None) -> List[str]:
         try:
             if path is None:
-                path = DATA_DIR / "eigenexplorer_avs_all.json"
+                # Prefer expanded registry if present.
+                p_reg = DATA_DIR / "avs_registry_all.json"
+                path = p_reg if p_reg.exists() else (DATA_DIR / "eigenexplorer_avs_all.json")
             obj = json.loads(path.read_text(encoding="utf-8"))
             rows = obj.get("data", []) if isinstance(obj, dict) else []
             out: List[str] = []

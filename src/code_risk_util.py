@@ -79,15 +79,27 @@ class AVSCodeRiskUtil:
 
     def load_avs_addresses(self) -> List[str]:
         try:
-            path = DATA_DIR / "eigenexplorer_avs_all.json"
-            obj = self._read_json(path)
-            rows = obj.get("data", []) if isinstance(obj, dict) else []
-            out = []
-            for r in rows:
-                if isinstance(r, dict):
+            # Prefer the expanded AVS registry if present; fall back to EigenExplorer list.
+            candidates = [
+                DATA_DIR / "avs_registry_all.json",
+                DATA_DIR / "eigenexplorer_avs_all.json",
+            ]
+            out: List[str] = []
+            for path in candidates:
+                if not path.exists():
+                    continue
+                obj = self._read_json(path)
+                rows = obj.get("data", []) if isinstance(obj, dict) else []
+                if not isinstance(rows, list):
+                    continue
+                for r in rows:
+                    if not isinstance(r, dict):
+                        continue
                     a = r.get("address")
                     if isinstance(a, str) and a.startswith("0x") and len(a) == 42:
                         out.append(a.lower())
+                if out:
+                    break
             return sorted(set(out))
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during load_avs_addresses", exc_info=True)

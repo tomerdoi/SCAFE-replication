@@ -133,9 +133,15 @@ def _read_json(path: Path) -> Any:
 
 def _load_avs_addresses() -> List[str]:
     """
-    Load AVS addresses from data/eigenexplorer_avs_all.json.
+    Load AVS addresses from the broadest available registry.
+
+    Preference order:
+    1) data/avs_registry_all.json (unioned registry)
+    2) data/eigenexplorer_avs_all.json (fallback)
     """
-    p = _repo_root() / "data" / "eigenexplorer_avs_all.json"
+    root = _repo_root() / "data"
+    p_reg = root / "avs_registry_all.json"
+    p = p_reg if p_reg.exists() else (root / "eigenexplorer_avs_all.json")
     obj = _read_json(p)
     rows = obj.get("data", []) if isinstance(obj, dict) else []
     out: List[str] = []
@@ -1015,6 +1021,69 @@ def build_avs_contract_mapping_pairs(
         out.append(p)
         seen_pairs.add(p)
     return out
+
+
+def build_sql_avs_directory_avs_registry() -> str:
+    """
+    Discover AVS addresses directly from EigenLayer's AVSDirectory on-chain logs.
+
+    We union two sources:
+    - AVSMetadataURIUpdated(address indexed avs, string metadataURI)  -> topic1 is AVS address
+    - OperatorAVSRegistrationStatusUpdated(address indexed operator, address indexed avs, uint8 status) -> topic2 is AVS address
+
+    This is independent of any pre-existing AVS inventory file, and is the best way to scale the AVS list.
+    """
+    # Mainnet AVSDirectory (EigenLayer core)
+    avs_directory = "0xdabdb3cd346b7d5f5779b0b614ede1cc9dcba5b7"
+    sig_meta = "AVSMetadataURIUpdated(address,string)"
+    sig_reg = "OperatorAVSRegistrationStatusUpdated(address,address,uint8)"
+
+    return f"""
+WITH logs_meta AS (
+  SELECT
+    varbinary_ltrim(l.topic1) AS avs_address,
+    l.block_time
+  FROM ethereum.logs l
+  WHERE l.contract_address = {avs_directory}
+    AND l.topic0 = keccak(to_utf8('{sig_meta}'))
+),
+logs_reg AS (
+  SELECT
+    varbinary_ltrim(l.topic2) AS avs_address,
+    l.block_time
+  FROM ethereum.logs l
+  WHERE l.contract_address = {avs_directory}
+    AND l.topic0 = keccak(to_utf8('{sig_reg}'))
+),
+all_avs AS (
+  SELECT * FROM logs_meta
+  UNION ALL
+  SELECT * FROM logs_reg
+)
+SELECT
+  avs_address,
+  MIN(block_time) AS first_seen,
+  MAX(block_time) AS last_seen,
+  COUNT(*) AS n_events
+FROM all_avs
+WHERE avs_address IS NOT NULL
+GROUP BY 1
+ORDER BY 2 ASC
+""".strip()
+
+
+def run_avs_directory_avs_registry(
+    *,
+    performance: str = "medium",
+    skip_if_exists: bool = False,
+) -> Path:
+    """
+    Writes: data/dune_avs_directory_avs_registry_all.json
+    """
+    out_name = "dune_avs_directory_avs_registry_all.json"
+    dune = DuneClient(api_key=CONF.DUNE_API_KEY)
+    sql = build_sql_avs_directory_avs_registry()
+    return run_sql_to_data(dune, sql, out_name=out_name, performance=performance, timeout_secs=900.0, skip_if_exists=skip_if_exists)
 
 
 def run_full_year_panels(

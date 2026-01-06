@@ -27,7 +27,8 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from src.code_risk_util import AVSCodeRiskUtil
-from src.dune_util import run_full_year_panels
+from src.avs_registry_util import AVSRegistryUtil
+from src.dune_util import run_avs_directory_avs_registry, run_full_year_panels
 from src.eigen_explorer_avs_exposure_util import main_generate_operator_avs_edges
 from src.eigen_explorer_avs_util import main_generate_all_rows as eigen_avs_all
 from src.eigen_explorer_operator_rewards_util import main_fetch_operator_rewards
@@ -48,7 +49,7 @@ class MainPipeline:
             logger.addHandler(h)
         self.logger = logger
 
-        self._total_steps = 7  # keep in sync with run()
+        self._total_steps = 9  # keep in sync with run()
         self._step_idx = 0
         self.force = str(os.getenv("PIPELINE_FORCE", "0")).strip() in ("1", "true", "True", "yes", "YES")
 
@@ -137,6 +138,26 @@ class MainPipeline:
             self.logger.error(f"Exception {e} occurred during run_u1", exc_info=True)
             raise
 
+    def run_avs_registry(self) -> None:
+        """
+        Build a broad AVS registry by unioning available sources (EigenExplorer + u--1 + Dune-derived lists if present).
+        Downstream steps prefer this file if present.
+        """
+        try:
+            step = "AVS registry (union)"
+            self._start_step(step)
+            out_path = self.data_dir / "avs_registry_all.json"
+            if (not self.force) and self._file_ok(out_path):
+                self._log_progress(f"AVS registry exists; skipping: {out_path.name}")
+                self._end_step(step)
+                return
+            self._log_progress("Building unioned AVS registry (max coverage)")
+            AVSRegistryUtil().write_registry(out_path=out_path)
+            self._end_step(step)
+        except Exception as e:
+            self.logger.error(f"Exception {e} occurred during run_avs_registry", exc_info=True)
+            raise
+
     def run_dune(self) -> None:
         try:
             step = "Dune panels"
@@ -152,6 +173,26 @@ class MainPipeline:
             self._end_step(step)
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during run_dune", exc_info=True)
+            raise
+
+    def run_dune_avs_registry(self) -> None:
+        """
+        Discover AVS addresses directly from on-chain AVSDirectory logs via Dune.
+        This is independent of EigenExplorer/u--1 inventories and can expand coverage.
+        """
+        try:
+            step = "Dune AVS registry (on-chain)"
+            self._start_step(step)
+            out_path = self.data_dir / "dune_avs_directory_avs_registry_all.json"
+            if not self.force and self._file_ok(out_path):
+                self._log_progress("Dune AVS registry output exists; skipping query")
+                self._end_step(step)
+                return
+            self._log_progress("Dune: discovering AVS addresses from AVSDirectory logs")
+            run_avs_directory_avs_registry(performance="medium", skip_if_exists=not self.force)
+            self._end_step(step)
+        except Exception as e:
+            self.logger.error(f"Exception {e} occurred during run_dune_avs_registry", exc_info=True)
             raise
 
     def run_github(self) -> None:
@@ -228,6 +269,8 @@ class MainPipeline:
             self._step_idx = 0
             self.run_eigenexplorer()
             self.run_u1()
+            self.run_dune_avs_registry()
+            self.run_avs_registry()
             self.run_dune()
             self.run_github()
             self.run_etherscan_sources()
