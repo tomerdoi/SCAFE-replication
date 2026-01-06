@@ -287,7 +287,18 @@ class EtherscanAVSSourceUtil:
                 return
             visited.add(addr)
 
-            data = self.client.get_sourcecode(addr)
+            out = OUT_DIR / f"{addr}.json"
+            from_cache = False
+            if getattr(self, "_skip_existing", False) and out.exists() and out.stat().st_size > 10:
+                # Use existing payload to decide whether we also need to fetch implementation.
+                try:
+                    existing = json.loads(out.read_text(encoding="utf-8"))
+                    data = existing.get("etherscan", {}) if isinstance(existing, dict) else {}
+                    from_cache = True
+                except Exception:
+                    data = {}
+            else:
+                data = self.client.get_sourcecode(addr)
             contracts = self.parse_contract_sources(data, addr)
             payload = {
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
@@ -298,9 +309,10 @@ class EtherscanAVSSourceUtil:
                     "contracts": contracts,
                 },
             }
-            out = OUT_DIR / f"{addr}.json"
-            out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-            time.sleep(0.25)
+            # If we're skipping existing, don't rewrite/sleep (keeps runs fast and avoids extra IO).
+            if not from_cache:
+                out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                time.sleep(0.25)
 
             impl = self._extract_implementation_address(data)
             if impl and impl not in visited:
@@ -317,8 +329,11 @@ class EtherscanAVSSourceUtil:
         limit: int = 5,
         progress_logger: Optional[Any] = None,
         progress_every: int = 5,
+        skip_existing: bool = False,
     ) -> None:
         try:
+            # used by fetch_one_with_implementation
+            self._skip_existing = bool(skip_existing)
             self.ensure_dirs()
             addrs = self.load_avs_addresses()
             if not fetch_all:

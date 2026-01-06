@@ -17,6 +17,7 @@ Usage:
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -49,6 +50,11 @@ class MainPipeline:
 
         self._total_steps = 7  # keep in sync with run()
         self._step_idx = 0
+        self.force = str(os.getenv("PIPELINE_FORCE", "0")).strip() in ("1", "true", "True", "yes", "YES")
+
+        self.repo_root = _REPO_ROOT
+        self.data_dir = self.repo_root / "data"
+        self.derived_dir = self.data_dir / "derived"
 
     def _log_progress(self, msg: str) -> None:
         """
@@ -66,19 +72,54 @@ class MainPipeline:
         pct_end = int(round(100.0 * self._step_idx / max(1, self._total_steps)))
         self.logger.info(f"[{pct_end:3d}%] DONE:  {name} ({self._step_idx}/{self._total_steps})")
 
+    def _file_ok(self, path: Path, min_bytes: int = 10) -> bool:
+        try:
+            return path.exists() and path.is_file() and path.stat().st_size >= int(min_bytes)
+        except Exception:
+            return False
+
+    def _all_ok(self, paths: list[Path]) -> bool:
+        return all(self._file_ok(p) for p in paths)
+
     def run_eigenexplorer(self) -> None:
         try:
             step = "EigenExplorer"
             self._start_step(step)
-            self._log_progress("EigenExplorer: operators inventory (all)")
-            eigen_ops_all(page_size=100)
-            self._log_progress("EigenExplorer: AVS registry (all)")
-            eigen_avs_all(page_size=100)
-            self._log_progress("EigenExplorer: operator↔AVS exposure graph")
-            main_generate_operator_avs_edges(page_size=100, limit_avs=None)
-            self._log_progress("EigenExplorer: operator rewards (all exposed operators)")
-            # progress-aware logging inside the util
-            main_fetch_operator_rewards(limit=None, progress_logger=self.logger, progress_every=25)
+            out_ops = self.data_dir / "eigenexplorer_operator_addresses_all.json"
+            out_avs = self.data_dir / "eigenexplorer_avs_all.json"
+            out_edges = self.data_dir / "eigenexplorer_operator_avs_edges.json"
+            out_edges_raw = self.data_dir / "eigenexplorer_avs_operators_payloads.json"
+            out_rewards = self.data_dir / "eigenexplorer_operator_rewards.json"
+
+            if not self.force and self._all_ok([out_ops, out_avs, out_edges, out_edges_raw, out_rewards]):
+                self._log_progress("EigenExplorer outputs exist; skipping API calls")
+                self._end_step(step)
+                return
+
+            if self.force or not self._file_ok(out_ops):
+                self._log_progress("EigenExplorer: operators inventory (all)")
+                eigen_ops_all(page_size=100)
+            else:
+                self._log_progress("EigenExplorer: operators inventory exists; skipping")
+
+            if self.force or not self._file_ok(out_avs):
+                self._log_progress("EigenExplorer: AVS registry (all)")
+                eigen_avs_all(page_size=100)
+            else:
+                self._log_progress("EigenExplorer: AVS registry exists; skipping")
+
+            if self.force or not (self._file_ok(out_edges) and self._file_ok(out_edges_raw)):
+                self._log_progress("EigenExplorer: operator↔AVS exposure graph")
+                main_generate_operator_avs_edges(page_size=100, limit_avs=None)
+            else:
+                self._log_progress("EigenExplorer: exposure graph exists; skipping")
+
+            if self.force or not self._file_ok(out_rewards):
+                self._log_progress("EigenExplorer: operator rewards (all exposed operators)")
+                main_fetch_operator_rewards(limit=None, progress_logger=self.logger, progress_every=25)
+            else:
+                self._log_progress("EigenExplorer: operator rewards exists; skipping")
+
             self._end_step(step)
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during run_eigenexplorer", exc_info=True)
@@ -89,7 +130,8 @@ class MainPipeline:
             step = "u--1 snapshots"
             self._start_step(step)
             self._log_progress("u--1: live snapshots + Tokensight labels (small)")
-            main_fetch_all_live()
+            # u1_util will also skip individual endpoints if files exist
+            main_fetch_all_live(skip_if_exists=not self.force)
             self._end_step(step)
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during run_u1", exc_info=True)
@@ -100,7 +142,13 @@ class MainPipeline:
             step = "Dune panels"
             self._start_step(step)
             self._log_progress("Dune: 1-year panels (governance/activity/flows + related contracts)")
-            run_full_year_panels(fetch_all=True, lookback_days=365, performance="medium", progress_logger=self.logger)
+            run_full_year_panels(
+                fetch_all=True,
+                lookback_days=365,
+                performance="medium",
+                progress_logger=self.logger,
+                skip_if_exists=not self.force,
+            )
             self._end_step(step)
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during run_dune", exc_info=True)
@@ -111,6 +159,11 @@ class MainPipeline:
             step = "GitHub case studies"
             self._start_step(step)
             self._log_progress("GitHub: case-study signals (incident-like issues/PRs + releases)")
+            out_path = self.data_dir / "github_case_studies.json"
+            if not self.force and self._file_ok(out_path):
+                self._log_progress("GitHub case studies output exists; skipping API calls")
+                self._end_step(step)
+                return
             util = GitHubIncidentsUtil()
             base_repos = [
                 "Layr-Labs/eigenlayer-contracts",
@@ -131,7 +184,13 @@ class MainPipeline:
             step = "Etherscan sources"
             self._start_step(step)
             self._log_progress("Etherscan: verified contract sources (all AVSs + proxy implementations)")
-            EtherscanAVSSourceUtil().run(fetch_all=True, limit=0, progress_logger=self.logger, progress_every=5)
+            EtherscanAVSSourceUtil().run(
+                fetch_all=True,
+                limit=0,
+                progress_logger=self.logger,
+                progress_every=5,
+                skip_existing=not self.force,
+            )
             self._end_step(step)
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during run_etherscan_sources", exc_info=True)
@@ -142,6 +201,11 @@ class MainPipeline:
             step = "Code risk"
             self._start_step(step)
             self._log_progress("Code risk: derive AVS code-risk features")
+            out_path = self.derived_dir / "avs_code_risk.csv"
+            if not self.force and self._file_ok(out_path):
+                self._log_progress("AVS code risk CSV exists; skipping computation")
+                self._end_step(step)
+                return
             AVSCodeRiskUtil().run(progress_logger=self.logger, progress_every=5)
             self._end_step(step)
         except Exception as e:

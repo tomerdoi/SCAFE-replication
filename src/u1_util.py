@@ -101,36 +101,57 @@ def _write_json(name: str, payload: Any) -> Path:
     return path
 
 
-def main_fetch_all_live() -> None:
+def main_fetch_all_live(*, skip_if_exists: bool = True) -> None:
     key = (CONF.U1_API_KEY or "").strip()
     if not key:
         raise U1Error("Missing U1_API_KEY (add to secrets.json as U1_API_KEY)")
 
     client = U1Client(api_key=key)
 
-    operators = client.latest_operator_balances()
-    p1 = _write_json("u1_latest_operator_balances.json", operators)
-    print(f"wrote {p1}")
+    out_dir = _ensure_data_dir()
+    p1 = out_dir / "u1_latest_operator_balances.json"
+    if not (skip_if_exists and p1.exists()):
+        operators = client.latest_operator_balances()
+        p1 = _write_json("u1_latest_operator_balances.json", operators)
+        print(f"wrote {p1}")
+    else:
+        print(f"exists, skipping: {p1}")
 
     time.sleep(0.2)
-    avs = client.latest_avs_balances()
-    p2 = _write_json("u1_latest_avs_balances.json", avs)
-    print(f"wrote {p2}")
+    p2 = out_dir / "u1_latest_avs_balances.json"
+    if not (skip_if_exists and p2.exists()):
+        avs = client.latest_avs_balances()
+        p2 = _write_json("u1_latest_avs_balances.json", avs)
+        print(f"wrote {p2}")
+    else:
+        print(f"exists, skipping: {p2}")
 
     time.sleep(0.2)
-    strategies = client.strategies()
-    p3 = _write_json("u1_strategies.json", strategies)
-    print(f"wrote {p3}")
+    p3 = out_dir / "u1_strategies.json"
+    if not (skip_if_exists and p3.exists()):
+        strategies = client.strategies()
+        p3 = _write_json("u1_strategies.json", strategies)
+        print(f"wrote {p3}")
+    else:
+        print(f"exists, skipping: {p3}")
 
     time.sleep(0.2)
-    pricing = client.latest_pricing()
-    p4 = _write_json("u1_latest_pricing.json", pricing)
-    print(f"wrote {p4}")
+    p4 = out_dir / "u1_latest_pricing.json"
+    if not (skip_if_exists and p4.exists()):
+        pricing = client.latest_pricing()
+        p4 = _write_json("u1_latest_pricing.json", pricing)
+        print(f"wrote {p4}")
+    else:
+        print(f"exists, skipping: {p4}")
 
     time.sleep(0.2)
-    risks = client.avs_risks_summary()
-    p5 = _write_json("u1_avs_risks_summary.json", risks)
-    print(f"wrote {p5}")
+    p5 = out_dir / "u1_avs_risks_summary.json"
+    if not (skip_if_exists and p5.exists()):
+        risks = client.avs_risks_summary()
+        p5 = _write_json("u1_avs_risks_summary.json", risks)
+        print(f"wrote {p5}")
+    else:
+        print(f"exists, skipping: {p5}")
 
 
 if __name__ == "__main__":

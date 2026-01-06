@@ -880,13 +880,17 @@ def run_avs_governance_events(
     end_date: str,
     performance: str = "medium",
     out_name: str = "dune_avs_governance_events.json",
+    skip_if_exists: bool = False,
 ) -> Path:
+    out_dir = _ensure_data_dir()
+    out_path = out_dir / out_name
+    if skip_if_exists and out_path.exists() and out_path.stat().st_size > 10:
+        print(f"exists, skipping: {out_path}")
+        return out_path
     sql = build_sql_avs_governance_events(avs_addresses, start_date=start_date, end_date=end_date)
     execution_id = dune.execute_sql(sql, performance=performance)
     results = dune.wait_for_results(execution_id)
 
-    out_dir = _ensure_data_dir()
-    out_path = out_dir / out_name
     with out_path.open("w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
 
@@ -905,13 +909,17 @@ def run_avs_governance_events_panel(
     end_date: str,
     performance: str = "medium",
     out_name: str = "dune_avs_governance_events_panel.json",
+    skip_if_exists: bool = False,
 ) -> Path:
+    out_dir = _ensure_data_dir()
+    out_path = out_dir / out_name
+    if skip_if_exists and out_path.exists() and out_path.stat().st_size > 10:
+        print(f"exists, skipping: {out_path}")
+        return out_path
     sql = build_sql_avs_governance_events_panel(avs_addresses, start_date=start_date, end_date=end_date)
     execution_id = dune.execute_sql(sql, performance=performance)
     results = dune.wait_for_results(execution_id, timeout_secs=600.0)
 
-    out_dir = _ensure_data_dir()
-    out_path = out_dir / out_name
     with out_path.open("w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
 
@@ -928,11 +936,15 @@ def run_sql_to_data(
     out_name: str,
     performance: str = "medium",
     timeout_secs: float = 600.0,
+    skip_if_exists: bool = False,
 ) -> Path:
-    execution_id = dune.execute_sql(sql, performance=performance)
-    results = dune.wait_for_results(execution_id, timeout_secs=timeout_secs)
     out_dir = _ensure_data_dir()
     out_path = out_dir / out_name
+    if skip_if_exists and out_path.exists() and out_path.stat().st_size > 10:
+        print(f"exists, skipping: {out_path}")
+        return out_path
+    execution_id = dune.execute_sql(sql, performance=performance)
+    results = dune.wait_for_results(execution_id, timeout_secs=timeout_secs)
     with out_path.open("w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
     result = results.get("result", {})
@@ -1014,6 +1026,7 @@ def run_full_year_panels(
     top_k_related_contracts: int = 10,
     timeout_secs: float = 900.0,
     progress_logger: Optional[Any] = None,
+    skip_if_exists: bool = False,
 ) -> None:
     """
     In-process "main" runner for Dune extraction (same logic as the __main__ block).
@@ -1053,6 +1066,7 @@ def run_full_year_panels(
             end_date=end_date,
             performance=performance,
             out_name="dune_avs_governance_events_all.json" if fetch_all else "dune_avs_governance_events_small.json",
+            skip_if_exists=skip_if_exists,
         )
 
         step = 2
@@ -1066,6 +1080,7 @@ def run_full_year_panels(
             out_name="dune_avs_governance_events_panel_all.json"
             if fetch_all
             else "dune_avs_governance_events_panel_small.json",
+            skip_if_exists=skip_if_exists,
         )
 
         # Discover related contracts and compute expanded panels
@@ -1078,6 +1093,7 @@ def run_full_year_panels(
             out_name="dune_avs_related_contracts_all.json" if fetch_all else "dune_avs_related_contracts_small.json",
             performance=performance,
             timeout_secs=timeout_secs,
+            skip_if_exists=skip_if_exists,
         )
 
         step = 4
@@ -1089,6 +1105,7 @@ def run_full_year_panels(
             out_name="dune_avs_activity_panel_all.json" if fetch_all else "dune_avs_activity_panel_small.json",
             performance=performance,
             timeout_secs=timeout_secs,
+            skip_if_exists=skip_if_exists,
         )
 
         related_rows = _load_dune_rows(related_path)
@@ -1110,6 +1127,7 @@ def run_full_year_panels(
             else "dune_avs_governance_events_panel_expanded_small.json",
             performance=performance,
             timeout_secs=timeout_secs,
+            skip_if_exists=skip_if_exists,
         )
 
         step = 6
@@ -1128,6 +1146,7 @@ def run_full_year_panels(
             else "dune_avs_tokenflow_panel_expanded_small.json",
             performance=performance,
             timeout_secs=timeout_secs,
+            skip_if_exists=skip_if_exists,
         )
 
         step = 7
@@ -1144,6 +1163,7 @@ def run_full_year_panels(
             out_name="dune_avs_ethflow_panel_expanded_all.json" if fetch_all else "dune_avs_ethflow_panel_expanded_small.json",
             performance=performance,
             timeout_secs=timeout_secs,
+            skip_if_exists=skip_if_exists,
         )
 
         # Operator activity panel (operators in exposure graph)
@@ -1155,6 +1175,7 @@ def run_full_year_panels(
             out_name="dune_operator_activity_panel_all.json" if fetch_all else "dune_operator_activity_panel_small.json",
             performance=performance,
             timeout_secs=timeout_secs,
+            skip_if_exists=skip_if_exists,
         )
     except Exception as e:
         raise DuneError(f"run_full_year_panels failed: {e}") from e
