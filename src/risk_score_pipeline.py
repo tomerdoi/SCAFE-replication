@@ -17,6 +17,7 @@ import logging
 import os
 import json
 import re
+import argparse
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -112,6 +113,18 @@ class RiskScorePipeline:
             return z.fillna(0.0)
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during _zscore_by_week", exc_info=True)
+            raise
+
+    def _zscore_global(self, series: pd.Series) -> pd.Series:
+        try:
+            x = pd.to_numeric(series, errors="coerce").fillna(0.0)
+            mu = float(x.mean())
+            sigma = float(x.std())
+            if sigma == 0.0 or np.isnan(sigma):
+                return pd.Series(np.zeros(len(x)), index=x.index)
+            return (x - mu) / sigma
+        except Exception as e:
+            self.logger.error(f"Exception {e} occurred during _zscore_global", exc_info=True)
             raise
 
     # ---------------- loaders ----------------
@@ -291,6 +304,167 @@ class RiskScorePipeline:
             return df
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during apply_code_risk", exc_info=True)
+            raise
+
+    def score_feature_csv(
+        self,
+        in_csv: Path,
+        *,
+        out_csv: Optional[Path] = None,
+        mode: str = "expanded+flows",
+        alpha: float = 0.8,
+        label_col: str = "llm_totalRiskScore",
+    ) -> pd.DataFrame:
+        """
+        Score an LLM-generated feature CSV (one row per AVS-time snapshot) and produce `modelRisk` per row.
+
+        Expected minimum columns (extra columns are allowed and preserved):
+        - week: ISO date/time (parsed to datetime; used for per-week z-scoring)
+        - avs_id: any string identifier (name/address); used only for readability
+        - n_txs_to_avs: non-negative int
+        - Governance event counts (non-negative ints):
+          - n_upgraded_events
+          - n_beacon_upgraded_events
+          - n_admin_changed_events
+          - n_ownership_transfers
+          - n_role_granted_events
+          - n_role_revoked_events
+        - If mode == "expanded+flows", also provide flow columns (non-negative ints):
+          - n_erc20_transfers_out
+          - n_eth_transfers_out
+          - total_eth_value_wei_out
+          - total_erc20_value_raw_out
+        - Optional code risk:
+          - code_risk_z (preferred; typically ~[-3, +3])
+          - OR code_risk_raw_max (will be z-scored globally inside this CSV to create code_risk_z)
+
+        If `label_col` exists and is numeric, we compute Spearman rho between `modelRisk` and that label
+        and log it (for quick iteration).
+        """
+        try:
+            in_csv = Path(in_csv)
+            if not in_csv.exists():
+                raise FileNotFoundError(f"Input CSV not found: {in_csv}")
+
+            df = pd.read_csv(in_csv)
+            if df.empty:
+                raise ValueError(f"Input CSV is empty: {in_csv}")
+
+            # --- required columns ---
+            required = {
+                "week",
+                "n_txs_to_avs",
+                "n_upgraded_events",
+                "n_beacon_upgraded_events",
+                "n_admin_changed_events",
+                "n_ownership_transfers",
+                "n_role_granted_events",
+                "n_role_revoked_events",
+            }
+            missing = sorted([c for c in required if c not in df.columns])
+            if missing:
+                raise ValueError(f"Missing required columns in {in_csv.name}: {missing}")
+
+            df = df.copy()
+            # Be permissive: accept ISO (YYYY-MM-DD) and common DD/MM/YYYY exports.
+            # `dayfirst=True` still parses ISO correctly while fixing e.g. 13/01/2025.
+            df["week"] = pd.to_datetime(df["week"], utc=True, errors="coerce", dayfirst=True)
+            df = df.dropna(subset=["week"]).copy()
+            if df.empty:
+                raise ValueError("All rows have invalid/missing `week` after parsing.")
+
+            # Coerce core numeric columns
+            for c in list(required - {"week"}):
+                df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0.0).clip(lower=0)
+
+            # Governance weighted signal (same weights as main pipeline)
+            gov_weighted = (
+                3 * df["n_upgraded_events"]
+                + 2 * df["n_beacon_upgraded_events"]
+                + 2 * df["n_admin_changed_events"]
+                + 1 * df["n_ownership_transfers"]
+                + 1 * df["n_role_granted_events"]
+                + 1 * df["n_role_revoked_events"]
+            )
+            df["gov_weighted"] = pd.to_numeric(gov_weighted, errors="coerce").fillna(0.0)
+
+            df["gov_per_tx"] = df["gov_weighted"] / (1.0 + df["n_txs_to_avs"])
+            df["gov_per_tx_log"] = self._safe_log1p(df["gov_per_tx"])
+            df["gov_per_tx_z"] = self._zscore_by_week(df, "gov_per_tx_log")
+
+            # Behavioral risk (same structure as build_avs_week_risk)
+            if mode == "expanded+flows":
+                flow_required = {
+                    "n_erc20_transfers_out",
+                    "n_eth_transfers_out",
+                    "total_eth_value_wei_out",
+                    "total_erc20_value_raw_out",
+                }
+                flow_missing = sorted([c for c in flow_required if c not in df.columns])
+                if flow_missing:
+                    raise ValueError(
+                        f"mode=expanded+flows requires flow columns; missing: {flow_missing}. "
+                        f"Either add them or run with mode=baseline/expanded."
+                    )
+
+                for c in flow_required:
+                    df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0.0).clip(lower=0)
+
+                df["erc20_out_log"] = self._safe_log1p(df["n_erc20_transfers_out"])
+                df["eth_out_log"] = self._safe_log1p(df["n_eth_transfers_out"])
+                df["eth_out_value_log"] = self._safe_log1p(df["total_eth_value_wei_out"])
+                df["erc20_out_value_log"] = self._safe_log1p(df["total_erc20_value_raw_out"])
+
+                df["erc20_out_z"] = self._zscore_by_week(df, "erc20_out_log")
+                df["eth_out_z"] = self._zscore_by_week(df, "eth_out_log")
+                df["eth_out_value_z"] = self._zscore_by_week(df, "eth_out_value_log")
+                df["erc20_out_value_z"] = self._zscore_by_week(df, "erc20_out_value_log")
+
+                df["flow_z"] = (
+                    0.25 * df["erc20_out_z"]
+                    + 0.25 * df["eth_out_z"]
+                    + 0.25 * df["eth_out_value_z"]
+                    + 0.25 * df["erc20_out_value_z"]
+                )
+                df["avs_risk_behavior"] = 0.6 * df["gov_per_tx_z"] + 0.4 * df["flow_z"]
+            else:
+                if mode not in ("baseline", "expanded"):
+                    raise ValueError(f"Unsupported mode: {mode}. Use baseline|expanded|expanded+flows.")
+                df["avs_risk_behavior"] = df["gov_per_tx_z"]
+
+            # Code risk (optional)
+            if "code_risk_z" not in df.columns:
+                if "code_risk_raw_max" in df.columns:
+                    df["code_risk_z"] = self._zscore_global(df["code_risk_raw_max"])
+                else:
+                    df["code_risk_z"] = 0.0
+            else:
+                df["code_risk_z"] = pd.to_numeric(df["code_risk_z"], errors="coerce").fillna(0.0)
+
+            a = float(alpha)
+            df["modelRisk"] = a * df["avs_risk_behavior"] + (1.0 - a) * df["code_risk_z"]
+
+            # Optional: quick eval vs label column (LLM "ground truth")
+            if label_col in df.columns:
+                y = pd.to_numeric(df[label_col], errors="coerce")
+                m = df[["modelRisk"]].copy()
+                m[label_col] = y
+                m = m.dropna(subset=["modelRisk", label_col])
+                if len(m) >= 3:
+                    rho = self.spearman(m["modelRisk"], m[label_col])
+                    self.logger.info(f"Evaluation vs {label_col} (Spearman ρ): {rho:.3f} (n={len(m)})")
+                else:
+                    self.logger.info(f"Evaluation vs {label_col}: not enough labeled rows (n={len(m)})")
+
+            if out_csv is not None:
+                out_csv = Path(out_csv)
+                out_csv.parent.mkdir(parents=True, exist_ok=True)
+                df.to_csv(out_csv, index=False)
+                self.logger.info(f"Wrote scored CSV: {out_csv}")
+
+            return df
+        except Exception as e:
+            self.logger.error(f"Exception {e} occurred during score_feature_csv", exc_info=True)
             raise
 
     def lift_to_operator_week(self, avs_week: pd.DataFrame, edges: pd.DataFrame) -> pd.DataFrame:
@@ -496,5 +670,43 @@ class RiskScorePipeline:
 
 
 if __name__ == "__main__":
-    RiskScorePipeline().run()
+    parser = argparse.ArgumentParser(description="Risk score pipeline (full run) or score an LLM feature CSV.")
+    parser.add_argument("--feature-csv", type=str, default="", help="Path to LLM-generated feature CSV to score.")
+    parser.add_argument(
+        "--out-csv",
+        type=str,
+        default="",
+        help="Optional output CSV path. If omitted, nothing is written (but evaluation logs still print).",
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="expanded+flows",
+        help="baseline|expanded|expanded+flows (must match the columns present in your feature CSV).",
+    )
+    parser.add_argument(
+        "--alpha",
+        type=float,
+        default=0.8,
+        help="Blend factor for final score: modelRisk = alpha*behavior + (1-alpha)*code_risk_z",
+    )
+    parser.add_argument(
+        "--label-col",
+        type=str,
+        default="llm_totalRiskScore",
+        help="Optional label column name to evaluate against (Spearman).",
+    )
+    args = parser.parse_args()
+
+    pipe = RiskScorePipeline()
+    if str(args.feature_csv).strip():
+        pipe.score_feature_csv(
+            Path(args.feature_csv),
+            out_csv=Path(args.out_csv) if str(args.out_csv).strip() else None,
+            mode=str(args.mode).strip(),
+            alpha=float(args.alpha),
+            label_col=str(args.label_col).strip(),
+        )
+    else:
+        pipe.run()
 
