@@ -5,7 +5,7 @@ Etherscan v2: the source-code endpoint is `module=contract&action=getsourcecode`
 served via `/v2/api?chainid=<id>`.
 
 Input:
-- data/eigenexplorer_avs_all.json  (AVS addresses)
+- data/eigenexplorer_avs_all.json  (AVS addresses) OR an arbitrary address list CSV (pivot)
 
 Output:
 - data/etherscan_sources/<address>.json  (raw Etherscan payload per address)
@@ -18,6 +18,7 @@ import logging
 import re
 import time
 import os
+import argparse
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -146,6 +147,27 @@ class EtherscanAVSSourceUtil:
             return out
         except Exception as e:
             self.logger.error(f"Exception {e} occurred during load_avs_addresses", exc_info=True)
+            raise
+
+    def load_addresses_from_csv(self, csv_path: Path) -> List[str]:
+        """
+        Generic loader for pivoted project: CSV with an `address` column.
+        Example: data/contract_registry.csv
+        """
+        try:
+            import pandas as pd
+
+            p = Path(csv_path)
+            if not p.exists():
+                raise FileNotFoundError(f"Addresses CSV not found: {p}")
+            df = pd.read_csv(p)
+            if "address" not in df.columns:
+                raise ValueError(f"Addresses CSV must contain `address` column: {p}")
+            out = [str(x).strip().lower() for x in df["address"].tolist()]
+            out = [a for a in out if isinstance(a, str) and a.startswith("0x") and len(a) == 42]
+            return out
+        except Exception as e:
+            self.logger.error(f"Exception {e} occurred during load_addresses_from_csv", exc_info=True)
             raise
 
     def parse_contract_sources(self, etherscan_resp: Dict[str, Any], address: str) -> List[str]:
@@ -329,6 +351,7 @@ class EtherscanAVSSourceUtil:
         *,
         fetch_all: bool,
         limit: int = 5,
+        addresses_csv: Optional[Path] = None,
         progress_logger: Optional[Any] = None,
         progress_every: int = 5,
         skip_existing: bool = False,
@@ -337,11 +360,14 @@ class EtherscanAVSSourceUtil:
             # used by fetch_one_with_implementation
             self._skip_existing = bool(skip_existing)
             self.ensure_dirs()
-            addrs = self.load_avs_addresses()
+            if addresses_csv is not None:
+                addrs = self.load_addresses_from_csv(Path(addresses_csv))
+            else:
+                addrs = self.load_avs_addresses()
             if not fetch_all:
                 addrs = addrs[: max(0, int(limit))]
             total_base = len(addrs)
-            self.logger.info(f"Fetching Etherscan sources for {total_base} AVS addresses")
+            self.logger.info(f"Fetching Etherscan sources for {total_base} addresses")
             visited: Set[str] = set()
             for i, a in enumerate(addrs, start=1):
                 self.logger.info(f"Fetching {a}")
@@ -356,12 +382,28 @@ class EtherscanAVSSourceUtil:
 
 
 if __name__ == "__main__":
-    # Keep this simple (edit locally; no argparse).
-    # You can also override from the environment:
-    #   ETHERSCAN_FETCH_ALL=1 python -m src.etherscan_source_util
-    FETCH_ALL = str(os.getenv("ETHERSCAN_FETCH_ALL", "0")).strip() in ("1", "true", "True", "yes", "YES")
-    LIMIT = int(os.getenv("ETHERSCAN_LIMIT", "5"))
+    parser = argparse.ArgumentParser(description="Fetch verified contract sources from Etherscan (writes data/etherscan_sources/*.json).")
+    parser.add_argument("--fetch-all", action="store_true", help="Fetch all addresses (ignore --limit).")
+    parser.add_argument("--limit", type=int, default=int(os.getenv("ETHERSCAN_LIMIT", "5") or "5"), help="Limit addresses when not --fetch-all.")
+    parser.add_argument(
+        "--addresses-csv",
+        type=str,
+        default=str(os.getenv("ETHERSCAN_ADDRESSES_CSV", "")).strip(),
+        help="Optional CSV with an `address` column (e.g., data/contract_registry.csv). If omitted, uses AVS registry.",
+    )
+    parser.add_argument("--skip-existing", action="store_true", help="Skip rewriting existing payloads (faster, fewer calls).")
+    args = parser.parse_args()
 
-    EtherscanAVSSourceUtil().run(fetch_all=bool(FETCH_ALL), limit=int(LIMIT))
+    # Backwards-compatible env behavior:
+    #   ETHERSCAN_FETCH_ALL=1 python -m src.etherscan_source_util
+    fetch_all = bool(args.fetch_all) or (str(os.getenv("ETHERSCAN_FETCH_ALL", "0")).strip() in ("1", "true", "True", "yes", "YES"))
+    addresses_csv = Path(args.addresses_csv) if str(args.addresses_csv).strip() else None
+
+    EtherscanAVSSourceUtil().run(
+        fetch_all=bool(fetch_all),
+        limit=int(args.limit),
+        addresses_csv=addresses_csv,
+        skip_existing=bool(args.skip_existing),
+    )
 
 
