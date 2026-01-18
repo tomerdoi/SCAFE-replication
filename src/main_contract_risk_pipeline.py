@@ -26,6 +26,7 @@ if str(_REPO_ROOT) not in sys.path:
 
 from src.contract_registry_util import ContractRegistryUtil  # noqa: E402
 from src.contract_risk_util import ContractRiskUtil  # noqa: E402
+from src.contract_risk_evaluation import ContractRiskEvaluation  # noqa: E402
 
 
 class MainContractRiskPipeline:
@@ -44,6 +45,7 @@ class MainContractRiskPipeline:
 
         self.registry_csv = self.data_dir / "contract_registry.csv"
         self.contract_risk_csv = self.derived_dir / "contract_risk.csv"
+        self.contract_risk_top_csv = self.derived_dir / "contract_risk_top50.csv"
 
         self.limit = int(os.getenv("CONTRACT_RISK_LIMIT", "0") or "0")
 
@@ -53,7 +55,26 @@ class MainContractRiskPipeline:
         ContractRegistryUtil().write_registry(reg, out_csv=self.registry_csv)
 
         self.logger.info("Computing contract risk scores from cached Etherscan sources…")
-        ContractRiskUtil().run(registry_csv=self.registry_csv, out_csv=self.contract_risk_csv, limit=self.limit)
+        out = ContractRiskUtil().run(registry_csv=self.registry_csv, out_csv=self.contract_risk_csv, limit=self.limit)
+
+        # Convenience export: top 50 by z-score
+        try:
+            import pandas as pd
+
+            df = pd.read_csv(out)
+            if "risk_z" in df.columns:
+                top = df.sort_values("risk_z", ascending=False).head(50).copy()
+                top.to_csv(self.contract_risk_top_csv, index=False)
+                self.logger.info(f"Wrote: {self.contract_risk_top_csv}")
+        except Exception:
+            pass
+
+        # Evaluation artifacts (ablations, plots). Label-based metrics are optional.
+        try:
+            self.logger.info("Generating evaluation artifacts (ablations/plots)…")
+            ContractRiskEvaluation().run()
+        except Exception as e:
+            self.logger.warning(f"Evaluation step failed (continuing): {type(e).__name__}: {e}")
         self.logger.info("Contract-risk pipeline completed successfully.")
 
 

@@ -22,7 +22,7 @@ import argparse
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -105,6 +105,39 @@ class EtherscanSourceClient:
             return data
 
         raise EtherscanSourceError("Etherscan rate limit: exhausted retries")
+
+    def get_runtime_bytecode(self, address: str) -> Dict[str, Any]:
+        """
+        Fetch runtime bytecode via Etherscan "proxy" module (eth_getCode).
+
+        Response shape (typical):
+          {"jsonrpc":"2.0","id":1,"result":"0x..."}
+        """
+        addr = address.strip().lower()
+        if not (addr.startswith("0x") and len(addr) == 42):
+            raise ValueError(f"Invalid address: {address!r}")
+
+        params = {
+            "chainid": int(self.chain_id),
+            "module": "proxy",
+            "action": "eth_getCode",
+            "address": addr,
+            "tag": "latest",
+            "apikey": self.api_key,
+        }
+
+        for attempt in range(1, 6):
+            r = self._session.get(f"{self.base_url}/v2/api", params=params, timeout=self.timeout_secs)
+            data = r.json()
+            # Sometimes throttling comes back as a dict with message/result text; handle similarly.
+            if isinstance(data, dict) and data.get("status") == "0" and data.get("message") == "NOTOK":
+                res = data.get("result")
+                if isinstance(res, str) and "rate limit" in res.lower():
+                    time.sleep(min(5.0, 0.5 * attempt))
+                    continue
+            return data
+
+        raise EtherscanSourceError("Etherscan rate limit (eth_getCode): exhausted retries")
 
 
 class EtherscanAVSSourceUtil:
@@ -262,10 +295,15 @@ class EtherscanAVSSourceUtil:
         try:
             data = self.client.get_sourcecode(address)
             contracts = self.parse_contract_sources(data, address.lower())
+            code_resp = self.client.get_runtime_bytecode(address)
             payload = {
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
                 "address": address.lower(),
                 "etherscan": data,
+                "bytecode": {
+                    "fetched_at": datetime.now(timezone.utc).isoformat(),
+                    "eth_getCode": code_resp,
+                },
                 "parsed_sources": {
                     "n_contracts": len(contracts),
                     "contracts": contracts,
@@ -318,25 +356,44 @@ class EtherscanAVSSourceUtil:
                 try:
                     existing = json.loads(out.read_text(encoding="utf-8"))
                     data = existing.get("etherscan", {}) if isinstance(existing, dict) else {}
+                    existing_bytecode = existing.get("bytecode") if isinstance(existing, dict) else None
                     from_cache = True
                 except Exception:
                     data = {}
+                    existing_bytecode = None
             else:
                 data = self.client.get_sourcecode(addr)
+                existing_bytecode = None
             contracts = self.parse_contract_sources(data, addr)
+
+            # Always try to have bytecode. Even if we're skipping existing payloads, backfill bytecode if missing.
+            need_bytecode = True
+            if isinstance(existing_bytecode, dict):
+                # consider present if it has eth_getCode result
+                res = (existing_bytecode.get("eth_getCode") or {}) if isinstance(existing_bytecode.get("eth_getCode"), dict) else existing_bytecode.get("eth_getCode")
+                if isinstance(res, dict) and isinstance(res.get("result"), str):
+                    need_bytecode = False
+            if need_bytecode:
+                code_resp = self.client.get_runtime_bytecode(addr)
+                bytecode_payload = {"fetched_at": datetime.now(timezone.utc).isoformat(), "eth_getCode": code_resp}
+            else:
+                bytecode_payload = existing_bytecode
+
             payload = {
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
                 "address": addr,
                 "etherscan": data,
+                "bytecode": bytecode_payload,
                 "parsed_sources": {
                     "n_contracts": len(contracts),
                     "contracts": contracts,
                 },
             }
             # If we're skipping existing, don't rewrite/sleep (keeps runs fast and avoids extra IO).
-            if not from_cache:
+            if (not from_cache) or need_bytecode:
                 out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-                time.sleep(0.25)
+                # If we're only backfilling bytecode, keep this fast but polite.
+                time.sleep(0.10 if from_cache else 0.25)
 
             impl = self._extract_implementation_address(data)
             if impl and impl not in visited:

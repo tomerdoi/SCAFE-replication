@@ -16,6 +16,9 @@ If you already have cached Etherscan payloads under `data/etherscan_sources/` (t
 Outputs:
 - `data/contract_registry.csv` (address universe to score)
 - `data/derived/contract_risk.csv` (one row per contract)
+- `data/derived/contract_risk_top50.csv` (top 50 convenience export)
+- `data/derived/contract_risk_ablation.csv` + `data/derived/contract_risk_report.json` (evaluation artifacts)
+- `figures/contract_risk_distribution.png` + `figures/contract_risk_components_heatmap.png` (plots)
 
 ### Fetch/update sources from Etherscan (optional)
 If you want to refresh or expand coverage, set `ETHERSCAN_API_KEY` (via `secrets.json` or env) and run:
@@ -23,6 +26,9 @@ If you want to refresh or expand coverage, set `ETHERSCAN_API_KEY` (via `secrets
 ```bash
 /Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.etherscan_source_util --addresses-csv data/contract_registry.csv --fetch-all --skip-existing
 ```
+
+### Optional: labels for AUC/AP evaluation
+If you provide a small labeled subset at `data/labels/contract_labels.csv` (schema: `address,label`), the evaluation step will compute AUC/AP for baselines and ablations.
 
 ### Legacy / AVS pipeline
 The older AVS risk pipeline is still available (and can reuse the contract risk output as a component), but it is no longer the “main” entrypoint:
