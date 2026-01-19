@@ -20,7 +20,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from src.global_conf import CONF
+from src.config.global_conf import CONF
 
 
 class EigenExplorerError(RuntimeError):
@@ -69,7 +69,8 @@ class EigenExplorerClient:
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[1]
+    # src/clients/eigen_explorer_operator_rewards.py -> repo root is two levels up from this file
+    return Path(__file__).resolve().parents[2]
 
 
 def _ensure_data_dir() -> Path:

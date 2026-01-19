@@ -35,7 +35,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from src.global_conf import CONF
+from src.config.global_conf import CONF
 
 
 class DuneError(RuntimeError):
@@ -118,7 +118,8 @@ class DuneClient:
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[1]
+    # src/clients/dune.py -> repo root is two levels up from this file
+    return Path(__file__).resolve().parents[2]
 
 
 def _ensure_data_dir() -> Path:
@@ -1100,7 +1101,7 @@ def run_full_year_panels(
     """
     In-process "main" runner for Dune extraction (same logic as the __main__ block).
 
-    This is intended for orchestration from src.main_pipeline without spawning subprocesses.
+    This is intended for orchestration from src.pipelines.main_pipeline without spawning subprocesses.
     """
     try:
         # Time range: rolling window ending today (UTC)

@@ -23,10 +23,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from src.global_conf import CONF
+from src.config.global_conf import CONF
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+# src/clients/github_incidents.py -> repo root is two levels up from this file
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data"
 
 

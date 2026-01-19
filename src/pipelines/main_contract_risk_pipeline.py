@@ -6,10 +6,10 @@ Runs:
 - Compute contract risk using cached `data/etherscan_sources/*.json`
 
 Usage:
-  python -m src.main_contract_risk_pipeline
+  python -m src.pipelines.main_contract_risk_pipeline
 
 Optional:
-  If you want to refresh sources, run `python -m src.etherscan_source_util --addresses-csv data/contract_registry.csv ...`
+  If you want to refresh sources, run `python -m src.clients.etherscan_source --addresses-csv data/contract_registry.csv ...`
 """
 
 from __future__ import annotations
@@ -20,13 +20,14 @@ import sys
 from pathlib import Path
 
 # Allow running as a file in IDE/debugger (so `import src...` works)
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+# src/pipelines/main_contract_risk_pipeline.py -> repo root is two levels up from this file
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from src.contract_registry_util import ContractRegistryUtil  # noqa: E402
-from src.contract_risk_util import ContractRiskUtil  # noqa: E402
-from src.contract_risk_evaluation import ContractRiskEvaluation  # noqa: E402
+from src.registry.contract_registry import ContractRegistryUtil  # noqa: E402
+from src.risk.contract_risk import ContractRiskUtil  # noqa: E402
+from src.risk.contract_risk_evaluation import ContractRiskEvaluation  # noqa: E402
 
 
 class MainContractRiskPipeline:

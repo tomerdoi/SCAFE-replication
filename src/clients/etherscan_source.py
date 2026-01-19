@@ -28,10 +28,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from src.global_conf import CONF
+from src.config.global_conf import CONF
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+# src/clients/etherscan_source.py -> repo root is two levels up from this file
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data"
 OUT_DIR = DATA_DIR / "etherscan_sources"
 
@@ -452,7 +453,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Backwards-compatible env behavior:
-    #   ETHERSCAN_FETCH_ALL=1 python -m src.etherscan_source_util
+    #   ETHERSCAN_FETCH_ALL=1 python -m src.clients.etherscan_source
     fetch_all = bool(args.fetch_all) or (str(os.getenv("ETHERSCAN_FETCH_ALL", "0")).strip() in ("1", "true", "True", "yes", "YES"))
     addresses_csv = Path(args.addresses_csv) if str(args.addresses_csv).strip() else None
 

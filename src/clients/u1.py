@@ -23,7 +23,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from src.global_conf import CONF
+from src.config.global_conf import CONF
 
 
 class U1Error(RuntimeError):
@@ -84,7 +84,8 @@ class U1Client:
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[1]
+    # src/clients/u1.py -> repo root is two levels up from this file
+    return Path(__file__).resolve().parents[2]
 
 
 def _ensure_data_dir() -> Path:

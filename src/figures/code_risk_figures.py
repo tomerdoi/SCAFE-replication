@@ -22,7 +22,8 @@ import numpy as np
 import pandas as pd
 
 # Headless plotting
-REPO_ROOT = Path(__file__).resolve().parents[1]
+# src/figures/code_risk_figures.py -> repo root is two levels up from this file
+REPO_ROOT = Path(__file__).resolve().parents[2]
 os.environ.setdefault("MPLBACKEND", "Agg")
 os.environ.setdefault("MPLCONFIGDIR", str(REPO_ROOT / ".mplconfig"))
 os.environ.setdefault("XDG_CACHE_HOME", str(REPO_ROOT / ".cache"))
@@ -32,7 +33,7 @@ Path(os.environ["XDG_CACHE_HOME"]).mkdir(parents=True, exist_ok=True)
 import seaborn as sns  # noqa: E402
 from matplotlib import pyplot as plt  # noqa: E402
 
-from src.code_risk_util import AVSCodeRiskUtil
+from src.risk.code_risk import AVSCodeRiskUtil
 
 
 DATA_DIR = REPO_ROOT / "data"

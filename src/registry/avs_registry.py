@@ -24,7 +24,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+# src/registry/avs_registry.py -> repo root is two levels up from this file
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data"
 
 

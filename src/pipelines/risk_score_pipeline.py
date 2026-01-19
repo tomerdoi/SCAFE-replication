@@ -24,7 +24,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+# src/pipelines/risk_score_pipeline.py -> repo root is two levels up from this file
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # Ensure headless plotting + writable caches (some environments have read-only $HOME caches)
 os.environ.setdefault("MPLBACKEND", "Agg")

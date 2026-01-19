@@ -14,8 +14,8 @@ from pathlib import Path
 
 
 def _repo_root() -> Path:
-    # src/global_conf.py -> repo root is one level up from src/
-    return Path(__file__).resolve().parents[1]
+    # src/config/global_conf.py -> repo root is two levels up from this file
+    return Path(__file__).resolve().parents[2]
 
 
 def _load_secrets() -> dict:

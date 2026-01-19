@@ -28,7 +28,8 @@ import numpy as np
 import pandas as pd
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+# src/risk/code_risk.py -> repo root is two levels up from this file
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data"
 DERIVED_DIR = DATA_DIR / "derived"
 ETHERSCAN_SOURCES_DIR = DATA_DIR / "etherscan_sources"

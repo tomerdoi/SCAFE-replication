@@ -10,7 +10,7 @@ This repo now supports a **contract-level technical risk score** pipeline (with 
 If you already have cached Etherscan payloads under `data/etherscan_sources/` (this repo does), you can run:
 
 ```bash
-/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.main_contract_risk_pipeline
+/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.pipelines.main_contract_risk_pipeline
 ```
 
 Outputs:
@@ -24,7 +24,7 @@ Outputs:
 If you want to refresh or expand coverage, set `ETHERSCAN_API_KEY` (via `secrets.json` or env) and run:
 
 ```bash
-/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.etherscan_source_util --addresses-csv data/contract_registry.csv --fetch-all --skip-existing
+/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.clients.etherscan_source --addresses-csv data/contract_registry.csv --fetch-all --skip-existing
 ```
 
 ### Optional: labels for AUC/AP evaluation
@@ -34,7 +34,7 @@ If you provide a small labeled subset at `data/labels/contract_labels.csv` (sche
 The older AVS risk pipeline is still available (and can reuse the contract risk output as a component), but it is no longer the “main” entrypoint:
 
 ```bash
-/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.main_pipeline
+/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.pipelines.main_pipeline
 ```
 
 

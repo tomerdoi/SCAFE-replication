@@ -20,7 +20,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from src.global_conf import CONF
+from src.config.global_conf import CONF
 
 
 class EigenExplorerError(RuntimeError):
@@ -106,7 +106,8 @@ class EigenExplorerClient:
 
 
 def _ensure_data_dir() -> Path:
-    root = Path(__file__).resolve().parents[1]
+    # src/clients/eigen_explorer_avs_exposure.py -> repo root is two levels up from this file
+    root = Path(__file__).resolve().parents[2]
     d = root / "data"
     d.mkdir(parents=True, exist_ok=True)
     return d

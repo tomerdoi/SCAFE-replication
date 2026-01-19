@@ -19,7 +19,7 @@ Outputs
 
 Usage
 -----
-python -m src.incidents_public_dataset --since-days 365
+python -m src.datasets.incidents_public_dataset --since-days 365
 """
 
 from __future__ import annotations
@@ -43,15 +43,17 @@ from urllib3.util.retry import Retry
 
 # Allow running as a script: `python src/incidents_public_dataset.py`
 # (When executed this way, `src` isn't automatically on sys.path.)
-_REPO_ROOT_FOR_SCRIPT = Path(__file__).resolve().parents[1]
+# src/datasets/incidents_public_dataset.py -> repo root is two levels up from this file
+_REPO_ROOT_FOR_SCRIPT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT_FOR_SCRIPT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT_FOR_SCRIPT))
 
-from src.global_conf import CONF
-from src.github_incidents_util import GitHubClient, GitHubIncidentsUtil
+from src.config.global_conf import CONF
+from src.clients.github_incidents import GitHubClient, GitHubIncidentsUtil
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+# src/datasets/incidents_public_dataset.py -> repo root is two levels up from this file
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data"
 DERIVED_DIR = DATA_DIR / "derived"
 RAW_DIR = DERIVED_DIR / "incidents_raw"

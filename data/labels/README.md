@@ -19,7 +19,7 @@ address,label
 Then run:
 
 ```bash
-python -m src.contract_risk_evaluation
+python -m src.risk.contract_risk_evaluation
 ```
 
 This will write:

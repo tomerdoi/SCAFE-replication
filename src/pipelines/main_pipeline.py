@@ -11,7 +11,7 @@ Runs (in order):
 - Risk score pipeline: final AVS/operator risk + figures
 
 Usage:
-  python -m src.main_pipeline
+  python -m src.pipelines.main_pipeline
 """
 
 from __future__ import annotations
@@ -22,21 +22,22 @@ import sys
 from pathlib import Path
 
 # Allow running as a file in IDE/debugger (so `import src...` works)
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+# src/pipelines/main_pipeline.py -> repo root is two levels up from this file
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from src.code_risk_util import AVSCodeRiskUtil
-from src.avs_registry_util import AVSRegistryUtil
-from src.dune_util import run_avs_directory_avs_registry, run_full_year_panels
-from src.eigen_explorer_avs_exposure_util import main_generate_operator_avs_edges
-from src.eigen_explorer_avs_util import main_generate_all_rows as eigen_avs_all
-from src.eigen_explorer_operator_rewards_util import main_fetch_operator_rewards
-from src.eigen_explorer_util import main_generate_all_rows as eigen_ops_all
-from src.etherscan_source_util import EtherscanAVSSourceUtil
-from src.github_incidents_util import GitHubIncidentsUtil
-from src.risk_score_pipeline import RiskScorePipeline
-from src.u1_util import main_fetch_all_live
+from src.risk.code_risk import AVSCodeRiskUtil
+from src.registry.avs_registry import AVSRegistryUtil
+from src.clients.dune import run_avs_directory_avs_registry, run_full_year_panels
+from src.clients.eigen_explorer_avs_exposure import main_generate_operator_avs_edges
+from src.clients.eigen_explorer_avs import main_generate_all_rows as eigen_avs_all
+from src.clients.eigen_explorer_operator_rewards import main_fetch_operator_rewards
+from src.clients.eigen_explorer import main_generate_all_rows as eigen_ops_all
+from src.clients.etherscan_source import EtherscanAVSSourceUtil
+from src.clients.github_incidents import GitHubIncidentsUtil
+from src.pipelines.risk_score_pipeline import RiskScorePipeline
+from src.clients.u1 import main_fetch_all_live
 
 
 class MainPipeline:
