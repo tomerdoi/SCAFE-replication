@@ -25,6 +25,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+from src.clients.etherscan_activity import EtherscanActivityUtil  # noqa: E402
+from src.clients.etherscan_source import EtherscanAVSSourceUtil  # noqa: E402
 from src.registry.contract_registry import ContractRegistryUtil  # noqa: E402
 from src.risk.contract_risk import ContractRiskUtil  # noqa: E402
 from src.risk.contract_risk_evaluation import ContractRiskEvaluation  # noqa: E402
@@ -54,6 +56,35 @@ class MainContractRiskPipeline:
         self.logger.info("Building contract registry…")
         reg = ContractRegistryUtil().build_registry()
         ContractRegistryUtil().write_registry(reg, out_csv=self.registry_csv)
+
+        # Refresh Etherscan sources (source+bytecode) and on-chain activity caches for this registry.
+        # These make the score "live" (txs/transfers/admin events), while keeping reproducibility via caching.
+        fetch_sources = str(os.getenv("CONTRACT_RISK_FETCH_SOURCES", "1")).strip() in ("1", "true", "True", "yes", "YES")
+        fetch_activity = str(os.getenv("CONTRACT_RISK_FETCH_ACTIVITY", "1")).strip() in ("1", "true", "True", "yes", "YES")
+        skip_existing = str(os.getenv("CONTRACT_RISK_SKIP_EXISTING", "1")).strip() in ("1", "true", "True", "yes", "YES")
+
+        if fetch_sources:
+            self.logger.info("Fetching Etherscan source+bytecode cache for contract registry…")
+            EtherscanAVSSourceUtil().run(
+                fetch_all=True,
+                limit=0,
+                addresses_csv=self.registry_csv,
+                progress_logger=self.logger,
+                progress_every=25,
+                skip_existing=skip_existing,
+            )
+
+        if fetch_activity:
+            self.logger.info("Fetching Etherscan on-chain activity cache for contract registry…")
+            EtherscanActivityUtil().run(
+                addresses_csv=self.registry_csv,
+                fetch_all=True,
+                limit=0,
+                skip_existing=skip_existing,
+                max_pages=int(os.getenv("ETHERSCAN_ACTIVITY_MAX_PAGES", "2") or "2"),
+                progress_logger=self.logger,
+                progress_every=25,
+            )
 
         self.logger.info("Computing contract risk scores from cached Etherscan sources…")
         out = ContractRiskUtil().run(registry_csv=self.registry_csv, out_csv=self.contract_risk_csv, limit=self.limit)

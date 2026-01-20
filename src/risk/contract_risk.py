@@ -33,6 +33,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data"
 DERIVED_DIR = DATA_DIR / "derived"
 ETHERSCAN_SOURCES_DIR = DATA_DIR / "etherscan_sources"
+ETHERSCAN_ACTIVITY_DIR = DATA_DIR / "etherscan_activity"
 
 
 def _is_addr(s: Any) -> bool:
@@ -41,6 +42,45 @@ def _is_addr(s: Any) -> bool:
 
 def _read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _utc_now_ts() -> int:
+    # avoid importing datetime everywhere in hot paths
+    import time
+
+    return int(time.time())
+
+
+def _clamp01(x: float) -> float:
+    try:
+        if x < 0.0:
+            return 0.0
+        if x > 1.0:
+            return 1.0
+        return float(x)
+    except Exception:
+        return 0.0
+
+
+def _safe_float(x: Any, default: float = 0.0) -> float:
+    try:
+        return float(str(x).strip())
+    except Exception:
+        return float(default)
+
+
+def _safe_int(x: Any, default: int = 0) -> int:
+    try:
+        return int(str(x).strip())
+    except Exception:
+        return int(default)
+
+
+def _eth_from_wei(wei: Any) -> float:
+    try:
+        return float(_safe_int(wei, 0)) / 1e18
+    except Exception:
+        return 0.0
 
 def _hex_to_bytes(hex_str: str) -> bytes:
     s = (hex_str or "").strip()
@@ -116,6 +156,7 @@ class ContractRiskConfig:
     w_complexity: float = 1.0
     w_opacity: float = 1.0
     w_safety: float = 1.0  # subtracted (safety credit)
+    w_activity: float = 1.0  # live on-chain activity / exposure
 
     # --- feature-level weights inside components ---
     w_selfdestruct: float = 8.0
@@ -142,6 +183,14 @@ class ContractRiskConfig:
     w_safe_math: float = 0.25
     w_two_step_ownable: float = 0.5
 
+    # Live activity weights (non-code signals)
+    w_tx_activity: float = 0.35
+    w_unique_senders: float = 0.50
+    w_failed_rate: float = 1.25
+    w_token_activity: float = 0.25
+    w_value_flow_eth: float = 0.20
+    w_admin_event_churn: float = 0.65
+
 
 class ContractRiskUtil:
     def __init__(self, cfg: Optional[ContractRiskConfig] = None) -> None:
@@ -160,8 +209,18 @@ class ContractRiskUtil:
     def _etherscan_payload_path(self, address: str) -> Path:
         return ETHERSCAN_SOURCES_DIR / f"{address.lower()}.json"
 
+    def _etherscan_activity_path(self, address: str) -> Path:
+        return ETHERSCAN_ACTIVITY_DIR / f"{address.lower()}.json"
+
     def load_etherscan_source_payload(self, address: str) -> Optional[Dict[str, Any]]:
         p = self._etherscan_payload_path(address)
+        if not p.exists():
+            return None
+        obj = _read_json(p)
+        return obj if isinstance(obj, dict) else None
+
+    def load_etherscan_activity_payload(self, address: str) -> Optional[Dict[str, Any]]:
+        p = self._etherscan_activity_path(address)
         if not p.exists():
             return None
         obj = _read_json(p)
@@ -234,6 +293,33 @@ class ContractRiskUtil:
             "bc_n_delegatecall": 0,
             "bc_n_selfdestruct": 0,
             "bc_proxy_like": 0,
+            # --- live (non-code) activity features ---
+            "has_activity_payload": 0,
+            "age_days": 0.0,
+            "last_tx_age_days": 0.0,
+            "tx_count_7d": 0,
+            "tx_count_30d": 0,
+            "tx_count_90d": 0,
+            "tx_in_30d": 0,
+            "tx_out_30d": 0,
+            "unique_senders_30d": 0,
+            "failed_tx_rate_90d": 0.0,
+            "internal_tx_count_30d": 0,
+            "erc20_tx_count_30d": 0,
+            "erc20_unique_tokens_30d": 0,
+            "erc20_unique_senders_30d": 0,
+            "erc20_unique_receivers_30d": 0,
+            "value_in_eth_30d": 0.0,
+            "value_out_eth_30d": 0.0,
+            # admin/governance event churn (last 365d)
+            "n_evt_upgraded_365d": 0,
+            "n_evt_admin_changed_365d": 0,
+            "n_evt_ownership_transferred_365d": 0,
+            "n_evt_role_granted_365d": 0,
+            "n_evt_role_revoked_365d": 0,
+            "n_evt_paused_365d": 0,
+            "n_evt_unpaused_365d": 0,
+            "admin_event_churn_365d": 0.0,
         }
         if not payload:
             return base
@@ -321,6 +407,137 @@ class ContractRiskUtil:
             # Proxy-like heuristic: short runtime with delegatecall
             base["bc_proxy_like"] = 1 if (base["bc_has_delegatecall"] == 1 and base["bytecode_len"] <= 600) else 0
 
+        # --- live activity payload (optional) ---
+        act = self.load_etherscan_activity_payload(address)
+        if isinstance(act, dict):
+            base["has_activity_payload"] = 1
+            now_ts = _utc_now_ts()
+
+            def parse_rows(key: str) -> List[Dict[str, Any]]:
+                obj = act.get(key)
+                if isinstance(obj, dict) and isinstance(obj.get("rows"), list):
+                    return [r for r in obj["rows"] if isinstance(r, dict)]
+                return []
+
+            tx_rows = parse_rows("txlist")
+            internal_rows = parse_rows("txlistinternal")
+            token_rows = parse_rows("tokentx")
+
+            # --- tx-derived metrics (90d payload can be filtered into 7/30/90) ---
+            def within_days(ts: int, days: int) -> bool:
+                return ts >= now_ts - int(days) * 86400
+
+            seen_senders_30: set[str] = set()
+            tx_in_30 = 0
+            tx_out_30 = 0
+            v_in_30 = 0.0
+            v_out_30 = 0.0
+            n_fail_90 = 0
+            n_total_90 = 0
+            ts_min: Optional[int] = None
+            ts_max: Optional[int] = None
+
+            for r in tx_rows:
+                ts = _safe_int(r.get("timeStamp"), 0)
+                if ts <= 0:
+                    continue
+                ts_min = ts if ts_min is None else min(ts_min, ts)
+                ts_max = ts if ts_max is None else max(ts_max, ts)
+
+                n_total_90 += 1
+                if str(r.get("isError") or "").strip() == "1":
+                    n_fail_90 += 1
+
+                if within_days(ts, 7):
+                    base["tx_count_7d"] += 1
+                if within_days(ts, 30):
+                    base["tx_count_30d"] += 1
+                    frm = str(r.get("from") or "").lower()
+                    if _is_addr(frm):
+                        seen_senders_30.add(frm)
+                    to = str(r.get("to") or "").lower()
+                    if to == base["address"]:
+                        tx_in_30 += 1
+                        v_in_30 += _eth_from_wei(r.get("value"))
+                    if frm == base["address"]:
+                        tx_out_30 += 1
+                        v_out_30 += _eth_from_wei(r.get("value"))
+                if within_days(ts, 90):
+                    base["tx_count_90d"] += 1
+
+            base["unique_senders_30d"] = int(len(seen_senders_30))
+            base["tx_in_30d"] = int(tx_in_30)
+            base["tx_out_30d"] = int(tx_out_30)
+            base["value_in_eth_30d"] = float(v_in_30)
+            base["value_out_eth_30d"] = float(v_out_30)
+            base["failed_tx_rate_90d"] = float(n_fail_90 / max(1, n_total_90))
+
+            if ts_min is not None:
+                base["age_days"] = float(max(0.0, (now_ts - int(ts_min)) / 86400.0))
+            if ts_max is not None:
+                base["last_tx_age_days"] = float(max(0.0, (now_ts - int(ts_max)) / 86400.0))
+
+            # internal tx count (30d)
+            n_int_30 = 0
+            for r in internal_rows:
+                ts = _safe_int(r.get("timeStamp"), 0)
+                if ts > 0 and within_days(ts, 30):
+                    n_int_30 += 1
+            base["internal_tx_count_30d"] = int(n_int_30)
+
+            # ERC20 transfer metrics (30d)
+            n_tok_30 = 0
+            tok_set: set[str] = set()
+            tok_senders: set[str] = set()
+            tok_receivers: set[str] = set()
+            for r in token_rows:
+                ts = _safe_int(r.get("timeStamp"), 0)
+                if ts <= 0 or not within_days(ts, 30):
+                    continue
+                n_tok_30 += 1
+                token_addr = str(r.get("contractAddress") or "").lower()
+                if _is_addr(token_addr):
+                    tok_set.add(token_addr)
+                frm = str(r.get("from") or "").lower()
+                to = str(r.get("to") or "").lower()
+                if _is_addr(frm):
+                    tok_senders.add(frm)
+                if _is_addr(to):
+                    tok_receivers.add(to)
+            base["erc20_tx_count_30d"] = int(n_tok_30)
+            base["erc20_unique_tokens_30d"] = int(len(tok_set))
+            base["erc20_unique_senders_30d"] = int(len(tok_senders))
+            base["erc20_unique_receivers_30d"] = int(len(tok_receivers))
+
+            # Logs-based governance/admin churn (365d)
+            logs = act.get("logs", {}) if isinstance(act.get("logs"), dict) else {}
+
+            def count_logs(key: str) -> int:
+                entry = logs.get(key) if isinstance(logs, dict) else None
+                resp = entry.get("response") if isinstance(entry, dict) else None
+                res = resp.get("result") if isinstance(resp, dict) else None
+                if isinstance(res, list):
+                    return int(len([x for x in res if isinstance(x, dict)]))
+                return 0
+
+            base["n_evt_upgraded_365d"] = count_logs("upgraded")
+            base["n_evt_admin_changed_365d"] = count_logs("admin_changed")
+            base["n_evt_ownership_transferred_365d"] = count_logs("ownership_transferred")
+            base["n_evt_role_granted_365d"] = count_logs("role_granted")
+            base["n_evt_role_revoked_365d"] = count_logs("role_revoked")
+            base["n_evt_paused_365d"] = count_logs("paused")
+            base["n_evt_unpaused_365d"] = count_logs("unpaused")
+            churn = (
+                base["n_evt_upgraded_365d"]
+                + base["n_evt_admin_changed_365d"]
+                + base["n_evt_ownership_transferred_365d"]
+                + base["n_evt_role_granted_365d"]
+                + base["n_evt_role_revoked_365d"]
+                + base["n_evt_paused_365d"]
+                + base["n_evt_unpaused_365d"]
+            )
+            base["admin_event_churn_365d"] = float(churn)
+
         return base
 
     def _complexity_term(self, feats: Dict[str, Any]) -> float:
@@ -402,6 +619,23 @@ class ContractRiskUtil:
         safety += c.w_safe_math * int(feats.get("uses_safe_math", 0))
         safety += c.w_two_step_ownable * int(feats.get("uses_two_step_ownable", 0))
 
+        # Live activity / exposure: higher usage + higher failure rate + admin churn => higher operational risk.
+        # This is intentionally log-scaled (more robust).
+        tx_30 = float(_safe_int(feats.get("tx_count_30d"), 0))
+        uniq_30 = float(_safe_int(feats.get("unique_senders_30d"), 0))
+        tok_30 = float(_safe_int(feats.get("erc20_tx_count_30d"), 0))
+        v_flow = float(max(0.0, _safe_float(feats.get("value_in_eth_30d"), 0.0) + _safe_float(feats.get("value_out_eth_30d"), 0.0)))
+        fail_rate = _clamp01(_safe_float(feats.get("failed_tx_rate_90d"), 0.0))
+        churn_365 = float(max(0.0, _safe_float(feats.get("admin_event_churn_365d"), 0.0)))
+
+        activity = 0.0
+        activity += c.w_tx_activity * math.log1p(tx_30)
+        activity += c.w_unique_senders * math.log1p(uniq_30)
+        activity += c.w_token_activity * math.log1p(tok_30)
+        activity += c.w_value_flow_eth * math.log1p(v_flow)
+        activity += c.w_failed_rate * fail_rate
+        activity += c.w_admin_event_churn * math.log1p(churn_365)
+
         return {
             "comp_upgrade": float(upgrade),
             "comp_privilege": float(privilege),
@@ -410,6 +644,7 @@ class ContractRiskUtil:
             "comp_complexity": float(complexity),
             "comp_opacity": float(opacity),
             "comp_safety": float(safety),
+            "comp_activity": float(activity),
             "aux_is_upgradeable": float(is_upgradeable),
             "aux_admin_power": float(admin_power),
         }
@@ -427,6 +662,7 @@ class ContractRiskUtil:
         score += c.w_dangerous * comps["comp_dangerous"]
         score += c.w_complexity * comps["comp_complexity"]
         score += c.w_opacity * comps["comp_opacity"]
+        score += c.w_activity * comps["comp_activity"]
         score -= c.w_safety * comps["comp_safety"]
         return float(score), comps
 
