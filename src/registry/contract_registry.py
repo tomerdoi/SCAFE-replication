@@ -22,6 +22,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set
 
 import pandas as pd
 
+from src.paths import AVS_DATA_DIR
 
 # src/registry/contract_registry.py -> repo root is two levels up from this file
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -60,9 +61,9 @@ def _read_addresses_file(path: Path) -> List[str]:
 
 @dataclass(frozen=True, slots=True)
 class ContractRegistrySources:
-    avs_registry_all: Path = DATA_DIR / "avs_registry_all.json"
-    dune_avs_related_contracts: Path = DATA_DIR / "dune_avs_related_contracts_all.json"
-    u1_latest_avs_balances: Path = DATA_DIR / "u1_latest_avs_balances.json"
+    avs_registry_all: Path = AVS_DATA_DIR / "avs_registry_all.json"
+    dune_avs_related_contracts: Path = AVS_DATA_DIR / "dune_avs_related_contracts_all.json"
+    u1_latest_avs_balances: Path = AVS_DATA_DIR / "u1_latest_avs_balances.json"
 
 
 class ContractRegistryUtil:

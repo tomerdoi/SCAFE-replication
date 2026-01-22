@@ -29,6 +29,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from src.config.global_conf import CONF
+from src.paths import AVS_DATA_DIR
 
 
 # src/clients/etherscan_source.py -> repo root is two levels up from this file
@@ -167,8 +168,8 @@ class EtherscanAVSSourceUtil:
         try:
             if path is None:
                 # Prefer expanded registry if present.
-                p_reg = DATA_DIR / "avs_registry_all.json"
-                path = p_reg if p_reg.exists() else (DATA_DIR / "eigenexplorer_avs_all.json")
+                p_reg = AVS_DATA_DIR / "avs_registry_all.json"
+                path = p_reg if p_reg.exists() else (AVS_DATA_DIR / "eigenexplorer_avs_all.json")
             obj = json.loads(path.read_text(encoding="utf-8"))
             rows = obj.get("data", []) if isinstance(obj, dict) else []
             out: List[str] = []

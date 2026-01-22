@@ -20,6 +20,20 @@ Outputs:
 - `data/derived/contract_risk_ablation.csv` + `data/derived/contract_risk_report.json` (evaluation artifacts)
 - `figures/contract_risk_distribution.png` + `figures/contract_risk_components_heatmap.png` (plots)
 
+### Public incidents dataset (recent incidents from the web)
+This repo includes a best-effort collector that builds a **reproducible CSV** from public sources like DeFiLlama’s hacks dataset and REKT writeups.
+
+General “web incidents” preset:
+
+```bash
+/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.datasets.incidents_public_dataset --general-web --since-days 365
+```
+
+Outputs:
+- `data/derived/incidents_web.csv` (filtered/hygienic general incidents dataset)
+- `data/derived/incidents_web_all.csv` (raw/unfiltered union of sources)
+- `data/derived/incidents_raw/*.json` (raw snapshots, if enabled)
+
 ### Fetch/update sources from Etherscan (optional)
 If you want to refresh or expand coverage, set `ETHERSCAN_API_KEY` (via `secrets.json` or env) and run:
 
@@ -35,6 +49,17 @@ The older AVS risk pipeline is still available (and can reuse the contract risk 
 
 ```bash
 /Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.pipelines.main_pipeline
+```
+
+AVS case study code/data now lives under:
+- `src/case_studies/avs/`
+- `data/case_studies/avs/`
+- `figures/case_studies/avs/`
+
+You can also run the AVS pipeline via the new module path:
+
+```bash
+/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.case_studies.avs.pipelines.main_pipeline
 ```
 
 

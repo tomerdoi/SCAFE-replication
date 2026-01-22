@@ -20,6 +20,9 @@ Outputs
 Usage
 -----
 python -m src.datasets.incidents_public_dataset --since-days 365
+
+General web incidents (recommended defaults: DeFiLlama + REKT):
+python -m src.datasets.incidents_public_dataset --general-web --since-days 365
 """
 
 from __future__ import annotations
@@ -50,6 +53,7 @@ if str(_REPO_ROOT_FOR_SCRIPT) not in sys.path:
 
 from src.config.global_conf import CONF
 from src.clients.github_incidents import GitHubClient, GitHubIncidentsUtil
+from src.paths import AVS_DATA_DIR
 
 
 # src/datasets/incidents_public_dataset.py -> repo root is two levels up from this file
@@ -201,7 +205,10 @@ def _load_ecosystem_terms(logger: logging.Logger) -> List[str]:
     terms: set[str] = set(ECOSYSTEM_KEYWORDS_BASE)
 
     # AVS names from u--1 metadata (best signal for "what is an AVS in our dataset")
-    u1_path = DATA_DIR / "u1_latest_avs_balances.json"
+    u1_path = AVS_DATA_DIR / "u1_latest_avs_balances.json"
+    if not u1_path.exists():
+        # backward-compat for older layouts
+        u1_path = DATA_DIR / "u1_latest_avs_balances.json"
     if u1_path.exists():
         try:
             obj = json.loads(u1_path.read_text(encoding="utf-8"))
@@ -693,7 +700,8 @@ class EigenLayerSitemapCollector:
 class RektSitemapCollector:
     """
     REKT is a curated incident writeup site. We use its sitemap as a best-effort discovery tool.
-    We only include entries that look EigenLayer/restaking-related via keyword filtering.
+    In restaking mode we keyword-filter to EigenLayer/restaking-related entries.
+    In general mode we keep all incident writeups (no ecosystem filtering).
     """
 
     SITEMAP_URLS = [
@@ -789,7 +797,7 @@ class RektSitemapCollector:
         *,
         since_dt: datetime,
         write_raw: bool,
-        ecosystem_terms: List[str],
+        ecosystem_terms: Optional[List[str]] = None,
         max_pages: int = 250,
     ) -> List[Incident]:
         url, xml_text = self._fetch_sitemap()
@@ -802,11 +810,14 @@ class RektSitemapCollector:
         incidents: List[Incident] = []
         raw_entries: List[Dict[str, Any]] = []
 
+        terms = [t for t in (ecosystem_terms or []) if isinstance(t, str) and t.strip()]
+        do_filter = len(terms) > 0
+
         for (page_url, lastmod) in post_urls[: max(1, int(max_pages))]:
             if lastmod and lastmod < since_dt:
                 continue
-            # quick pre-filter by URL slug
-            if not _contains_any(page_url, ecosystem_terms):
+            # quick pre-filter by URL slug (restaking mode only)
+            if do_filter and (not _contains_any(page_url, terms)):
                 continue
             try:
                 resp = self.http.get(page_url, headers={"Accept": "text/html, */*;q=0.8"})
@@ -818,8 +829,8 @@ class RektSitemapCollector:
                 if occurred and occurred < since_dt:
                     continue
 
-                # Ensure content is actually ecosystem-related
-                if not _contains_any(" | ".join([title, desc or "", page_url]), ecosystem_terms):
+                # Ensure content is actually ecosystem-related (restaking mode only)
+                if do_filter and (not _contains_any(" | ".join([title, desc or "", page_url]), terms)):
                     continue
 
                 entry = {"title": title, "url": page_url, "published": (occurred.isoformat() if occurred else ""), "description": desc}
@@ -852,7 +863,9 @@ class RektSitemapCollector:
                 encoding="utf-8",
             )
 
-        self.logger.info(f"REKT entries collected (filtered): {len(incidents)} (since {since_dt.date().isoformat()})")
+        self.logger.info(
+            f"REKT entries collected ({'filtered' if do_filter else 'unfiltered'}): {len(incidents)} (since {since_dt.date().isoformat()})"
+        )
         return incidents
 
 
@@ -879,10 +892,11 @@ class GitHubSignalsCollector:
             repos = sorted(set(base + discovered))
 
         # Reuse existing util to keep behavior consistent (rate limit handling, etc.)
-        out_path = self.util.run(repos, since_days=since_days, out_path=DATA_DIR / "github_case_studies.json")
+        # For reproducibility, keep outputs scoped to incidents_raw rather than polluting data/ root.
+        RAW_DIR.mkdir(parents=True, exist_ok=True)
+        out_path = self.util.run(repos, since_days=since_days, out_path=RAW_DIR / "github_case_studies.json")
         payload = json.loads(out_path.read_text(encoding="utf-8"))
         if write_raw:
-            RAW_DIR.mkdir(parents=True, exist_ok=True)
             (RAW_DIR / "github_case_studies.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
         now = _utc_now()
@@ -949,6 +963,7 @@ class PublicIncidentsDatasetBuilder:
         include_rekt: bool = True,
         include_github: bool = True,
         repos: Optional[List[str]] = None,
+        mode: str = "restaking",  # restaking|general
     ) -> Tuple[List[Incident], List[str]]:
         """
         Collect raw incident-like objects from configured sources (no filtering, no DataFrame).
@@ -956,7 +971,7 @@ class PublicIncidentsDatasetBuilder:
         """
         now = _utc_now()
         since_dt = now - timedelta(days=max(0, int(since_days)))
-        ecosystem_terms = _load_ecosystem_terms(self.logger)
+        ecosystem_terms: List[str] = _load_ecosystem_terms(self.logger) if str(mode).lower().strip() == "restaking" else []
 
         incidents: List[Incident] = []
 
@@ -985,7 +1000,7 @@ class PublicIncidentsDatasetBuilder:
             safe_collect(
                 "rekt",
                 lambda: RektSitemapCollector(self.http, self.logger).collect(
-                    since_dt=since_dt, write_raw=write_raw, ecosystem_terms=ecosystem_terms
+                    since_dt=since_dt, write_raw=write_raw, ecosystem_terms=ecosystem_terms if ecosystem_terms else None
                 ),
             )
         if include_github:
@@ -1022,6 +1037,33 @@ class PublicIncidentsDatasetBuilder:
         df = df.sort_values(by=["_occurred_at", "source"], ascending=[False, True]).drop(columns=["_occurred_at"])
         return df
 
+    def filter_general(self, incidents: List[Incident]) -> pd.DataFrame:
+        """
+        Minimal, reproducible filter for a general incidents dataset.
+
+        Inclusion:
+        - Must look incident/security-related for noisy sources (currently GitHub only).
+        Exclusion:
+        - Drop obvious non-incident announcements (EigenLayer blog collectors label these as 'announcement').
+        """
+        kept_rows: List[Dict[str, Any]] = []
+        for inc in incidents:
+            # Remove announcements / non-incidents produced by some collectors.
+            if (inc.category or "").strip().lower() == "announcement":
+                continue
+            # GitHub is particularly noisy: keep only explicitly incident/security-related items.
+            if inc.source == "github_search" and not _is_incident_like(inc):
+                continue
+            kept_rows.append(inc.to_row())
+
+        df = pd.DataFrame(kept_rows)
+        if df.empty:
+            return df
+        df = df.drop_duplicates(subset=["incident_id"]).copy()
+        df["_occurred_at"] = pd.to_datetime(df["occurred_at"], utc=True, errors="coerce")
+        df = df.sort_values(by=["_occurred_at", "source"], ascending=[False, True]).drop(columns=["_occurred_at"])
+        return df
+
     def build(
         self,
         *,
@@ -1034,6 +1076,7 @@ class PublicIncidentsDatasetBuilder:
         include_github: bool = True,
         repos: Optional[List[str]] = None,
         restaking_only: bool = True,
+        mode: str = "restaking",  # restaking|general
     ) -> pd.DataFrame:
         incidents, ecosystem_terms = self.collect_incidents(
             since_days=since_days,
@@ -1044,9 +1087,13 @@ class PublicIncidentsDatasetBuilder:
             include_rekt=include_rekt,
             include_github=include_github,
             repos=repos,
+            mode=mode,
         )
         if restaking_only:
             return self.filter_restaking(incidents, ecosystem_terms)
+        # In non-restaking mode, still apply minimal hygiene filters for noisy/announcement sources.
+        if str(mode).lower().strip() == "general":
+            return self.filter_general(incidents)
         return self.incidents_to_df(incidents)
 
     def write(self, df: pd.DataFrame, *, out_csv: Path) -> Path:
@@ -1088,6 +1135,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build best-effort public incidents dataset (real sources).")
     parser.add_argument("--since-days", type=int, default=365, help="How far back to collect.")
     parser.add_argument(
+        "--mode",
+        type=str,
+        default="restaking",
+        choices=["restaking", "general"],
+        help="Dataset mode. 'restaking' applies EigenLayer/restaking relevance filtering. 'general' keeps general incidents.",
+    )
+    parser.add_argument(
+        "--general-web",
+        action="store_true",
+        help="Convenience preset for a general 'recent incidents from the web' dataset (mode=general, keeps DeFiLlama+REKT, disables EigenLayer+GitHub).",
+    )
+    parser.add_argument(
         "--out-csv",
         type=str,
         default=str(DERIVED_DIR / "incidents_public.csv"),
@@ -1120,6 +1179,14 @@ def main() -> None:
 
     repos = [r.strip() for r in str(args.repos).split(",") if r.strip()] if str(args.repos).strip() else None
 
+    # Apply preset after parsing so users can still override flags if they want.
+    if bool(args.general_web):
+        args.mode = "general"
+        args.no_restaking_only = True
+        args.no_eigenlayer_blog = True
+        args.no_eigenlayer_sitemap = True
+        args.no_github = True
+
     builder = PublicIncidentsDatasetBuilder()
     incidents, ecosystem_terms = builder.collect_incidents(
         since_days=int(args.since_days),
@@ -1130,15 +1197,21 @@ def main() -> None:
         include_rekt=not bool(args.no_rekt),
         include_github=not bool(args.no_github),
         repos=repos,
+        mode=str(args.mode),
     )
 
-    df_all = builder.incidents_to_df(incidents)
+    # Determine output paths. For the general-web preset, pick a more specific default filename.
+    default_out = str(DERIVED_DIR / "incidents_public.csv")
     out_csv = Path(args.out_csv)
+    if bool(args.general_web) and str(args.out_csv).strip() == default_out:
+        out_csv = Path(DERIVED_DIR / "incidents_web.csv")
+
+    df_all = builder.incidents_to_df(incidents)
     out_csv_all = Path(args.out_csv_all) if str(args.out_csv_all).strip() else out_csv.with_name(out_csv.stem + "_all" + out_csv.suffix)
     builder.write(df_all, out_csv=out_csv_all)
 
     if bool(args.no_restaking_only):
-        df_filtered = df_all
+        df_filtered = builder.filter_general(incidents) if str(args.mode).lower().strip() == "general" else df_all
     else:
         df_filtered = builder.filter_restaking(incidents, ecosystem_terms)
     builder.write_with_backup(df_filtered, out_csv=out_csv, backup_suffix="_prev")
