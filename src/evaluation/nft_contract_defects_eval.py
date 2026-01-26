@@ -6,9 +6,11 @@ Input:
 - A CSV with a contract address column (commonly: "Contract Address")
 
 Outputs (under data/derived/ by default):
-- nft_contract_defects_registry.csv        (the addresses we scored)
-- nft_contract_defects_contract_risk.csv   (raw ContractRiskUtil output)
-- nft_contract_defects_scored.csv          (original dataset joined with risk columns)
+- nft_contract_defects_registry.csv              (the addresses we scored; subset when limit>0)
+- nft_contract_defects_contract_risk.csv         (raw ContractRiskUtil output; subset when limit>0)
+- nft_contract_defects_scored.csv                (original dataset joined with risk columns; subset filled when limit>0)
+- nft_contract_defects_contract_risk_all.csv     (optional: risk output for ALL dataset addresses; best for full runs)
+- nft_contract_defects_scored_all.csv            (optional: dataset joined with *_all risk output)
 
 Quick run (default limit=10):
   python3 -m src.evaluation.nft_contract_defects_eval
@@ -76,11 +78,13 @@ class NFTContractDefectsEvaluation:
         *,
         input_csv: Path,
         limit: int = 10,
+        batch_size: int = 0,
         fetch_sources: bool = True,
         fetch_activity: bool = False,
         skip_existing: bool = True,
         activity_max_pages: int = 2,
         out_scored_csv: Optional[Path] = None,
+        out_risk_csv: Optional[Path] = None,
     ) -> Path:
         input_csv = Path(input_csv)
         if not input_csv.exists():
@@ -100,49 +104,81 @@ class NFTContractDefectsEvaluation:
             raise ValueError("No valid 0x addresses found in input after filtering.")
 
         registry_csv = self.derived_dir / "nft_contract_defects_registry.csv"
-        risk_csv = self.derived_dir / "nft_contract_defects_contract_risk.csv"
+        risk_csv = Path(out_risk_csv) if out_risk_csv else (self.derived_dir / "nft_contract_defects_contract_risk.csv")
         out_scored_csv = Path(out_scored_csv) if out_scored_csv else (self.derived_dir / "nft_contract_defects_scored.csv")
 
         reg = pd.DataFrame([{"address": a, "sources": "nftdefects"} for a in addrs])
         reg.to_csv(registry_csv, index=False)
         self.logger.info(f"Wrote registry: {registry_csv} (rows={len(reg)})")
 
-        # Optionally fetch caches for these addresses (helps when dataset addresses aren't already cached).
-        if fetch_sources:
-            try:
-                from src.clients.etherscan_source import EtherscanAVSSourceUtil
+        def maybe_fetch(*, addresses_csv: Path) -> None:
+            # Optionally fetch caches for these addresses (helps when dataset addresses aren't already cached).
+            if fetch_sources:
+                try:
+                    from src.clients.etherscan_source import EtherscanAVSSourceUtil
 
-                self.logger.info("Fetching Etherscan sources+bytecode (best-effort)…")
-                EtherscanAVSSourceUtil().run(
-                    fetch_all=True,
-                    limit=0,
-                    addresses_csv=registry_csv,
-                    progress_logger=self.logger,
-                    progress_every=5,
-                    skip_existing=bool(skip_existing),
-                )
-            except Exception as e:
-                self.logger.warning(f"Skipping source fetch (continuing with cache-only scoring): {type(e).__name__}: {e}")
+                    self.logger.info("Fetching Etherscan sources+bytecode (best-effort)…")
+                    EtherscanAVSSourceUtil().run(
+                        fetch_all=True,
+                        limit=0,
+                        addresses_csv=Path(addresses_csv),
+                        progress_logger=self.logger,
+                        progress_every=5,
+                        skip_existing=bool(skip_existing),
+                    )
+                except Exception as e:
+                    self.logger.warning(
+                        f"Skipping source fetch (continuing with cache-only scoring): {type(e).__name__}: {e}"
+                    )
 
-        if fetch_activity:
-            try:
-                from src.clients.etherscan_activity import EtherscanActivityUtil
+            if fetch_activity:
+                try:
+                    from src.clients.etherscan_activity import EtherscanActivityUtil
 
-                self.logger.info("Fetching Etherscan activity (best-effort)…")
-                EtherscanActivityUtil().run(
-                    addresses_csv=registry_csv,
-                    fetch_all=True,
-                    limit=0,
-                    skip_existing=bool(skip_existing),
-                    max_pages=int(activity_max_pages),
-                    progress_logger=self.logger,
-                    progress_every=5,
-                )
-            except Exception as e:
-                self.logger.warning(f"Skipping activity fetch (continuing): {type(e).__name__}: {e}")
+                    self.logger.info("Fetching Etherscan activity (best-effort)…")
+                    EtherscanActivityUtil().run(
+                        addresses_csv=Path(addresses_csv),
+                        fetch_all=True,
+                        limit=0,
+                        skip_existing=bool(skip_existing),
+                        max_pages=int(activity_max_pages),
+                        progress_logger=self.logger,
+                        progress_every=5,
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Skipping activity fetch (continuing): {type(e).__name__}: {e}")
 
-        # Score using cached payloads under data/etherscan_sources (+ optional activity payloads).
-        ContractRiskUtil().run(registry_csv=registry_csv, out_csv=risk_csv, limit=0)
+        def score_one_registry(*, addresses_csv: Path, out_csv: Path) -> None:
+            # Score using cached payloads under data/etherscan_sources (+ optional activity payloads).
+            ContractRiskUtil().run(registry_csv=Path(addresses_csv), out_csv=Path(out_csv), limit=0)
+
+        # If batch_size is set, run in chunks and append to a single risk CSV.
+        bs = int(batch_size or 0)
+        if bs > 0 and len(addrs) > bs:
+            risk_csv.parent.mkdir(parents=True, exist_ok=True)
+            if risk_csv.exists():
+                risk_csv.unlink()
+            self.logger.info(f"Batch mode enabled: batch_size={bs} over {len(addrs)} addresses")
+
+            for start in range(0, len(addrs), bs):
+                end = min(len(addrs), start + bs)
+                batch_addrs = addrs[start:end]
+                batch_registry = self.derived_dir / f"nft_contract_defects_registry_batch_{start}_{end}.csv"
+                pd.DataFrame([{"address": a, "sources": "nftdefects"} for a in batch_addrs]).to_csv(batch_registry, index=False)
+                self.logger.info(f"Batch {start}:{end} registry written: {batch_registry}")
+
+                maybe_fetch(addresses_csv=batch_registry)
+
+                batch_risk = self.derived_dir / f"nft_contract_defects_contract_risk_batch_{start}_{end}.csv"
+                score_one_registry(addresses_csv=batch_registry, out_csv=batch_risk)
+
+                bdf = pd.read_csv(batch_risk)
+                write_header = not risk_csv.exists()
+                bdf.to_csv(risk_csv, index=False, mode="a", header=write_header)
+                self.logger.info(f"Appended batch risk to: {risk_csv} (batch_rows={len(bdf)})")
+        else:
+            maybe_fetch(addresses_csv=registry_csv)
+            score_one_registry(addresses_csv=registry_csv, out_csv=risk_csv)
 
         risk_df = pd.read_csv(risk_csv)
         risk_df["address"] = risk_df["address"].astype(str).str.strip().str.lower()
@@ -161,7 +197,8 @@ class NFTContractDefectsEvaluation:
 if __name__ == "__main__":
     # ---- Editable run parameters (no CLI args) ----
     input_csv = DATA_DIR / "raw" / "NFTContractDefects.csv"
-    limit = 10  # default run limit
+    limit = 0  # 0 = score ALL dataset contracts (16,527)
+    batch_size = 250  # set >0 for long runs to save progress incrementally (recommended)
 
     # Fetch caches via Etherscan (best-effort). Requires ETHERSCAN_API_KEY.
     fetch_sources = True
@@ -169,15 +206,18 @@ if __name__ == "__main__":
     skip_existing = True
     activity_max_pages = 2
 
-    out_scored_csv = DERIVED_DIR / "nft_contract_defects_scored.csv"
+    out_risk_csv = DERIVED_DIR / "nft_contract_defects_contract_risk_all.csv"
+    out_scored_csv = DERIVED_DIR / "nft_contract_defects_scored_all.csv"
 
     NFTContractDefectsEvaluation().run(
         input_csv=Path(input_csv),
         limit=int(limit),
+        batch_size=int(batch_size),
         fetch_sources=bool(fetch_sources),
         fetch_activity=bool(fetch_activity),
         skip_existing=bool(skip_existing),
         activity_max_pages=int(activity_max_pages),
         out_scored_csv=Path(out_scored_csv),
+        out_risk_csv=Path(out_risk_csv),
     )
 
