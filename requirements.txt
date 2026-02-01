@@ -1,6 +1,7 @@
 # Core data processing
 pandas>=1.5.0
 numpy>=1.23.0
+openpyxl
 
 # Visualization (for paper figures)
 matplotlib>=3.6.0
