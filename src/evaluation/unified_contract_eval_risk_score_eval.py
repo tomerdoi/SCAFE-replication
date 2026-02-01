@@ -106,6 +106,7 @@ class UnifiedContractEvalRiskScoreEvaluation:
         skip_existing_fetch: bool = True,
         fetch_chunk_size: int = 0,
         sleep_between_chunks_secs: float = 2.0,
+        activity_max_pages: int = 2,
     ) -> Path:
         in_xlsx = Path(in_xlsx)
         if not in_xlsx.exists():
@@ -212,7 +213,7 @@ class UnifiedContractEvalRiskScoreEvaluation:
                             fetch_all=True,
                             limit=0,
                             skip_existing=bool(skip_existing_fetch),
-                            max_pages=2,
+                            max_pages=int(activity_max_pages),
                             progress_logger=self.logger,
                             progress_every=25,
                         )
@@ -353,13 +354,14 @@ if __name__ == "__main__":
     # ---- Editable run parameters (no CLI args) ----
     paths = Paths()
     resume = True
-    fetch_sources = True
-    fetch_activity = False
+    fetch_sources = False
+    fetch_activity = True
     fetch_missing_only = True
     skip_existing_fetch = True
     # End-to-end run: fetch ALL missing payloads, but do it in internal chunks to reduce rate-limit risk.
     fetch_chunk_size = 500  # set to 0 to do it in a single giant call (not recommended)
     sleep_between_chunks_secs = 2.0
+    activity_max_pages = 2
 
     UnifiedContractEvalRiskScoreEvaluation().run(
         in_xlsx=paths.in_xlsx,
@@ -373,5 +375,6 @@ if __name__ == "__main__":
         skip_existing_fetch=bool(skip_existing_fetch),
         fetch_chunk_size=int(fetch_chunk_size),
         sleep_between_chunks_secs=float(sleep_between_chunks_secs),
+        activity_max_pages=int(activity_max_pages),
     )
 
