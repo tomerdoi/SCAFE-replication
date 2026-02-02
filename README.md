@@ -2,6 +2,20 @@
 
 This repo now supports a **contract-level technical risk score** pipeline (with the existing AVS work kept as an optional case study).
 
+### Recompute the unified dataset scores (cache-only, no refetch)
+If you change the risk-score formula (e.g. in `src/risk/contract_risk.py`) and want to **recalculate all unified scores using the cached contract payloads**, do:
+
+```bash
+rm -f data/derived/unified_contract_eval_contract_risk.csv
+/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.evaluation.unified_contract_eval_risk_score_eval
+```
+
+This will re-score using the local caches under:
+- `data/etherscan_sources/` (source + bytecode payloads)
+- `data/etherscan_activity/` (activity payloads, if fetched)
+
+Important: ensure the `unified_contract_eval_risk_score_eval.py` run is configured with fetching disabled (cache-only), otherwise it may call Etherscan again.
+
 ### What the contract risk score is (and isn’t)
 - **Is**: a reproducible, interpretable **technical risk** score for smart contracts (upgrade/admin surface, dangerous patterns, complexity proxies, etc.).
 - **Is not**: a credit risk / default probability model (those require protocol-specific user/position labels).
