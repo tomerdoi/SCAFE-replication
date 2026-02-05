@@ -59,11 +59,7 @@ If you want to refresh or expand coverage, set `ETHERSCAN_API_KEY` (via `secrets
 If you provide a small labeled subset at `data/labels/contract_labels.csv` (schema: `address,label`), the evaluation step will compute AUC/AP for baselines and ablations.
 
 ### Legacy / AVS pipeline
-The older AVS risk pipeline is still available (and can reuse the contract risk output as a component), but it is no longer the “main” entrypoint:
-
-```bash
-/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.pipelines.main_pipeline
-```
+The older AVS risk pipeline is still available (and can reuse the contract risk output as a component), but it is no longer the “main” entrypoint.
 
 AVS case study code/data now lives under:
 - `src/case_studies/avs/`

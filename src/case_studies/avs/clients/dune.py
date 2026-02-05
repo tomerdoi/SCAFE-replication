@@ -1101,7 +1101,7 @@ def run_full_year_panels(
     """
     In-process "main" runner for Dune extraction (same logic as the __main__ block).
 
-    This is intended for orchestration from src.pipelines.main_pipeline without spawning subprocesses.
+    This is intended for orchestration from src.case_studies.avs.pipelines.main_pipeline without spawning subprocesses.
     """
     try:
         # Time range: rolling window ending today (UTC)

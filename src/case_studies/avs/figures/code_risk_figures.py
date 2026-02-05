@@ -32,7 +32,7 @@ Path(os.environ["XDG_CACHE_HOME"]).mkdir(parents=True, exist_ok=True)
 import seaborn as sns  # noqa: E402
 from matplotlib import pyplot as plt  # noqa: E402
 
-from src.risk.code_risk import AVSCodeRiskUtil
+from src.case_studies.avs.risk.code_risk import AVSCodeRiskUtil
 from src.paths import AVS_DERIVED_DIR, AVS_FIGURES_DIR
 
 

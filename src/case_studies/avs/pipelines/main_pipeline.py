@@ -11,7 +11,7 @@ Runs (in order):
 - Risk score pipeline: final AVS/operator risk + figures
 
 Usage:
-  python -m src.pipelines.main_pipeline
+  python -m src.case_studies.avs.pipelines.main_pipeline
 """
 
 from __future__ import annotations
@@ -27,8 +27,8 @@ from src.paths import REPO_ROOT as _REPO_ROOT  # noqa: E402
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from src.risk.code_risk import AVSCodeRiskUtil
-from src.registry.avs_registry import AVSRegistryUtil
+from src.case_studies.avs.risk.code_risk import AVSCodeRiskUtil
+from src.case_studies.avs.registry.avs_registry import AVSRegistryUtil
 from src.clients.dune import run_avs_directory_avs_registry, run_full_year_panels
 from src.clients.eigen_explorer_avs_exposure import main_generate_operator_avs_edges
 from src.clients.eigen_explorer_avs import main_generate_all_rows as eigen_avs_all
@@ -36,7 +36,7 @@ from src.clients.eigen_explorer_operator_rewards import main_fetch_operator_rewa
 from src.clients.eigen_explorer import main_generate_all_rows as eigen_ops_all
 from src.clients.etherscan_source import EtherscanAVSSourceUtil
 from src.clients.github_incidents import GitHubIncidentsUtil
-from src.pipelines.risk_score_pipeline import RiskScorePipeline
+from src.case_studies.avs.pipelines.risk_score_pipeline import RiskScorePipeline
 from src.clients.u1 import main_fetch_all_live
 
 from src.paths import AVS_DATA_DIR, AVS_DERIVED_DIR
