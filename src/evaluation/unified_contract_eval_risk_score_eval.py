@@ -134,8 +134,20 @@ class UnifiedContractEvalRiskScoreEvaluation:
         df["_address_norm"] = df["address"].map(_norm_addr)
         all_addrs = [a for a in df["_address_norm"].tolist() if _is_addr(a)]
         uniq_addrs = _stable_dedupe(all_addrs)
-        if not uniq_addrs:
-            raise ValueError("No valid 0x addresses found in unified dataset.")
+
+        # Rows without on-chain address but with local .sol source (e.g. DAppSCAN)
+        has_local_source = (
+            df["local_source_path"].fillna("").astype(str).str.strip().str.len() > 0
+            if "local_source_path" in df.columns
+            else pd.Series([False] * len(df), index=df.index)
+        )
+        no_addr_mask = ~df["_address_norm"].map(_is_addr)
+        local_only_mask = no_addr_mask & has_local_source
+        n_local_only = int(local_only_mask.sum())
+        self.logger.info(
+            f"Dataset: {len(df)} rows, {len(uniq_addrs)} unique addresses, "
+            f"{n_local_only} local-source-only rows (no on-chain address)"
+        )
 
         reg = pd.DataFrame([{"address": a, "sources": "unified_contract_eval"} for a in uniq_addrs])
         reg.to_csv(out_registry_csv, index=False)
@@ -294,27 +306,84 @@ class UnifiedContractEvalRiskScoreEvaluation:
             parts.append(existing_df)
             risk_df = pd.concat(parts, ignore_index=True)
 
-        if risk_df.empty:
+        # ---- Phase 2: Score local-source-only rows (no on-chain address) ----
+        # These rows have a local .sol file but no Etherscan address.
+        # We use ContractRiskUtil.extract_features_from_local_file for each row.
+        local_risk_rows: list = []
+        if n_local_only > 0:
+            self.logger.info(f"Scoring {n_local_only} local-source-only rows via extract_features_from_local_file…")
+            risk_util = ContractRiskUtil()
+            local_df = df[local_only_mask].copy()
+            for idx, (_, row) in enumerate(local_df.iterrows(), start=1):
+                sol_path = str(row.get("local_source_path", "") or "").strip()
+                contract_id = str(row.get("contract_id", "") or "").strip()
+                addr = _norm_addr(row.get("address"))
+                if not sol_path:
+                    continue
+                feats = risk_util.extract_features_from_local_file(
+                    contract_id=contract_id,
+                    sol_path=sol_path,
+                    address=addr if _is_addr(addr) else "",
+                )
+                # Use contract_id as the identifier in the address column for join
+                feats["address"] = contract_id
+                raw, comps = risk_util.score_contract(feats)
+                has_src = float(int(feats.get("has_verified_source", 0)))
+                has_bc = float(int(feats.get("has_bytecode", 0)))
+                risk_uncertainty = (1.0 - has_src) * (0.7 - 0.4 * has_bc) + (1.0 - has_bc) * 0.3
+                local_risk_rows.append({
+                    **feats, **comps,
+                    "risk_raw": float(raw),
+                    "risk_uncertainty": float(max(0.0, risk_uncertainty)),
+                })
+                if idx == 1 or idx % 2000 == 0 or idx == n_local_only:
+                    self.logger.info(f"[local scoring] {idx}/{n_local_only}")
+
+        local_risk_df = pd.DataFrame(local_risk_rows) if local_risk_rows else pd.DataFrame()
+        if not local_risk_df.empty:
+            self.logger.info(f"Scored {len(local_risk_df)} local-source-only contracts")
+
+        # ---- Combine address-based and local-source risk DataFrames ----
+        all_parts = []
+        if risk_df is not None and not risk_df.empty:
+            all_parts.append(risk_df)
+        if not local_risk_df.empty:
+            all_parts.append(local_risk_df)
+
+        if not all_parts:
             raise ValueError("Risk scoring produced no rows.")
 
-        # One row per address: keep the first occurrence (new rows are concatenated first).
-        risk_df = risk_df.drop_duplicates(subset=["address"], keep="first").reset_index(drop=True)
-        # Deterministic row order for the written CSV.
-        risk_df = risk_df.sort_values(["address"]).reset_index(drop=True)
-        risk_df = _recompute_z_and_rank(risk_df)
+        combined_risk_df = pd.concat(all_parts, ignore_index=True) if len(all_parts) > 1 else all_parts[0]
+        combined_risk_df = combined_risk_df.drop_duplicates(subset=["address"], keep="first").reset_index(drop=True)
+        combined_risk_df = combined_risk_df.sort_values(["address"]).reset_index(drop=True)
+        combined_risk_df = _recompute_z_and_rank(combined_risk_df)
 
         out_risk_csv.parent.mkdir(parents=True, exist_ok=True)
-        risk_df.to_csv(out_risk_csv, index=False)
-        self.logger.info(f"Wrote risk-by-address CSV: {out_risk_csv} (rows={len(risk_df)})")
+        combined_risk_df.to_csv(out_risk_csv, index=False)
+        self.logger.info(f"Wrote risk CSV: {out_risk_csv} (rows={len(combined_risk_df)})")
 
-        # Merge back onto ALL original rows (preserve dataset columns for vuln/dataset analysis).
-        join_df = risk_df.copy()
-        join_df["_address_norm"] = join_df["address"].map(_norm_addr)
-        scored = df.merge(join_df, how="left", on="_address_norm", suffixes=("", "_risk"))
-        # Keep original address column; drop the risk-side duplicate.
-        if "address_risk" in scored.columns:
-            scored.drop(columns=["address_risk"], inplace=True)
-        scored.drop(columns=["_address_norm"], inplace=True)
+        # ---- Merge risk scores back onto ALL original rows ----
+        # For address-based rows: join on _address_norm
+        # For local-source-only rows: join on contract_id
+        join_df = combined_risk_df.copy()
+
+        # Address-based merge
+        addr_join = join_df[join_df["address"].map(_is_addr)].copy()
+        addr_join["_address_norm"] = addr_join["address"].map(_norm_addr)
+        scored_addr = df[~local_only_mask].merge(addr_join, how="left", on="_address_norm", suffixes=("", "_risk"))
+        if "address_risk" in scored_addr.columns:
+            scored_addr.drop(columns=["address_risk"], inplace=True)
+
+        # Local-source merge (join on contract_id)
+        local_join = join_df[~join_df["address"].map(_is_addr)].copy()
+        local_join = local_join.rename(columns={"address": "_local_join_key"})
+        scored_local = df[local_only_mask].copy()
+        scored_local["_local_join_key"] = scored_local["contract_id"].fillna("").astype(str)
+        scored_local = scored_local.merge(local_join, how="left", on="_local_join_key", suffixes=("", "_risk"))
+        scored_local.drop(columns=["_local_join_key"], inplace=True, errors="ignore")
+
+        scored = pd.concat([scored_addr, scored_local], ignore_index=True)
+        scored.drop(columns=["_address_norm"], inplace=True, errors="ignore")
 
         # Helpful flags
         scored["has_risk_row"] = scored["risk_raw"].notna().astype(int)
@@ -329,7 +398,7 @@ class UnifiedContractEvalRiskScoreEvaluation:
             out_scored_xlsx.parent.mkdir(parents=True, exist_ok=True)
             with pd.ExcelWriter(out_scored_xlsx, engine="openpyxl") as w:
                 scored.to_excel(w, sheet_name="contracts_scored", index=False)
-                risk_df.to_excel(w, sheet_name="risk_by_address", index=False)
+                combined_risk_df.to_excel(w, sheet_name="risk_by_address", index=False)
                 summary = (
                     scored.groupby(["source_dataset", "chain"], dropna=False)
                     .agg(
@@ -355,7 +424,7 @@ if __name__ == "__main__":
     paths = Paths()
     resume = True
     fetch_sources = False
-    fetch_activity = True
+    fetch_activity = False
     fetch_missing_only = True
     skip_existing_fetch = True
     # End-to-end run: fetch ALL missing payloads, but do it in internal chunks to reduce rate-limit risk.

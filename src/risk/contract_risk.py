@@ -143,7 +143,7 @@ class ContractRiskConfig:
     Scoring weights for a component-based, explainable contract technical risk score.
 
     Notes:
-    - This is intentionally transparent and simple (rule-based). For Q1-style rigor, you’ll
+    - This is intentionally transparent and simple (rule-based). For Q1-style rigor, you'll
       typically validate/ablate these weights or learn them later; for now they provide a
       reasonable, interpretable baseline.
     """
@@ -242,13 +242,16 @@ class ContractRiskUtil:
             return egc
         return ""
 
-    def extract_contract_features(self, address: str, payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Lightweight, rule-based feature extraction from Etherscan metadata + Solidity source text.
-        """
-        base: Dict[str, Any] = {
-            "address": address.lower(),
-            "has_payload": 1 if payload else 0,
+    # ------------------------------------------------------------------
+    # Shared helpers for feature extraction
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _empty_feature_base(identifier: str) -> Dict[str, Any]:
+        """Return a zeroed-out feature dict.  Shared by all extraction paths."""
+        return {
+            "address": str(identifier).lower(),
+            "has_payload": 0,
             "has_verified_source": 0,
             "n_files": 0,
             "loc": 0,
@@ -282,7 +285,7 @@ class ContractRiskUtil:
             "uses_chainlink_oracle": 0,
             "uses_uniswap_oracle": 0,
             "has_fallback_or_receive": 0,
-            # Bytecode-backed features (for robustness on unverified contracts)
+            # Bytecode-backed features
             "has_bytecode": 0,
             "bytecode_len": 0,
             "bc_has_call": 0,
@@ -321,32 +324,19 @@ class ContractRiskUtil:
             "n_evt_unpaused_365d": 0,
             "admin_event_churn_365d": 0.0,
         }
-        if not payload:
-            return base
 
-        etherscan = payload.get("etherscan", {}) if isinstance(payload, dict) else {}
-        result = etherscan.get("result", []) if isinstance(etherscan, dict) else []
-        row = result[0] if isinstance(result, list) and result and isinstance(result[0], dict) else {}
-
-        base["compiler_version"] = str(row.get("CompilerVersion") or "").strip()
-        base["is_proxy"] = 1 if str(row.get("Proxy", "")).strip() == "1" else 0
-        impl = row.get("Implementation")
-        if isinstance(impl, str) and impl.lower().startswith("0x") and len(impl) == 42:
-            base["implementation_address"] = impl.lower()
-
-        ps = payload.get("parsed_sources", {}) if isinstance(payload, dict) else {}
-        contracts = ps.get("contracts", []) if isinstance(ps, dict) else []
-        if isinstance(contracts, list):
-            base["n_files"] = len([c for c in contracts if isinstance(c, str) and c.strip()])
-            text = "\n".join([c for c in contracts if isinstance(c, str)])
-        else:
-            text = ""
-
-        base["loc"] = int(sum(1 for _ in text.splitlines())) if text else 0
-        base["has_verified_source"] = 1 if base["n_files"] > 0 else 0
-
-        # patterns (cheap but effective)
+    @staticmethod
+    def _extract_source_features(base: Dict[str, Any], text: str, n_files: int) -> Dict[str, Any]:
+        """
+        Populate source-code-derived features into *base* from concatenated Solidity *text*.
+        This is the shared regex/pattern logic used by both Etherscan-payload and
+        local-file extraction paths.  Modifies *base* in place and returns it.
+        """
         t = text
+        base["loc"] = int(sum(1 for _ in t.splitlines())) if t else 0
+        base["n_files"] = int(n_files)
+        base["has_verified_source"] = 1 if n_files > 0 else 0
+
         base["has_upgrade_patterns"] = 1 if any(
             p in t for p in ("upgradeTo(", "upgradeToAndCall(", "UUPSUpgradeable", "TransparentUpgradeableProxy")
         ) else 0
@@ -367,7 +357,6 @@ class ContractRiskUtil:
         base["uses_assembly"] = 1 if re.search(r"\bassembly\s*\{", t) else 0
         base["uses_unchecked"] = 1 if re.search(r"\bunchecked\s*\{", t) else 0
 
-        # Count low-level calls: `.call(` or `.call{`
         base["n_external_calls"] = int(len(re.findall(r"\.call\s*(\{|\()", t)))
         base["n_delegatecall"] = int(len(re.findall(r"\bdelegatecall\b", t)))
 
@@ -381,14 +370,157 @@ class ContractRiskUtil:
             len(re.findall(r"\b(grantRole|revokeRole|renounceRole|_grantRole|_revokeRole)\b", t))
         )
 
-        # “Safety-ish” library usage (weak signal, but cheap)
         base["uses_safe_math"] = 1 if ("SafeMath" in t) else 0
-
-        # Oracle surface (also weak; just indicates dependency)
         base["uses_chainlink_oracle"] = 1 if ("AggregatorV3Interface" in t or "latestRoundData" in t or "chainlink" in t.lower()) else 0
         base["uses_uniswap_oracle"] = 1 if ("IUniswapV3Pool" in t or "observe(" in t or "getReserves" in t) else 0
-
         base["has_fallback_or_receive"] = 1 if (re.search(r"\bfallback\s*\(", t) or re.search(r"\breceive\s*\(", t)) else 0
+
+        return base
+
+    def _enrich_activity_features(self, base: Dict[str, Any], act: Dict[str, Any]) -> None:
+        """Populate on-chain activity features into *base* from an activity payload dict."""
+        base["has_activity_payload"] = 1
+        now_ts = _utc_now_ts()
+
+        def _parse_rows(key: str) -> list:
+            obj = act.get(key)
+            if isinstance(obj, dict) and isinstance(obj.get("rows"), list):
+                return [r for r in obj["rows"] if isinstance(r, dict)]
+            return []
+
+        tx_rows = _parse_rows("txlist")
+        internal_rows = _parse_rows("txlistinternal")
+        token_rows = _parse_rows("tokentx")
+
+        def within_days(ts: int, days: int) -> bool:
+            return ts >= now_ts - int(days) * 86400
+
+        seen_senders_30: set = set()
+        tx_in_30 = tx_out_30 = 0
+        v_in_30 = v_out_30 = 0.0
+        n_fail_90 = n_total_90 = 0
+        ts_min: Optional[int] = None
+        ts_max: Optional[int] = None
+
+        for r in tx_rows:
+            ts = _safe_int(r.get("timeStamp"), 0)
+            if ts <= 0:
+                continue
+            ts_min = ts if ts_min is None else min(ts_min, ts)
+            ts_max = ts if ts_max is None else max(ts_max, ts)
+            n_total_90 += 1
+            if str(r.get("isError") or "").strip() == "1":
+                n_fail_90 += 1
+            if within_days(ts, 7):
+                base["tx_count_7d"] += 1
+            if within_days(ts, 30):
+                base["tx_count_30d"] += 1
+                frm = str(r.get("from") or "").lower()
+                if _is_addr(frm):
+                    seen_senders_30.add(frm)
+                to = str(r.get("to") or "").lower()
+                if to == base["address"]:
+                    tx_in_30 += 1
+                    v_in_30 += _eth_from_wei(r.get("value"))
+                if frm == base["address"]:
+                    tx_out_30 += 1
+                    v_out_30 += _eth_from_wei(r.get("value"))
+            if within_days(ts, 90):
+                base["tx_count_90d"] += 1
+
+        base["unique_senders_30d"] = int(len(seen_senders_30))
+        base["tx_in_30d"] = int(tx_in_30)
+        base["tx_out_30d"] = int(tx_out_30)
+        base["value_in_eth_30d"] = float(v_in_30)
+        base["value_out_eth_30d"] = float(v_out_30)
+        base["failed_tx_rate_90d"] = float(n_fail_90 / max(1, n_total_90))
+        if ts_min is not None:
+            base["age_days"] = float(max(0.0, (now_ts - int(ts_min)) / 86400.0))
+        if ts_max is not None:
+            base["last_tx_age_days"] = float(max(0.0, (now_ts - int(ts_max)) / 86400.0))
+
+        n_int_30 = sum(1 for r in internal_rows if _safe_int(r.get("timeStamp"), 0) > 0 and within_days(_safe_int(r.get("timeStamp"), 0), 30))
+        base["internal_tx_count_30d"] = int(n_int_30)
+
+        n_tok_30 = 0
+        tok_set: set = set()
+        tok_senders: set = set()
+        tok_receivers: set = set()
+        for r in token_rows:
+            ts = _safe_int(r.get("timeStamp"), 0)
+            if ts <= 0 or not within_days(ts, 30):
+                continue
+            n_tok_30 += 1
+            token_addr = str(r.get("contractAddress") or "").lower()
+            if _is_addr(token_addr):
+                tok_set.add(token_addr)
+            frm = str(r.get("from") or "").lower()
+            to = str(r.get("to") or "").lower()
+            if _is_addr(frm):
+                tok_senders.add(frm)
+            if _is_addr(to):
+                tok_receivers.add(to)
+        base["erc20_tx_count_30d"] = int(n_tok_30)
+        base["erc20_unique_tokens_30d"] = int(len(tok_set))
+        base["erc20_unique_senders_30d"] = int(len(tok_senders))
+        base["erc20_unique_receivers_30d"] = int(len(tok_receivers))
+
+        logs = act.get("logs", {}) if isinstance(act.get("logs"), dict) else {}
+
+        def _count_logs(key: str) -> int:
+            entry = logs.get(key) if isinstance(logs, dict) else None
+            resp = entry.get("response") if isinstance(entry, dict) else None
+            res = resp.get("result") if isinstance(resp, dict) else None
+            return int(len([x for x in res if isinstance(x, dict)])) if isinstance(res, list) else 0
+
+        base["n_evt_upgraded_365d"] = _count_logs("upgraded")
+        base["n_evt_admin_changed_365d"] = _count_logs("admin_changed")
+        base["n_evt_ownership_transferred_365d"] = _count_logs("ownership_transferred")
+        base["n_evt_role_granted_365d"] = _count_logs("role_granted")
+        base["n_evt_role_revoked_365d"] = _count_logs("role_revoked")
+        base["n_evt_paused_365d"] = _count_logs("paused")
+        base["n_evt_unpaused_365d"] = _count_logs("unpaused")
+        base["admin_event_churn_365d"] = float(sum(
+            base[k] for k in (
+                "n_evt_upgraded_365d", "n_evt_admin_changed_365d", "n_evt_ownership_transferred_365d",
+                "n_evt_role_granted_365d", "n_evt_role_revoked_365d", "n_evt_paused_365d", "n_evt_unpaused_365d",
+            )
+        ))
+
+    # ------------------------------------------------------------------
+    # Public extraction API: from Etherscan payload (existing path)
+    # ------------------------------------------------------------------
+
+    def extract_contract_features(self, address: str, payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Lightweight, rule-based feature extraction from Etherscan metadata + Solidity source text.
+        """
+        base = self._empty_feature_base(address)
+        base["has_payload"] = 1 if payload else 0
+
+        if not payload:
+            return base
+
+        etherscan = payload.get("etherscan", {}) if isinstance(payload, dict) else {}
+        result = etherscan.get("result", []) if isinstance(etherscan, dict) else []
+        row = result[0] if isinstance(result, list) and result and isinstance(result[0], dict) else {}
+
+        base["compiler_version"] = str(row.get("CompilerVersion") or "").strip()
+        base["is_proxy"] = 1 if str(row.get("Proxy", "")).strip() == "1" else 0
+        impl = row.get("Implementation")
+        if isinstance(impl, str) and impl.lower().startswith("0x") and len(impl) == 42:
+            base["implementation_address"] = impl.lower()
+
+        ps = payload.get("parsed_sources", {}) if isinstance(payload, dict) else {}
+        contracts = ps.get("contracts", []) if isinstance(ps, dict) else []
+        if isinstance(contracts, list):
+            n_files = len([c for c in contracts if isinstance(c, str) and c.strip()])
+            text = "\n".join([c for c in contracts if isinstance(c, str)])
+        else:
+            n_files = 0
+            text = ""
+
+        self._extract_source_features(base, text, n_files)
 
         # --- bytecode features (present even when source is unverified) ---
         bytecode_hex = self._extract_bytecode_hex(payload)
@@ -404,141 +536,103 @@ class ContractRiskUtil:
             base["bc_has_delegatecall"] = 1 if base["bc_n_delegatecall"] > 0 else 0
             base["bc_has_staticcall"] = 1 if int(op.get("STATICCALL", 0)) > 0 else 0
             base["bc_has_selfdestruct"] = 1 if base["bc_n_selfdestruct"] > 0 else 0
-            # Proxy-like heuristic: short runtime with delegatecall
             base["bc_proxy_like"] = 1 if (base["bc_has_delegatecall"] == 1 and base["bytecode_len"] <= 600) else 0
 
         # --- live activity payload (optional) ---
         act = self.load_etherscan_activity_payload(address)
         if isinstance(act, dict):
-            base["has_activity_payload"] = 1
-            now_ts = _utc_now_ts()
-
-            def parse_rows(key: str) -> List[Dict[str, Any]]:
-                obj = act.get(key)
-                if isinstance(obj, dict) and isinstance(obj.get("rows"), list):
-                    return [r for r in obj["rows"] if isinstance(r, dict)]
-                return []
-
-            tx_rows = parse_rows("txlist")
-            internal_rows = parse_rows("txlistinternal")
-            token_rows = parse_rows("tokentx")
-
-            # --- tx-derived metrics (90d payload can be filtered into 7/30/90) ---
-            def within_days(ts: int, days: int) -> bool:
-                return ts >= now_ts - int(days) * 86400
-
-            seen_senders_30: set[str] = set()
-            tx_in_30 = 0
-            tx_out_30 = 0
-            v_in_30 = 0.0
-            v_out_30 = 0.0
-            n_fail_90 = 0
-            n_total_90 = 0
-            ts_min: Optional[int] = None
-            ts_max: Optional[int] = None
-
-            for r in tx_rows:
-                ts = _safe_int(r.get("timeStamp"), 0)
-                if ts <= 0:
-                    continue
-                ts_min = ts if ts_min is None else min(ts_min, ts)
-                ts_max = ts if ts_max is None else max(ts_max, ts)
-
-                n_total_90 += 1
-                if str(r.get("isError") or "").strip() == "1":
-                    n_fail_90 += 1
-
-                if within_days(ts, 7):
-                    base["tx_count_7d"] += 1
-                if within_days(ts, 30):
-                    base["tx_count_30d"] += 1
-                    frm = str(r.get("from") or "").lower()
-                    if _is_addr(frm):
-                        seen_senders_30.add(frm)
-                    to = str(r.get("to") or "").lower()
-                    if to == base["address"]:
-                        tx_in_30 += 1
-                        v_in_30 += _eth_from_wei(r.get("value"))
-                    if frm == base["address"]:
-                        tx_out_30 += 1
-                        v_out_30 += _eth_from_wei(r.get("value"))
-                if within_days(ts, 90):
-                    base["tx_count_90d"] += 1
-
-            base["unique_senders_30d"] = int(len(seen_senders_30))
-            base["tx_in_30d"] = int(tx_in_30)
-            base["tx_out_30d"] = int(tx_out_30)
-            base["value_in_eth_30d"] = float(v_in_30)
-            base["value_out_eth_30d"] = float(v_out_30)
-            base["failed_tx_rate_90d"] = float(n_fail_90 / max(1, n_total_90))
-
-            if ts_min is not None:
-                base["age_days"] = float(max(0.0, (now_ts - int(ts_min)) / 86400.0))
-            if ts_max is not None:
-                base["last_tx_age_days"] = float(max(0.0, (now_ts - int(ts_max)) / 86400.0))
-
-            # internal tx count (30d)
-            n_int_30 = 0
-            for r in internal_rows:
-                ts = _safe_int(r.get("timeStamp"), 0)
-                if ts > 0 and within_days(ts, 30):
-                    n_int_30 += 1
-            base["internal_tx_count_30d"] = int(n_int_30)
-
-            # ERC20 transfer metrics (30d)
-            n_tok_30 = 0
-            tok_set: set[str] = set()
-            tok_senders: set[str] = set()
-            tok_receivers: set[str] = set()
-            for r in token_rows:
-                ts = _safe_int(r.get("timeStamp"), 0)
-                if ts <= 0 or not within_days(ts, 30):
-                    continue
-                n_tok_30 += 1
-                token_addr = str(r.get("contractAddress") or "").lower()
-                if _is_addr(token_addr):
-                    tok_set.add(token_addr)
-                frm = str(r.get("from") or "").lower()
-                to = str(r.get("to") or "").lower()
-                if _is_addr(frm):
-                    tok_senders.add(frm)
-                if _is_addr(to):
-                    tok_receivers.add(to)
-            base["erc20_tx_count_30d"] = int(n_tok_30)
-            base["erc20_unique_tokens_30d"] = int(len(tok_set))
-            base["erc20_unique_senders_30d"] = int(len(tok_senders))
-            base["erc20_unique_receivers_30d"] = int(len(tok_receivers))
-
-            # Logs-based governance/admin churn (365d)
-            logs = act.get("logs", {}) if isinstance(act.get("logs"), dict) else {}
-
-            def count_logs(key: str) -> int:
-                entry = logs.get(key) if isinstance(logs, dict) else None
-                resp = entry.get("response") if isinstance(entry, dict) else None
-                res = resp.get("result") if isinstance(resp, dict) else None
-                if isinstance(res, list):
-                    return int(len([x for x in res if isinstance(x, dict)]))
-                return 0
-
-            base["n_evt_upgraded_365d"] = count_logs("upgraded")
-            base["n_evt_admin_changed_365d"] = count_logs("admin_changed")
-            base["n_evt_ownership_transferred_365d"] = count_logs("ownership_transferred")
-            base["n_evt_role_granted_365d"] = count_logs("role_granted")
-            base["n_evt_role_revoked_365d"] = count_logs("role_revoked")
-            base["n_evt_paused_365d"] = count_logs("paused")
-            base["n_evt_unpaused_365d"] = count_logs("unpaused")
-            churn = (
-                base["n_evt_upgraded_365d"]
-                + base["n_evt_admin_changed_365d"]
-                + base["n_evt_ownership_transferred_365d"]
-                + base["n_evt_role_granted_365d"]
-                + base["n_evt_role_revoked_365d"]
-                + base["n_evt_paused_365d"]
-                + base["n_evt_unpaused_365d"]
-            )
-            base["admin_event_churn_365d"] = float(churn)
+            self._enrich_activity_features(base, act)
 
         return base
+
+    # ------------------------------------------------------------------
+    # Public extraction API: from raw Solidity source text (local files)
+    # ------------------------------------------------------------------
+
+    def extract_features_from_source_text(
+        self,
+        contract_id: str,
+        source_text: str,
+        *,
+        n_files: int = 1,
+        address: str = "",
+    ) -> Dict[str, Any]:
+        """
+        Extract features from raw Solidity source text (e.g. a local .sol file).
+
+        Only static source-code features are populated; bytecode and on-chain
+        activity features remain at their defaults (0).  If an on-chain *address*
+        is also available, cached Etherscan data will be used to enrich bytecode
+        and activity features.
+        """
+        identifier = address if _is_addr(address) else contract_id
+        base = self._empty_feature_base(identifier)
+        base["has_payload"] = 1
+        self._extract_source_features(base, source_text, n_files)
+
+        if _is_addr(address):
+            src_payload = self.load_etherscan_source_payload(address)
+            if isinstance(src_payload, dict):
+                bytecode_hex = self._extract_bytecode_hex(src_payload)
+                bb = _hex_to_bytes(bytecode_hex)
+                base["has_bytecode"] = 1 if len(bb) > 0 else 0
+                base["bytecode_len"] = int(len(bb))
+                if len(bb) > 0:
+                    op = _disassemble_opcode_counts(bytecode_hex)
+                    base["bc_n_call"] = int(op.get("CALL", 0))
+                    base["bc_n_delegatecall"] = int(op.get("DELEGATECALL", 0))
+                    base["bc_n_selfdestruct"] = int(op.get("SELFDESTRUCT", 0))
+                    base["bc_has_call"] = 1 if base["bc_n_call"] > 0 else 0
+                    base["bc_has_delegatecall"] = 1 if base["bc_n_delegatecall"] > 0 else 0
+                    base["bc_has_staticcall"] = 1 if int(op.get("STATICCALL", 0)) > 0 else 0
+                    base["bc_has_selfdestruct"] = 1 if base["bc_n_selfdestruct"] > 0 else 0
+                    base["bc_proxy_like"] = 1 if (base["bc_has_delegatecall"] == 1 and base["bytecode_len"] <= 600) else 0
+            act = self.load_etherscan_activity_payload(address)
+            if isinstance(act, dict):
+                self._enrich_activity_features(base, act)
+
+        return base
+
+    def extract_features_from_local_file(
+        self,
+        contract_id: str,
+        sol_path: str,
+        *,
+        address: str = "",
+    ) -> Dict[str, Any]:
+        """
+        Read a local ``.sol`` file (or directory of .sol files) and extract features.
+
+        If *sol_path* is a directory, all ``*.sol`` files inside are concatenated.
+        """
+        p = Path(sol_path)
+        if p.is_dir():
+            sols = sorted(p.rglob("*.sol"))
+            texts = []
+            for s in sols:
+                try:
+                    texts.append(s.read_text(encoding="utf-8", errors="ignore"))
+                except Exception:
+                    pass
+            text = "\n".join(texts)
+            n_files = len(texts)
+        elif p.is_file():
+            try:
+                text = p.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                text = ""
+            n_files = 1 if text else 0
+        else:
+            text = ""
+            n_files = 0
+
+        return self.extract_features_from_source_text(
+            contract_id, text, n_files=n_files, address=address,
+        )
+
+    # ------------------------------------------------------------------
+    # Scoring
+    # ------------------------------------------------------------------
 
     def _complexity_term(self, feats: Dict[str, Any]) -> float:
         loc = float(feats.get("loc", 0) or 0)
@@ -570,7 +664,7 @@ class ContractRiskUtil:
             + (c.w_upgrade_patterns * int(feats.get("has_upgrade_patterns", 0)))
             + (0.5 * int(feats.get("bc_proxy_like", 0)))
         )
-        # privilege includes “can someone change things?” + “admin ops exist?” + upgradeable init patterns
+        # privilege includes "can someone change things?" + "admin ops exist?" + upgradeable init patterns
         privilege = 0.0
         privilege += c.w_only_owner * int(feats.get("uses_ownable", 0))
         privilege += c.w_access_control * int(feats.get("uses_accesscontrol", 0))
@@ -738,5 +832,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

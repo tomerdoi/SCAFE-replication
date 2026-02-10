@@ -1,10 +1,9 @@
 """
-Build a single Excel file that unifies contract rows across the 4 local datasets under `data/raw/`:
+Build a single Excel file that unifies contract rows across the 3 local datasets under `data/raw/`:
 
 - AccessControlVulnerabilities-main
-- BadRandomness-SWC120-Dataset-main
-- Empirical-Analysis-of-Vulnerability-Detection-Tools-for-Solidity-Smart-Contracts-main
 - FORGE-Artifacts-main
+- DAppSCAN-main
 
 The output is intended for *risk score / ML model* evaluation from a single table.
 
@@ -22,9 +21,8 @@ import re
 import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 
@@ -48,30 +46,11 @@ def _safe_read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore")
 
 
-def _parse_empirical_vuln_types(tag: object) -> Tuple[int, str]:
-    t = str(tag or "").strip().lower().strip(";").strip()
-    if not t or t in {"no", "none"}:
-        return 0, ""
-    t = re.sub(r"\b\d+\s*:\s*", "", t)
-    kinds = []
-    for k in [
-        "access_control",
-        "reentrancy",
-        "time_manipulation",
-        "unchecked_low_calls",
-        "arithmetic",
-        "front_running",
-    ]:
-        if k in t:
-            kinds.append(k)
-    # fall back: store raw tag if we couldn't categorize
-    if not kinds:
-        kinds.append("other")
-    return 1, ";".join(sorted(set(kinds)))
-
+# ---------------------------------------------------------------------------
+# FORGE helpers
+# ---------------------------------------------------------------------------
 
 def _forge_max_severity(findings: list[dict]) -> str:
-    # Ordered severities used by FORGE JSONs
     order = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
     best = None
     best_v = -1
@@ -94,9 +73,8 @@ def _forge_cwe_list(findings: list[dict], limit: int = 25) -> str:
                         xs = str(x).strip()
                         if xs and xs.startswith("CWE-"):
                             cwes.append(xs)
-    # de-dup while preserving order
-    seen = set()
-    out = []
+    seen: set = set()
+    out: list = []
     for c in cwes:
         if c not in seen:
             seen.add(c)
@@ -106,23 +84,9 @@ def _forge_cwe_list(findings: list[dict], limit: int = 25) -> str:
     return ";".join(out)
 
 
-def _bad_randomness_indicator(sol_text: str) -> int:
-    """
-    Best-effort heuristic for SWC-120 style bad randomness sources.
-    (Not a ground-truth label; just a helpful column.)
-    """
-    t = (sol_text or "").lower()
-    needles = [
-        "block.timestamp",
-        " now",
-        "blockhash(",
-        "block.difficulty",
-        "block.prevrandao",
-        "block.number",
-        "block.coinbase",
-    ]
-    return int(any(n in t for n in needles))
-
+# ---------------------------------------------------------------------------
+# Unified row dataclass
+# ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class UnifiedRow:
@@ -140,78 +104,9 @@ class UnifiedRow:
     local_metadata_path: str
 
 
-def _rows_from_empirical() -> List[UnifiedRow]:
-    ds_root = DATA_DIR / "raw" / "Empirical-Analysis-of-Vulnerability-Detection-Tools-for-Solidity-Smart-Contracts-main"
-    inp = ds_root / "csvs" / "sample_of_interest.csv"
-    if not inp.exists():
-        return []
-    df = pd.read_csv(inp)
-    rows: List[UnifiedRow] = []
-
-    for _, r in df.iterrows():
-        addr = _norm_addr(r.get("contract"))
-        if not _is_addr(addr):
-            continue
-        sub = str(r.get("label") or "").strip()
-        tag = r.get("tag")
-        vuln_present, vuln_types = _parse_empirical_vuln_types(tag)
-        label_status = "vulnerable" if vuln_present else "clean"
-
-        # local paths (best-effort)
-        sol_path = ""
-        if sub == "smartbugs_results":
-            sol = ds_root / "contracts" / "sb_results_contracts" / f"{addr}.sol"
-            if sol.exists():
-                sol_path = str(sol)
-        elif sub == "smartbugs_curated":
-            sol = ds_root / "contracts" / "smartbugs_curated" / f"{addr}.sol"
-            if sol.exists():
-                sol_path = str(sol)
-        elif sub == "zeus_safe":
-            sol = ds_root / "contracts" / "zeus_safe_contracts" / f"{addr}.sol"
-            if sol.exists():
-                sol_path = str(sol)
-        elif sub == "zeus_vulnerable":
-            sol = ds_root / "contracts" / "zeus_vulnerable_contracts" / f"{addr}.sol"
-            if sol.exists():
-                sol_path = str(sol)
-
-        hex_path = ""
-        # the repo mixes *.hex and *.sol.hex
-        for cand in [
-            ds_root / "bytecode" / "smartbugs_results" / f"{addr}.hex",
-            ds_root / "bytecode" / "smartbugs_curated" / f"{addr}.sol.hex",
-            ds_root / "bytecode" / "smartbugs_curated" / f"{addr}.hex",
-            ds_root / "bytecode" / "zeus_safe" / f"{addr}.hex",
-            ds_root / "bytecode" / "zeus_vulnerable" / f"{addr}.hex",
-        ]:
-            if cand.exists():
-                hex_path = str(cand)
-                break
-
-        rows.append(
-            UnifiedRow(
-                source_dataset="Empirical-Analysis",
-                source_subdataset=sub,
-                chain="eth",
-                address=addr,
-                contract_id=f"empirical:{sub}:{addr}",
-                label_status=label_status,
-                vuln_present=vuln_present,
-                vuln_types=vuln_types,
-                vuln_severity="",
-                local_source_path=sol_path,
-                local_bytecode_path=hex_path,
-                local_metadata_path=str(inp),
-            )
-        )
-
-    # Deduplicate exact duplicates (same address+sub+tag) by contract_id
-    dedup: Dict[str, UnifiedRow] = {}
-    for row in rows:
-        dedup[row.contract_id] = row
-    return list(dedup.values())
-
+# ---------------------------------------------------------------------------
+# Dataset loaders
+# ---------------------------------------------------------------------------
 
 def _rows_from_access_control() -> List[UnifiedRow]:
     ds_root = DATA_DIR / "raw" / "AccessControlVulnerabilities-main" / "datasets" / "DeFiHackLabsCVEs"
@@ -227,13 +122,10 @@ def _rows_from_access_control() -> List[UnifiedRow]:
         addr = _norm_addr(addr_raw)
         if not _is_addr(addr):
             continue
-        # treat these as positive access-control related cases (this repo is an access-control benchmark)
         config_path = d / "source_code" / "config.json"
         sol_dir = d / "source_code"
-        # bytecode artifacts exist but are split (bin/bin-runtime); keep directory path
         bin_dir = d / "binary"
         if not bin_dir.exists():
-            # some datasets place bytecode at root
             bin_dir = d
 
         rows.append(
@@ -256,42 +148,6 @@ def _rows_from_access_control() -> List[UnifiedRow]:
     return rows
 
 
-def _rows_from_bad_randomness() -> List[UnifiedRow]:
-    ds_root = DATA_DIR / "raw" / "BadRandomness-SWC120-Dataset-main" / "ground_truth"
-    rows: List[UnifiedRow] = []
-    if not ds_root.exists():
-        return rows
-
-    for p in ds_root.glob("*.sol"):
-        name = p.name
-        addr = ""
-        m = re.match(r"^(0x[a-fA-F0-9]{40})_", name)
-        if m:
-            addr = m.group(1).lower()
-
-        text = _safe_read_text(p)
-        is_bad_rand = _bad_randomness_indicator(text)
-        vuln_types = "bad_randomness_swc120" if is_bad_rand else ""
-
-        rows.append(
-            UnifiedRow(
-                source_dataset="BadRandomness-SWC120",
-                source_subdataset="ground_truth",
-                chain="eth" if addr else "",
-                address=addr,
-                contract_id=f"bad_randomness:{addr or p.stem}",
-                label_status="unknown",  # ground_truth folder includes both safe and vulnerable examples
-                vuln_present=int(is_bad_rand),
-                vuln_types=vuln_types,
-                vuln_severity="",
-                local_source_path=str(p),
-                local_bytecode_path="",
-                local_metadata_path=str(p),
-            )
-        )
-    return rows
-
-
 def _rows_from_forge() -> List[UnifiedRow]:
     ds_root = DATA_DIR / "raw" / "FORGE-Artifacts-main"
     results_root = ds_root / "dataset" / "results"
@@ -300,7 +156,6 @@ def _rows_from_forge() -> List[UnifiedRow]:
     if not results_root.exists():
         return rows
 
-    # Aggregate multiple JSONs per (chain,address)
     agg_findings: Dict[Tuple[str, str], List[dict]] = defaultdict(list)
     any_json_path: Dict[Tuple[str, str], str] = {}
     project_path_rel: Dict[Tuple[str, str], str] = {}
@@ -320,7 +175,6 @@ def _rows_from_forge() -> List[UnifiedRow]:
             agg_findings[(chain, addr)].extend([f for f in findings if isinstance(f, dict)])
         any_json_path[(chain, addr)] = str(jp)
         pp = info.get("project_path")
-        # project_path is dict: {project_name: "contracts/<...>"}
         if isinstance(pp, dict):
             for _, v in pp.items():
                 if isinstance(v, str) and v:
@@ -329,7 +183,6 @@ def _rows_from_forge() -> List[UnifiedRow]:
 
     for (chain, addr), findings in agg_findings.items():
         max_sev = _forge_max_severity(findings)
-        # Heuristic label: treat medium+ as "vulnerable", else "suspicious" if only low/info
         sev_order = {"": -1, "info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
         if sev_order.get(max_sev, -1) >= 2:
             label_status = "vulnerable"
@@ -341,11 +194,9 @@ def _rows_from_forge() -> List[UnifiedRow]:
         vuln_present = int(label_status in {"vulnerable", "suspicious"})
         vuln_types = _forge_cwe_list(findings, limit=25)
 
-        # local source path: use project_path if present (points into dataset/contracts/)
         local_source = ""
         rel = project_path_rel.get((chain, addr), "")
         if rel:
-            # rel already begins with "contracts/..."
             local_source = str((ds_root / "dataset" / rel).resolve())
         else:
             local_source = str(contracts_root) if contracts_root.exists() else ""
@@ -370,12 +221,118 @@ def _rows_from_forge() -> List[UnifiedRow]:
     return rows
 
 
+def _rows_from_dappscan() -> List[UnifiedRow]:
+    """
+    Load DAppSCAN-source: each .sol file under contracts/ is a row.
+    SWC labels come from matching JSON files under SWCsource/.
+
+    - Files WITH at least one SWC finding → label_status='vulnerable', vuln_present=1
+    - Files with NO SWC finding → label_status='clean', vuln_present=0
+    """
+    ds_root = DATA_DIR / "raw" / "DAppSCAN-main" / "DAppSCAN-source"
+    contracts_dir = ds_root / "contracts"
+    swc_dir = ds_root / "SWCsource"
+    bytecode_dir = DATA_DIR / "raw" / "DAppSCAN-main" / "DAppSCAN-bytecode"
+
+    rows: List[UnifiedRow] = []
+
+    if not contracts_dir.exists():
+        return rows
+
+    # ---- Build SWC label index: relpath → list of SWC categories ----
+    # The JSON filePath field looks like "DAppSCAN-source/contracts/<project>/.../<File>.sol"
+    # We normalize to "contracts/<project>/.../<File>.sol" for matching.
+    swc_by_relpath: Dict[str, List[str]] = defaultdict(list)
+    labeled_relpaths: Set[str] = set()
+
+    if swc_dir.exists():
+        for jp in swc_dir.rglob("*.json"):
+            try:
+                obj = json.loads(jp.read_text(encoding="utf-8", errors="ignore"))
+            except Exception:
+                continue
+            fp = str(obj.get("filePath") or "")
+            # strip leading "DAppSCAN-source/" prefix to get relative to ds_root
+            fp = fp.replace("DAppSCAN-source/", "", 1)
+            swcs = obj.get("SWCs", [])
+            if isinstance(swcs, list):
+                for swc in swcs:
+                    cat = str(swc.get("category", "")) if isinstance(swc, dict) else ""
+                    if cat:
+                        swc_by_relpath[fp].append(cat)
+            if fp:
+                labeled_relpaths.add(fp)
+
+    # ---- Walk all .sol files under contracts/ ----
+    all_sol = sorted(contracts_dir.rglob("*.sol"))
+
+    for sol_path in all_sol:
+        relpath = str(sol_path.relative_to(ds_root))  # "contracts/<project>/.../<File>.sol"
+
+        # Extract project name (first dir component after contracts/)
+        parts = sol_path.relative_to(contracts_dir).parts
+        project = parts[0] if parts else ""
+
+        # Try to extract an address from the filename or path
+        addr = ""
+        for m in re.finditer(r"(0x[a-fA-F0-9]{40})", sol_path.name):
+            addr = m.group(1).lower()
+            break
+        if not addr:
+            for m in re.finditer(r"(0x[a-fA-F0-9]{40})", str(sol_path)):
+                addr = m.group(1).lower()
+                break
+
+        # SWC labels for this file
+        swc_cats = swc_by_relpath.get(relpath, [])
+        if swc_cats:
+            label_status = "vulnerable"
+            vuln_present = 1
+            # Deduplicate and join SWC categories
+            seen: set = set()
+            unique_cats: list = []
+            for c in swc_cats:
+                if c not in seen:
+                    seen.add(c)
+                    unique_cats.append(c)
+            vuln_types = ";".join(unique_cats)
+        else:
+            label_status = "clean"
+            vuln_present = 0
+            vuln_types = ""
+
+        # Bytecode path (best-effort: check SWCbytecode dir for matching JSON)
+        bytecode_path = ""
+
+        rows.append(
+            UnifiedRow(
+                source_dataset="DAppSCAN",
+                source_subdataset=project,
+                chain="eth",
+                address=addr,
+                contract_id=f"dappscan:{project}:{sol_path.stem}",
+                label_status=label_status,
+                vuln_present=vuln_present,
+                vuln_types=vuln_types,
+                vuln_severity="",
+                local_source_path=str(sol_path),
+                local_bytecode_path=bytecode_path,
+                local_metadata_path=str(sol_path),
+            )
+        )
+
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# Build + write
+# ---------------------------------------------------------------------------
+
 def build_unified_df() -> pd.DataFrame:
     rows: List[UnifiedRow] = []
-    rows.extend(_rows_from_empirical())
     rows.extend(_rows_from_access_control())
-    rows.extend(_rows_from_bad_randomness())
     rows.extend(_rows_from_forge())
+    rows.extend(_rows_from_dappscan())
 
     df = pd.DataFrame([r.__dict__ for r in rows])
 
@@ -395,14 +352,12 @@ def build_unified_df() -> pd.DataFrame:
 def write_excel(df: pd.DataFrame, out_xlsx: Path) -> Path:
     out_xlsx.parent.mkdir(parents=True, exist_ok=True)
 
-    # Ensure we don't accidentally write infinities/NaNs that Excel hates.
     df2 = df.copy()
     df2 = df2.replace({pd.NA: "", float("nan"): ""})
 
     with pd.ExcelWriter(out_xlsx, engine="openpyxl") as w:
         df2.to_excel(w, sheet_name="contracts", index=False)
 
-        # lightweight summary sheet
         summary = (
             df2.groupby(["source_dataset", "chain"], dropna=False)
             .agg(rows=("contract_id", "count"), unique_addresses=("address", lambda s: len(set([x for x in s if x]))))
@@ -420,3 +375,10 @@ if __name__ == "__main__":
     p = write_excel(df, out_xlsx)
     print(f"Wrote: {p} (rows={len(df)})")
 
+    # Quick summary
+    print("\n--- Dataset summary ---")
+    for ds, g in df.groupby("source_dataset"):
+        n_vuln = int((g["vuln_present"] == 1).sum())
+        n_clean = int((g["vuln_present"] == 0).sum())
+        n_addr = g["address"].replace("", pd.NA).dropna().nunique()
+        print(f"  {ds}: {len(g)} rows, {n_addr} unique addresses, {n_vuln} vulnerable, {n_clean} clean")
