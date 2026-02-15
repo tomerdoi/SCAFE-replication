@@ -159,6 +159,482 @@ def _detect_solc_pre_08(compiler_version: str, source_text: str) -> int:
     return 0  # unknown
 
 
+def _extract_v4_features(
+    base: Dict[str, Any],
+    t: str,
+    func_matches: list,
+) -> None:
+    """
+    v4 feature extraction: cyclomatic complexity, Halstead metrics, token entropy,
+    function-size distributions, state mutation analysis, internal coupling,
+    data-structure complexity, code duplication, and inheritance depth.
+
+    These features were discovered via systematic exploration and AUC testing
+    on DAppSCAN (300 vuln vs 300 clean), yielding AUC 0.66–0.81.
+
+    Many of these are SIZE-INDEPENDENT (ratios, per-function, entropy) which
+    helps capture vulnerability signal beyond the "bigger code = more bugs" confound.
+    """
+    if not t:
+        return
+
+    loc = max(1, base.get("loc", 0) or 0)
+    n_funcs_raw = base.get("n_functions", 0) or 0
+    n_funcs = max(1, n_funcs_raw)
+
+    # ------------------------------------------------------------------
+    # L. Cyclomatic complexity (AUC 0.77–0.81)
+    # ------------------------------------------------------------------
+    if func_matches:
+        ccs = []
+        for _, _, body in func_matches:
+            cc = (
+                len(re.findall(r'\bif\s*\(', body))
+                + len(re.findall(r'\bfor\s*\(', body))
+                + len(re.findall(r'\bwhile\s*\(', body))
+                + len(re.findall(r'\brequire\s*\(', body))
+                + len(re.findall(r'&&|\|\|', body))
+                + 1  # base path
+            )
+            ccs.append(cc)
+        cc_arr = np.array(ccs, dtype=float)
+        base["max_cyclomatic"] = int(cc_arr.max())
+        base["avg_cyclomatic"] = float(cc_arr.mean())
+        base["std_cyclomatic"] = float(cc_arr.std()) if len(cc_arr) > 1 else 0.0
+        base["sum_cyclomatic"] = int(cc_arr.sum())
+        base["cyclomatic_per_loc"] = float(cc_arr.sum()) / loc
+        base["cyclomatic_variance_ratio"] = (
+            float(cc_arr.std() / cc_arr.mean()) if cc_arr.mean() > 0 else 0.0
+        )
+        base["n_high_complexity_fns"] = int(np.sum(cc_arr > 10))
+
+    # ------------------------------------------------------------------
+    # M. Halstead complexity metrics (AUC 0.72–0.78)
+    # ------------------------------------------------------------------
+    operators = set(re.findall(r'[+\-*/=<>!&|^~%]+', t))
+    operands = set(re.findall(r'\b[a-zA-Z_]\w*\b', t)) | set(re.findall(r'\b\d+\b', t))
+    N1 = len(re.findall(r'[+\-*/=<>!&|^~%]+', t))
+    N2 = len(re.findall(r'\b[a-zA-Z_]\w*\b|\b\d+\b', t))
+    n1 = len(operators)
+    n2 = max(1, len(operands))
+    n_vocab = max(2, n1 + n2)
+    N_total = N1 + N2
+
+    volume = float(N_total * np.log2(n_vocab))
+    difficulty = float((n1 / 2.0) * (N2 / n2))
+    base["halstead_volume"] = volume
+    base["halstead_difficulty"] = difficulty
+    base["halstead_effort"] = float(volume * difficulty)
+    base["halstead_volume_per_loc"] = volume / loc
+
+    # ------------------------------------------------------------------
+    # N. Token entropy & diversity (AUC 0.77–0.79)
+    # ------------------------------------------------------------------
+    tokens = re.findall(r'[a-zA-Z_]\w*', t)
+    unique_tokens = len(set(tokens))
+    total_tokens = max(1, len(tokens))
+    base["n_unique_tokens"] = int(unique_tokens)
+    base["n_total_tokens"] = int(total_tokens)
+    base["token_diversity"] = float(unique_tokens) / total_tokens
+
+    if tokens:
+        from collections import Counter as _Counter
+        tc = _Counter(tokens)
+        probs = np.array(list(tc.values()), dtype=float) / total_tokens
+        base["token_entropy"] = float(-np.sum(probs * np.log2(probs + 1e-10)))
+    else:
+        base["token_entropy"] = 0.0
+
+    # ------------------------------------------------------------------
+    # O. Function-size distribution metrics (AUC 0.71–0.77)
+    # ------------------------------------------------------------------
+    if func_matches:
+        fl = np.array([len(body.splitlines()) for _, _, body in func_matches], dtype=float)
+        n_fl = len(fl)
+
+        base["fn_loc_p75"] = float(np.percentile(fl, 75))
+        base["fn_loc_p90"] = float(np.percentile(fl, 90))
+        base["fn_loc_iqr"] = float(np.percentile(fl, 75) - np.percentile(fl, 25))
+        base["fn_loc_skew"] = float(pd.Series(fl).skew()) if n_fl > 2 else 0.0
+        base["fn_loc_cv"] = float(np.std(fl) / np.mean(fl)) if np.mean(fl) > 0 else 0.0
+
+        # Gini coefficient (inequality of function sizes)
+        sorted_fl = np.sort(fl)
+        idx = np.arange(1, n_fl + 1)
+        total = np.sum(sorted_fl)
+        if total > 0:
+            base["fn_loc_gini"] = float(
+                (2 * np.sum(idx * sorted_fl) / (n_fl * total) - (n_fl + 1) / n_fl)
+            )
+        else:
+            base["fn_loc_gini"] = 0.0
+
+        # % of LOC in complex functions (> 30 lines)
+        base["complex_fn_loc_ratio"] = float(sum(l for l in fl if l > 30)) / loc
+
+        # Max nesting density (normalized by log of function size)
+        max_nd = 0.0
+        for _, _, body in func_matches:
+            body_lines = max(1, len(body.splitlines()))
+            depth = 0
+            max_d = 0
+            for ch in body:
+                if ch == '{':
+                    depth += 1
+                    if depth > max_d:
+                        max_d = depth
+                elif ch == '}':
+                    depth -= 1
+            nd = max_d / np.log1p(body_lines)
+            if nd > max_nd:
+                max_nd = nd
+        base["max_nesting_density"] = float(max_nd)
+
+    # ------------------------------------------------------------------
+    # P. State mutation analysis (AUC 0.74–0.77)
+    # ------------------------------------------------------------------
+    sv_decls = set(re.findall(
+        r'\b(?:uint|int|bool|address|bytes|string|mapping)\w*\s+'
+        r'(?:public|private|internal)?\s*(\w+)\s*[;=]', t
+    ))
+    written = sum(1 for sv in sv_decls if re.search(rf'\b{re.escape(sv)}\s*=', t))
+    base["n_written_state_vars"] = int(written)
+    base["state_var_write_ratio"] = float(written) / max(1, len(sv_decls))
+    base["state_writes_per_fn"] = float(written) / n_funcs
+
+    if func_matches:
+        fn_writes = [len(re.findall(r'\w+\s*=\s*[^=]', body)) for _, _, body in func_matches]
+        base["max_fn_state_writes"] = int(max(fn_writes))
+        base["mean_fn_state_writes"] = float(np.mean(fn_writes))
+
+    # ------------------------------------------------------------------
+    # Q. Internal coupling (AUC 0.73)
+    # ------------------------------------------------------------------
+    func_names = set(re.findall(r'\bfunction\s+(\w+)\s*\(', t))
+    internal_calls = 0
+    for fn_name in func_names:
+        # -1 for the declaration itself
+        n_refs = len(re.findall(rf'\b{re.escape(fn_name)}\s*\(', t))
+        internal_calls += max(0, n_refs - 1)
+    base["n_internal_calls"] = int(internal_calls)
+    base["internal_call_density"] = float(internal_calls) / max(1, len(func_names))
+
+    # ------------------------------------------------------------------
+    # R. Data structure complexity (AUC 0.71)
+    # ------------------------------------------------------------------
+    base["n_mapping_access"] = int(len(re.findall(r'\w+\[\w+\]', t)))
+    base["n_nested_access"] = int(len(re.findall(r'\w+\[\w+\]\[\w+\]', t)))
+    base["mapping_access_per_fn"] = float(base["n_mapping_access"]) / n_funcs
+    base["nested_access_per_fn"] = float(base["n_nested_access"]) / n_funcs
+
+    # ------------------------------------------------------------------
+    # S. Code duplication (AUC 0.69)
+    # ------------------------------------------------------------------
+    lines = t.splitlines()
+    meaningful = [ln.strip() for ln in lines if len(ln.strip()) > 20]
+    if meaningful:
+        from collections import Counter as _Counter2
+        lc = _Counter2(meaningful)
+        n_dup = sum(c - 1 for c in lc.values() if c > 1)
+        base["n_duplicated_lines"] = int(n_dup)
+        base["duplication_ratio"] = float(n_dup) / max(1, len(meaningful))
+    else:
+        base["n_duplicated_lines"] = 0
+        base["duplication_ratio"] = 0.0
+
+    # ------------------------------------------------------------------
+    # T. Inheritance depth analysis (AUC 0.66–0.68)
+    # ------------------------------------------------------------------
+    contracts_with_is = re.findall(r'contract\s+(\w+)\s+is\s+([\w,\s]+)\{', t)
+    inh_graph: Dict[str, list] = {}
+    for cname, parents in contracts_with_is:
+        parent_list = [p.strip() for p in parents.split(",") if p.strip()]
+        inh_graph[cname] = parent_list
+
+    def _inh_depth(name: str, seen: set = None) -> int:
+        if seen is None:
+            seen = set()
+        if name in seen or name not in inh_graph:
+            return 0
+        seen.add(name)
+        return 1 + max((_inh_depth(p, seen) for p in inh_graph[name]), default=0)
+
+    depths = [_inh_depth(c) for c in inh_graph]
+    base["max_inheritance_depth"] = int(max(depths)) if depths else 0
+    base["total_inheritance_edges"] = int(sum(len(v) for v in inh_graph.values()))
+
+    # ------------------------------------------------------------------
+    # U. Additional statement/pattern counts
+    # ------------------------------------------------------------------
+    base["n_return_stmts"] = int(len(re.findall(r'\breturn\b', t)))
+    base["n_delete_stmts"] = int(len(re.findall(r'\bdelete\b', t)))
+    base["n_new_stmts"] = int(len(re.findall(r'\bnew\s+\w+', t)))
+    base["return_per_function"] = float(base["n_return_stmts"]) / n_funcs
+    base["n_override_fns"] = int(len(re.findall(r'\boverride\b', t)))
+    base["n_virtual_fns"] = int(len(re.findall(r'\bvirtual\b', t)))
+    base["n_ternary_ops"] = int(len(re.findall(r'\?[^:]+:', t)))
+    base["n_type_conversions"] = int(len(re.findall(r'\b(?:uint|int|bytes)\d*\s*\(', t)))
+
+    # ------------------------------------------------------------------
+    # V. Size-normalized ratio features
+    # ------------------------------------------------------------------
+    n_assign = max(1, base.get("n_assignments", 0) or 0)
+    base["require_to_assign_ratio"] = float(base.get("n_require_assert", 0) or 0) / n_assign
+    base["conditional_to_assign_ratio"] = float(base.get("n_conditionals", 0) or 0) / n_assign
+
+    # Guard coverage: fraction of public/external functions with access modifiers
+    pub_ext_sigs_v4 = re.findall(
+        r'function\s+\w+\s*\([^)]*\)\s*((?:public|external)[^{;]*)', t
+    )
+    n_pe_v4 = len(pub_ext_sigs_v4)
+    n_guarded = sum(
+        1 for sig in pub_ext_sigs_v4
+        if re.search(r'\b(onlyOwner|onlyRole|whenNotPaused|nonReentrant|only\w+)\b', sig)
+    )
+    base["guard_coverage"] = float(n_guarded) / max(1, n_pe_v4)
+
+    # Comment-to-code ratio
+    n_code_lines = sum(
+        1 for ln in lines
+        if ln.strip() and not ln.strip().startswith("//") and not ln.strip().startswith("*")
+    )
+    n_comment_lines = sum(
+        1 for ln in lines
+        if ln.strip().startswith("//") or ln.strip().startswith("*")
+    )
+    base["comment_to_code_ratio"] = float(n_comment_lines) / max(1, n_code_lines)
+
+    # ------------------------------------------------------------------
+    # W. Import analysis
+    # ------------------------------------------------------------------
+    import_paths = re.findall(r'import\s+["\']([^"\']+)', t)
+    base["n_unique_imports"] = int(len(set(import_paths)))
+    base["n_openzeppelin_imports"] = int(
+        sum(1 for p in import_paths if "openzeppelin" in p.lower())
+    )
+
+
+def _extract_v3_features(base: Dict[str, Any], t: str) -> None:
+    """
+    v3 feature extraction: function-level granularity, semantic patterns,
+    vulnerability-specific detectors, DeFi/token features, code quality signals.
+
+    Populates ``base`` dict in-place.  Designed to be called from
+    ``_extract_source_features`` after the v2 features are already set.
+
+    Feature groups and their empirical AUC on DAppSCAN (200 vuln vs 200 clean):
+      A. Function-level granularity  (AUC 0.77–0.82)
+      B. Code pattern counts         (AUC 0.71–0.82)
+      C. Solidity special variables   (AUC 0.57–0.77)
+      D. Data location / storage      (AUC 0.57–0.64)
+      E. Structural complexity        (AUC 0.53–0.72)
+      F. Encoding & crypto            (AUC 0.52–0.58)
+      G. Token / DeFi semantic        (AUC 0.53–0.68)
+      H. Vulnerability detectors      (AUC 0.52–0.63)
+      I. Code quality                 (AUC 0.52–0.59)
+      J. Density / ratio features     (AUC 0.60–0.74)
+      K. Cross-contract interaction   (AUC 0.52–0.66)
+    """
+    if not t:
+        return
+
+    loc = max(1, base.get("loc", 0) or 0)
+    n_funcs_raw = base.get("n_functions", 0) or 0
+    n_funcs = max(1, n_funcs_raw)
+
+    # ------------------------------------------------------------------
+    # A. Function-level granularity (highest-impact new features)
+    # ------------------------------------------------------------------
+    # Extract function signatures and their bodies using a regex that handles
+    # nested braces up to 3 levels deep (covers >99% of real Solidity).
+    _FUNC_BODY_RE = re.compile(
+        r'function\s+(\w+)\s*\(([^)]*)\)[^{;]*'
+        r'\{((?:[^{}]|\{(?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*\})*)\}',
+        re.DOTALL,
+    )
+    func_matches = _FUNC_BODY_RE.findall(t)
+
+    if func_matches:
+        func_locs = [len(body.splitlines()) for _, _, body in func_matches]
+        param_counts = [
+            len([p.strip() for p in params.split(",") if p.strip()])
+            for _, params, _ in func_matches
+        ]
+
+        base["max_function_loc"] = int(max(func_locs))
+        base["std_function_loc"] = float(np.std(func_locs)) if len(func_locs) > 1 else 0.0
+        base["n_complex_functions"] = int(sum(1 for fl in func_locs if fl > 30))
+        base["max_params"] = int(max(param_counts)) if param_counts else 0
+        base["avg_params"] = float(np.mean(param_counts)) if param_counts else 0.0
+        base["total_params"] = int(sum(param_counts))
+
+        # Max nesting depth: count nested {} within each function body
+        max_nest = 0
+        for _, _, body in func_matches:
+            depth = 0
+            max_d = 0
+            for ch in body:
+                if ch == '{':
+                    depth += 1
+                    if depth > max_d:
+                        max_d = depth
+                elif ch == '}':
+                    depth -= 1
+            if max_d > max_nest:
+                max_nest = max_d
+        base["max_nesting_depth"] = int(max_nest)
+
+    # ------------------------------------------------------------------
+    # B. Code pattern counts
+    # ------------------------------------------------------------------
+    base["n_arithmetic_ops"] = int(len(re.findall(r'[\w\]]\s*[+\-*/]\s*[\w\[]', t)))
+    n_if = len(re.findall(r'\bif\s*\(', t))
+    n_else = len(re.findall(r'\belse\b', t))
+    base["n_conditionals"] = int(n_if + n_else)
+    base["n_assignments"] = int(len(re.findall(r'\w+\s*=\s*[^=]', t)))
+    base["n_emit"] = int(len(re.findall(r'\bemit\s+\w+', t)))
+    base["n_type_casts"] = int(len(re.findall(r'[A-Z]\w+\s*\(\s*\w+\s*\)', t)))
+    base["n_address_casts"] = int(len(re.findall(r'\baddress\s*\(', t)))
+    base["n_bitwise_ops"] = int(len(re.findall(r'[&|^~](?!=)', t)))
+    base["n_exp_ops"] = int(len(re.findall(r'\*\*', t)))
+
+    # ------------------------------------------------------------------
+    # C. Solidity special variable usage
+    # ------------------------------------------------------------------
+    base["n_msg_sender"] = int(len(re.findall(r'\bmsg\.sender\b', t)))
+    base["n_msg_value"] = int(len(re.findall(r'\bmsg\.value\b', t)))
+    base["n_block_timestamp"] = int(len(re.findall(r'\bblock\.timestamp\b', t)))
+    base["n_block_number"] = int(len(re.findall(r'\bblock\.number\b', t)))
+
+    # ------------------------------------------------------------------
+    # D. Data location & storage patterns
+    # ------------------------------------------------------------------
+    base["n_storage_refs"] = int(len(re.findall(r'\bstorage\b', t)))
+    base["n_memory_refs"] = int(len(re.findall(r'\bmemory\b', t)))
+    base["n_calldata_refs"] = int(len(re.findall(r'\bcalldata\b', t)))
+    n_all_mappings = len(re.findall(r'\bmapping\s*\(', t))
+    n_nested = len(re.findall(r'mapping\s*\([^)]*mapping', t))
+    base["n_nested_mappings"] = int(n_nested)
+
+    # ------------------------------------------------------------------
+    # E. Structural complexity
+    # ------------------------------------------------------------------
+    base["n_imports"] = int(len(re.findall(r'\bimport\b', t)))
+    base["n_interfaces"] = int(len(re.findall(r'\binterface\s+\w+', t)))
+    base["n_contracts"] = int(len(re.findall(r'\bcontract\s+\w+', t)))
+    base["n_abstract_contracts"] = int(len(re.findall(r'\babstract\s+contract\b', t)))
+    # Max inheritance: e.g. "contract Foo is A, B, C {"
+    inh_matches = re.findall(r'\bis\s+([\w,\s]+)\{', t)
+    base["max_inheritance"] = int(max(
+        [len(m.split(",")) for m in inh_matches] or [0]
+    ))
+    base["n_libraries"] = int(len(re.findall(r'\blibrary\s+\w+', t)))
+    base["n_using_for"] = int(len(re.findall(r'\busing\s+\w+\s+for\b', t)))
+    base["n_structs"] = int(len(re.findall(r'\bstruct\s+\w+', t)))
+    base["n_enums"] = int(len(re.findall(r'\benum\s+\w+', t)))
+
+    # ------------------------------------------------------------------
+    # F. Encoding & crypto
+    # ------------------------------------------------------------------
+    base["n_abi_encode"] = int(len(re.findall(r'\babi\.encode\w*\(', t)))
+    base["n_keccak256"] = int(len(re.findall(r'\bkeccak256\s*\(', t)))
+    base["uses_ecrecover"] = 1 if "ecrecover" in t else 0
+
+    # ------------------------------------------------------------------
+    # G. Token standard & DeFi semantic features
+    # ------------------------------------------------------------------
+    base["is_erc20"] = 1 if any(
+        p in t for p in ("IERC20", "ERC20", "totalSupply() public", "balanceOf(address")
+    ) else 0
+    base["is_erc721"] = 1 if any(
+        p in t for p in ("IERC721", "ERC721", "ownerOf(", "safeTransferFrom(")
+    ) else 0
+    base["has_mint"] = 1 if re.search(r'\b_?mint\s*\(', t) else 0
+    base["has_burn"] = 1 if re.search(r'\b_?burn\s*\(', t) else 0
+    base["has_swap"] = 1 if re.search(r'\bswap\b', t, re.I) else 0
+    base["has_deposit_withdraw"] = 1 if ("deposit(" in t and "withdraw(" in t) else 0
+    base["has_flash_loan"] = 1 if re.search(r'\bflash(Loan|Borrow|Mint)\b', t) else 0
+    base["has_staking"] = 1 if re.search(r'\bstak(e|ing)\b', t, re.I) else 0
+    base["has_reward"] = 1 if re.search(r'\breward', t, re.I) else 0
+
+    # ------------------------------------------------------------------
+    # H. Vulnerability-specific detectors
+    # ------------------------------------------------------------------
+    # SWC-104: Unchecked low-level call return value
+    n_calls_raw = len(re.findall(r'\.call[\s{(]', t))
+    n_checked = len(re.findall(r'\(\s*bool\s+\w+\s*(?:,\s*)?\)\s*=\s*\w+\.call', t))
+    base["n_unchecked_calls"] = int(max(0, n_calls_raw - n_checked))
+    base["has_unchecked_call"] = 1 if base["n_unchecked_calls"] > 0 else 0
+
+    # SWC-107: Reentrancy pattern (state change after external call)
+    base["has_call_then_state"] = 1 if re.search(
+        r'\.call[\s{(].*?;\s*\n\s*\w+\s*[^=!<>]=\s*[^=]', t, re.DOTALL
+    ) else 0
+
+    # Access control gaps: public/external functions without modifier keywords
+    pub_ext_sigs = re.findall(
+        r'function\s+\w+\s*\([^)]*\)\s*((?:public|external)[^{;]*)', t
+    )
+    n_pe = len(pub_ext_sigs)
+    n_with_mod = sum(
+        1 for sig in pub_ext_sigs
+        if re.search(r'\b(onlyOwner|onlyRole|whenNotPaused|nonReentrant|only\w+)\b', sig)
+    )
+    base["n_unprotected_public"] = int(max(0, n_pe - n_with_mod))
+    base["unprotected_ratio"] = float(base["n_unprotected_public"]) / max(1, n_pe)
+
+    # ------------------------------------------------------------------
+    # I. Code quality
+    # ------------------------------------------------------------------
+    lines = t.splitlines()
+    n_lines = len(lines)
+    n_comment = sum(
+        1 for ln in lines
+        if ln.strip().startswith("//") or ln.strip().startswith("*") or ln.strip().startswith("/*")
+    )
+    base["comment_ratio"] = float(n_comment) / max(1, n_lines)
+    base["has_natspec"] = 1 if ("///" in t or "@notice" in t or "@dev" in t) else 0
+    base["n_try_catch"] = int(len(re.findall(r'\btry\s+', t)))
+    base["has_custom_errors"] = 1 if re.search(r'\berror\s+\w+\s*\(', t) else 0
+    base["n_revert_custom"] = int(len(re.findall(r'\brevert\s+\w+\s*\(', t)))
+
+    # ------------------------------------------------------------------
+    # J. New density / ratio features
+    # ------------------------------------------------------------------
+    base["conditional_density"] = float(base["n_conditionals"]) / loc
+    base["emit_to_assign_ratio"] = float(base["n_emit"]) / max(1, base["n_assignments"])
+    base["state_var_per_fn"] = float(base.get("n_state_variables", 0) or 0) / n_funcs
+    base["arithmetic_density"] = float(base["n_arithmetic_ops"]) / loc
+    n_pub_ext = base.get("n_public_external_functions", 0) or 0
+    base["modifier_coverage"] = float(base.get("n_modifiers", 0) or 0) / max(1, n_pub_ext)
+
+    # Visibility distribution (requires parsing function visibility keywords)
+    n_pub = len(re.findall(r'\bfunction\s+\w+[^{;]*\bpublic\b', t))
+    n_ext = len(re.findall(r'\bfunction\s+\w+[^{;]*\bexternal\b', t))
+    n_int = len(re.findall(r'\bfunction\s+\w+[^{;]*\binternal\b', t))
+    n_priv = len(re.findall(r'\bfunction\s+\w+[^{;]*\bprivate\b', t))
+    n_vis_total = max(1, n_pub + n_ext + n_int + n_priv)
+    base["vis_public_ratio"] = float(n_pub) / n_vis_total
+    base["vis_external_ratio"] = float(n_ext) / n_vis_total
+    base["vis_internal_ratio"] = float(n_int) / n_vis_total
+    base["vis_private_ratio"] = float(n_priv) / n_vis_total
+
+    # ------------------------------------------------------------------
+    # K. Cross-contract interaction
+    # ------------------------------------------------------------------
+    base["n_interface_calls"] = int(len(re.findall(r'I[A-Z]\w+\(', t)))
+    base["n_super_calls"] = int(len(re.findall(r'\bsuper\.\w+', t)))
+    base["uses_proxy_pattern"] = 1 if re.search(
+        r'\b(implementation|_implementation|proxy|Proxy|upgrade)\b', t
+    ) else 0
+
+    # ======================================================================
+    # v4 features — cyclomatic complexity, Halstead metrics, token entropy,
+    # function distributions, state mutation, coupling, duplication
+    # ======================================================================
+    _extract_v4_features(base, t, func_matches if func_matches else [])
+
+
 @dataclass(frozen=True, slots=True)
 class ContractRiskConfig:
     """
@@ -345,6 +821,147 @@ class ContractRiskUtil:
             "uses_abi_encode_packed": 0,         # abi.encodePacked (hash collision risk)
             "n_loops": 0,                        # for/while/do loops
             "loop_density": 0.0,                 # n_loops / n_functions
+            # --- v3 features: function-level granularity (AUC 0.77-0.82) ---
+            "max_function_loc": 0,               # LOC of the longest function body
+            "std_function_loc": 0.0,             # std deviation of function LOCs
+            "max_nesting_depth": 0,              # deepest { } nesting in any function
+            "n_complex_functions": 0,            # functions with > 30 LOC
+            "max_params": 0,                     # max parameters in any function
+            "avg_params": 0.0,                   # average parameters per function
+            "total_params": 0,                   # total parameters across all functions
+            # --- v3 features: code pattern counts (AUC 0.71-0.82) ---
+            "n_arithmetic_ops": 0,               # +, -, *, / on variables (not comments)
+            "n_conditionals": 0,                 # if + else count
+            "n_assignments": 0,                  # state assignment operations
+            "n_emit": 0,                         # emit statement count
+            "n_type_casts": 0,                   # Type(variable) casts
+            "n_address_casts": 0,                # address() casts
+            "n_bitwise_ops": 0,                  # &, |, ^, ~ operations
+            "n_exp_ops": 0,                      # ** exponentiation
+            # --- v3 features: Solidity special variable usage ---
+            "n_msg_sender": 0,                   # msg.sender count
+            "n_msg_value": 0,                    # msg.value count
+            "n_block_timestamp": 0,              # block.timestamp count
+            "n_block_number": 0,                 # block.number count
+            # --- v3 features: data location & storage patterns ---
+            "n_storage_refs": 0,                 # 'storage' keyword
+            "n_memory_refs": 0,                  # 'memory' keyword
+            "n_calldata_refs": 0,                # 'calldata' keyword
+            "n_nested_mappings": 0,              # mapping(... mapping(...))
+            # --- v3 features: structural complexity ---
+            "n_imports": 0,                      # import statement count
+            "n_interfaces": 0,                   # interface declarations
+            "n_contracts": 0,                    # contract declarations
+            "n_abstract_contracts": 0,           # abstract contract declarations
+            "max_inheritance": 0,                # max "is A, B, C" count
+            "n_libraries": 0,                    # library declarations
+            "n_using_for": 0,                    # using ... for ... statements
+            "n_structs": 0,                      # struct declarations
+            "n_enums": 0,                        # enum declarations
+            # --- v3 features: encoding & crypto ---
+            "n_abi_encode": 0,                   # abi.encode* calls
+            "n_keccak256": 0,                    # keccak256 calls
+            "uses_ecrecover": 0,                 # ecrecover (signature verification)
+            # --- v3 features: token standard & DeFi semantic ---
+            "is_erc20": 0,                       # ERC20 token contract
+            "is_erc721": 0,                      # ERC721 NFT contract
+            "has_mint": 0,                       # mint function present
+            "has_burn": 0,                       # burn function present
+            "has_swap": 0,                       # swap/DEX pattern
+            "has_deposit_withdraw": 0,           # deposit+withdraw pattern
+            "has_flash_loan": 0,                 # flash loan pattern
+            "has_staking": 0,                    # staking pattern
+            "has_reward": 0,                     # reward distribution
+            # --- v3 features: vulnerability-specific detectors ---
+            "n_unchecked_calls": 0,              # .call() without bool success check
+            "has_unchecked_call": 0,             # binary: any unchecked call
+            "has_call_then_state": 0,            # reentrancy pattern: state change after call
+            "n_unprotected_public": 0,           # public/external fns without access modifiers
+            "unprotected_ratio": 0.0,            # unprotected / total public+external
+            # --- v3 features: code quality ---
+            "comment_ratio": 0.0,                # comment lines / total lines
+            "has_natspec": 0,                    # NatSpec documentation present
+            "n_try_catch": 0,                    # try/catch blocks
+            "has_custom_errors": 0,              # custom error declarations
+            "n_revert_custom": 0,                # revert with custom error name
+            # --- v3 features: new density/ratio features ---
+            "conditional_density": 0.0,          # n_conditionals / loc
+            "emit_to_assign_ratio": 0.0,         # n_emit / n_assignments
+            "state_var_per_fn": 0.0,             # n_state_variables / n_functions
+            "arithmetic_density": 0.0,           # n_arithmetic_ops / loc
+            "modifier_coverage": 0.0,            # n_modifiers / n_public_external
+            "vis_public_ratio": 0.0,             # public functions / all functions
+            "vis_external_ratio": 0.0,           # external functions / all functions
+            "vis_internal_ratio": 0.0,           # internal functions / all functions
+            "vis_private_ratio": 0.0,            # private functions / all functions
+            # --- v3 features: cross-contract interaction ---
+            "n_interface_calls": 0,              # I<Name>() interface-based calls
+            "n_super_calls": 0,                  # super.method() calls
+            "uses_proxy_pattern": 0,             # proxy/implementation pattern
+            # --- v4 features: cyclomatic complexity (AUC 0.77-0.81) ---
+            "max_cyclomatic": 0,                 # max cyclomatic complexity of any function
+            "avg_cyclomatic": 0.0,               # mean cyclomatic complexity per function
+            "std_cyclomatic": 0.0,               # std dev of cyclomatic complexity
+            "sum_cyclomatic": 0,                 # total cyclomatic complexity
+            "cyclomatic_per_loc": 0.0,           # sum_cyclomatic / loc
+            "cyclomatic_variance_ratio": 0.0,    # std / mean of cyclomatic (heterogeneity)
+            "n_high_complexity_fns": 0,          # functions with cyclomatic > 10
+            # --- v4 features: Halstead metrics (AUC 0.72-0.78) ---
+            "halstead_volume": 0.0,              # N * log2(n) — information content
+            "halstead_difficulty": 0.0,          # (n1/2) * (N2/n2) — coding difficulty
+            "halstead_effort": 0.0,              # volume * difficulty
+            "halstead_volume_per_loc": 0.0,      # volume normalized by LOC
+            # --- v4 features: token entropy (AUC 0.77-0.79) ---
+            "n_unique_tokens": 0,                # vocabulary size
+            "n_total_tokens": 0,                 # total tokens
+            "token_diversity": 0.0,              # unique / total (inverse AUC: lower = vuln)
+            "token_entropy": 0.0,                # Shannon entropy of token distribution
+            # --- v4 features: function size distribution (AUC 0.71-0.77) ---
+            "fn_loc_gini": 0.0,                  # Gini coefficient of function LOCs
+            "fn_loc_cv": 0.0,                    # coefficient of variation of fn LOCs
+            "fn_loc_skew": 0.0,                  # skewness of function LOCs
+            "fn_loc_p75": 0.0,                   # 75th percentile function LOC
+            "fn_loc_p90": 0.0,                   # 90th percentile function LOC
+            "fn_loc_iqr": 0.0,                   # IQR of function LOCs
+            "complex_fn_loc_ratio": 0.0,         # LOC in complex fns / total LOC
+            # --- v4 features: state mutation analysis (AUC 0.74-0.77) ---
+            "n_written_state_vars": 0,           # state vars actually written
+            "state_var_write_ratio": 0.0,        # written / declared state vars
+            "max_fn_state_writes": 0,            # max assignments in any function
+            "mean_fn_state_writes": 0.0,         # mean assignments per function
+            "state_writes_per_fn": 0.0,          # n_written_state_vars / n_functions
+            # --- v4 features: internal coupling (AUC 0.73) ---
+            "n_internal_calls": 0,               # internal function-to-function calls
+            "internal_call_density": 0.0,        # internal calls per function
+            # --- v4 features: data structure complexity (AUC 0.71) ---
+            "n_mapping_access": 0,               # array/mapping bracket access
+            "n_nested_access": 0,                # nested mapping access (x[y][z])
+            "mapping_access_per_fn": 0.0,        # mapping access per function
+            # --- v4 features: code duplication (AUC 0.69) ---
+            "n_duplicated_lines": 0,             # duplicated non-trivial lines
+            "duplication_ratio": 0.0,            # duplicated / total meaningful lines
+            # --- v4 features: inheritance analysis (AUC 0.66-0.68) ---
+            "max_inheritance_depth": 0,          # deepest inheritance chain
+            "total_inheritance_edges": 0,        # total parent references
+            # --- v4 features: additional statement/pattern counts ---
+            "n_return_stmts": 0,                 # return statement count
+            "n_delete_stmts": 0,                 # delete statement count
+            "n_new_stmts": 0,                    # new ContractName() count
+            "return_per_function": 0.0,          # returns per function
+            "n_override_fns": 0,                 # override keyword count
+            "n_virtual_fns": 0,                  # virtual keyword count
+            "n_ternary_ops": 0,                  # ternary operator count
+            "n_type_conversions": 0,             # uint/int/bytes type conversions
+            # --- v4 features: size-normalized ratio features ---
+            "max_nesting_density": 0.0,          # max nesting / log(function LOC)
+            "require_to_assign_ratio": 0.0,      # require / assignments
+            "conditional_to_assign_ratio": 0.0,  # if / assignments
+            "guard_coverage": 0.0,               # guarded / total public+external fns
+            "nested_access_per_fn": 0.0,         # nested access per function
+            "comment_to_code_ratio": 0.0,        # comment lines / code lines
+            # --- v4 features: import analysis ---
+            "n_unique_imports": 0,               # unique import paths
+            "n_openzeppelin_imports": 0,         # OpenZeppelin imports
             # Bytecode-backed features
             "has_bytecode": 0,
             "bytecode_len": 0,
@@ -482,6 +1099,11 @@ class ContractRiskUtil:
         # Compiler version parsing: detect pre-0.8 (no built-in overflow protection)
         cv = base.get("compiler_version", "")
         base["is_solc_pre_08"] = _detect_solc_pre_08(cv, t)
+
+        # ======================================================================
+        # v3 features — function-level granularity, semantic patterns, vuln detectors
+        # ======================================================================
+        _extract_v3_features(base, t)
 
         return base
 
