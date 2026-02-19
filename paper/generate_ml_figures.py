@@ -92,59 +92,57 @@ def fig_model_comparison():
     cross = pd.read_csv(_ML_DIR / "cross_dataset_evaluation.csv")
     merged = cross[cross["experiment"] == "C_merged_cv"].copy()
 
-    models_order = ["rf", "xgb", "gbc", "hgb", "et", "logreg", "baseline_risk_z"]
+    # Only show models present in BOTH experiments
+    merged_models = set(merged["model"].unique())
+    models_order = [m for m in ["rf", "xgb", "gbc", "hgb"] if m in merged_models]
     metrics = ["roc_auc_mean", "pr_auc_mean", "f1_mean"]
     metric_labels = ["ROC-AUC", "PR-AUC", "F1"]
+    ylims = [(0.75, 0.95), (0.15, 0.55), (0.25, 0.65)]
 
-    fig, axes = plt.subplots(1, 3, figsize=(12, 4))
+    fig, axes = plt.subplots(1, 3, figsize=(10, 4))
 
-    for ax, metric, label in zip(axes, metrics, metric_labels):
+    for ax, metric, label, (ylo, yhi) in zip(axes, metrics, metric_labels, ylims):
         x = np.arange(len(models_order))
         width = 0.35
 
-        # DAppSCAN-only values
-        vals_d = []
-        errs_d = []
+        vals_d, errs_d = [], []
         for m in models_order:
             row = comp_all[comp_all["model"] == m]
-            if len(row):
-                vals_d.append(row.iloc[0][metric])
-                std_col = metric.replace("_mean", "_std")
-                errs_d.append(row.iloc[0].get(std_col, 0))
-            else:
-                vals_d.append(0)
-                errs_d.append(0)
+            vals_d.append(row.iloc[0][metric])
+            std_col = metric.replace("_mean", "_std")
+            errs_d.append(row.iloc[0].get(std_col, 0))
 
-        # Merged values (only for models in merged)
-        vals_m = []
-        errs_m = []
         merged_metric_map = {"roc_auc_mean": "roc_auc", "pr_auc_mean": "pr_auc", "f1_mean": "f1"}
         merged_std_map = {"roc_auc_mean": "roc_auc_std", "pr_auc_mean": "pr_auc_std", "f1_mean": None}
+        vals_m, errs_m = [], []
         for m in models_order:
             row = merged[merged["model"] == m]
-            if len(row):
-                vals_m.append(row.iloc[0][merged_metric_map[metric]])
-                std_col = merged_std_map[metric]
-                errs_m.append(row.iloc[0].get(std_col, 0) if std_col else 0)
-            else:
-                vals_m.append(0)
-                errs_m.append(0)
+            vals_m.append(row.iloc[0][merged_metric_map[metric]])
+            std_col = merged_std_map[metric]
+            errs_m.append(row.iloc[0].get(std_col, 0) if std_col else 0)
 
-        bars1 = ax.bar(x - width/2, vals_d, width, label="DAppSCAN only",
-                       color="#2196F3", alpha=0.8, edgecolor="white", linewidth=0.5)
-        bars2 = ax.bar(x + width/2, vals_m, width, label="Merged (DAppSCAN+FORGE)",
-                       color="#FF9800", alpha=0.8, edgecolor="white", linewidth=0.5)
+        bars1 = ax.bar(x - width/2, vals_d, width, yerr=errs_d, capsize=3,
+                       label="DAppSCAN only", color="#2196F3", alpha=0.85,
+                       edgecolor="white", linewidth=0.5, error_kw={"linewidth": 0.8})
+        bars2 = ax.bar(x + width/2, vals_m, width, yerr=errs_m, capsize=3,
+                       label="Merged (DAppSCAN+FORGE)", color="#FF9800", alpha=0.85,
+                       edgecolor="white", linewidth=0.5, error_kw={"linewidth": 0.8})
+
+        for i, (dv, mv) in enumerate(zip(vals_d, vals_m)):
+            ax.text(i - width/2, dv + errs_d[i] + 0.008, f"{dv:.3f}",
+                    ha="center", fontsize=7, color="#1565C0")
+            ax.text(i + width/2, mv + errs_m[i] + 0.008, f"{mv:.3f}",
+                    ha="center", fontsize=7, color="#E65100")
 
         ax.set_ylabel(label)
         ax.set_xticks(x)
         ax.set_xticklabels([MODEL_NAMES.get(m, m) for m in models_order],
-                           rotation=45, ha="right", fontsize=7.5)
-        ax.set_ylim(0, 1.0)
-        ax.yaxis.set_major_locator(mticker.MultipleLocator(0.1))
+                           rotation=35, ha="right", fontsize=8)
+        ax.set_ylim(ylo, yhi)
         ax.grid(axis="y", alpha=0.3, linewidth=0.5)
-        ax.legend(loc="upper right", framealpha=0.9)
+        ax.legend(loc="upper right", framealpha=0.9, fontsize=7.5)
 
-    fig.suptitle("Model Performance: DAppSCAN Only vs. Merged Training", fontsize=13, y=1.02)
+    fig.suptitle("Model Performance: DAppSCAN Only vs. Merged Training", fontsize=12, y=1.02)
     fig.tight_layout()
     _save(fig, "fig_model_comparison")
 
@@ -433,33 +431,51 @@ def tab_model_comparison():
         r"\hline",
     ]
 
-    # DAppSCAN-only results
-    best_d = {"roc": comp_all["roc_auc_mean"].max(), "pr": comp_all["pr_auc_mean"].max(),
-              "f1": comp_all["f1_mean"].max(), "prec": comp_all["precision_mean"].max(),
-              "rec": comp_all["recall_mean"].max()}
+    # Collect all values to find global bests
+    all_roc, all_pr, all_f1, all_prec, all_rec = [], [], [], [], []
 
+    d_rows = []
     for _, row in comp_all.iterrows():
         if row["model"] == "logreg_l1":
             continue
+        d_rows.append(row)
+        all_roc.append(row["roc_auc_mean"]); all_pr.append(row["pr_auc_mean"])
+        all_f1.append(row["f1_mean"]); all_prec.append(row["precision_mean"])
+        all_rec.append(row["recall_mean"])
+
+    m_rows = []
+    for _, row in merged.iterrows():
+        m_rows.append(row)
+        all_roc.append(row["roc_auc"]); all_pr.append(row["pr_auc"])
+        all_f1.append(row["f1"]); all_prec.append(row["precision"])
+        all_rec.append(row["recall"])
+
+    best = {"roc": max(all_roc), "pr": max(all_pr), "f1": max(all_f1),
+            "prec": max(all_prec), "rec": max(all_rec)}
+
+    def _bf(val, best_val):
+        s = f"{val:.3f}"
+        return f"\\textbf{{{s}}}" if abs(val - best_val) < 1e-4 else s
+
+    for row in d_rows:
         name = MODEL_NAMES.get(row["model"], row["model"])
-        roc = f"{row['roc_auc_mean']:.3f}$\\pm${row['roc_auc_std']:.3f}"
-        pr = f"{row['pr_auc_mean']:.3f}"
-        f1 = f"{row['f1_mean']:.3f}"
-        prec = f"{row['precision_mean']:.3f}"
-        rec = f"{row['recall_mean']:.3f}"
+        roc = f"{_bf(row['roc_auc_mean'], best['roc'])}$\\pm${row['roc_auc_std']:.3f}"
+        pr = _bf(row["pr_auc_mean"], best["pr"])
+        f1 = _bf(row["f1_mean"], best["f1"])
+        prec = _bf(row["precision_mean"], best["prec"])
+        rec = _bf(row["recall_mean"], best["rec"])
         lines.append(f"DAppSCAN & {name} & {roc} & {pr} & {f1} & {prec} & {rec} \\\\")
 
     lines.append(r"\hline")
 
-    # Merged results
-    for _, row in merged.iterrows():
+    for row in m_rows:
         name = MODEL_NAMES.get(row["model"], row["model"])
         std_str = f"$\\pm${row['roc_auc_std']:.3f}" if pd.notna(row.get("roc_auc_std")) else ""
-        roc = f"{row['roc_auc']:.3f}{std_str}"
-        pr = f"{row['pr_auc']:.3f}"
-        f1 = f"{row['f1']:.3f}"
-        prec = f"{row['precision']:.3f}"
-        rec = f"{row['recall']:.3f}"
+        roc = f"{_bf(row['roc_auc'], best['roc'])}{std_str}"
+        pr = _bf(row["pr_auc"], best["pr"])
+        f1 = _bf(row["f1"], best["f1"])
+        prec = _bf(row["precision"], best["prec"])
+        rec = _bf(row["recall"], best["rec"])
         lines.append(f"Merged & {name} & {roc} & {pr} & {f1} & {prec} & {rec} \\\\")
 
     lines.extend([
@@ -488,36 +504,40 @@ def tab_cross_dataset():
         r"\hline",
     ]
 
-    scenarios = [
-        ("D_per_dataset_cv", "gbc", "DAppSCAN", "DAppSCAN", "DAppSCAN"),
-        ("A_cross_predict", "gbc", "DAppSCAN", "FORGE (vuln\\_vs\\_unknown)", "FORGE (vuln_vs_unknown)"),
-        ("A_cross_predict", "gbc", "DAppSCAN", "AccessControlVuln", "AccessControlVuln"),
-        ("B_reverse", "gbc", "FORGE", "DAppSCAN", "DAppSCAN"),
-        ("D_per_dataset_cv", "gbc", "FORGE", "FORGE", "FORGE"),
-        ("C_merged_cv", "gbc", "DAppSCAN+FORGE", "Merged (CV)", "merged"),
-    ]
+    # Build rows manually to avoid filter bugs
+    rows_data = []
 
-    for exp, model, train_label, test_label, ds_filter in scenarios:
-        if exp == "A_cross_predict" and "vuln_vs_unknown" in ds_filter:
-            row = cross[(cross["experiment"] == exp) & (cross["model"] == model) &
-                        (cross["dataset"].str.contains("vuln_vs_unknown"))]
-        elif exp == "D_per_dataset_cv":
-            row = cross[(cross["experiment"] == exp) & (cross["model"] == model) &
-                        (cross["dataset"] == ds_filter)]
-        else:
-            row = cross[(cross["experiment"] == exp) & (cross["model"] == model)]
+    # DAppSCAN → DAppSCAN (CV)
+    r = cross[(cross["experiment"] == "D_per_dataset_cv") & (cross["model"] == "gbc") & (cross["dataset"] == "DAppSCAN")].iloc[0]
+    rows_data.append(("DAppSCAN", "DAppSCAN (CV)", r))
 
-        if len(row) == 0:
-            continue
-        r = row.iloc[0]
+    # DAppSCAN → FORGE
+    r = cross[(cross["experiment"] == "A_cross_predict") & (cross["model"] == "gbc") & (cross["dataset"].str.contains("vuln_vs_unknown"))].iloc[0]
+    rows_data.append(("DAppSCAN", "FORGE", r))
 
+    # DAppSCAN → AccessControlVuln
+    r = cross[(cross["experiment"] == "A_cross_predict") & (cross["model"] == "gbc") & (cross["dataset"] == "AccessControlVuln")].iloc[0]
+    rows_data.append(("DAppSCAN", "AccessControlVuln", r))
+
+    # FORGE → DAppSCAN
+    r = cross[(cross["experiment"] == "B_reverse") & (cross["model"] == "gbc")].iloc[0]
+    rows_data.append(("FORGE", "DAppSCAN", r))
+
+    # FORGE → FORGE (CV)
+    r = cross[(cross["experiment"] == "D_per_dataset_cv") & (cross["model"] == "gbc") & (cross["dataset"] == "FORGE")].iloc[0]
+    rows_data.append(("FORGE", "FORGE (CV)", r))
+
+    # Merged CV
+    r = cross[(cross["experiment"] == "C_merged_cv") & (cross["model"] == "gbc")].iloc[0]
+    rows_data.append(("DAppSCAN+FORGE", "Merged (CV)", r))
+
+    for train_label, test_label, r in rows_data:
         roc = f"{r['roc_auc']:.3f}" if pd.notna(r["roc_auc"]) else "---"
         pr = f"{r['pr_auc']:.3f}" if pd.notna(r["pr_auc"]) else "---"
         f1 = f"{r['f1']:.3f}" if pd.notna(r["f1"]) else "---"
         prec = f"{r['precision']:.3f}" if pd.notna(r["precision"]) else "---"
-        rec = f"{r['recall']:.3f}"
+        rec = f"{r['recall']:.3f}" if pd.notna(r["recall"]) else "---"
         n = f"{int(r['n_samples']):,}"
-
         lines.append(f"{train_label} & {test_label} & {roc} & {pr} & {f1} & {prec} & {rec} & {n} \\\\")
 
     lines.extend([
