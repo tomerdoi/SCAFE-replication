@@ -252,10 +252,15 @@ def _contract_to_label(severities: Dict[str, int], threshold: str = "Medium") ->
 def discover_contracts(
     contracts_dir: Path,
     require_no_imports: bool = True,
+    min_solc_minor: int = 7,
 ) -> List[Tuple[Path, str]]:
     """
     Find .sol files suitable for standalone Slither analysis.
     Returns list of (path, solc_version) tuples.
+
+    min_solc_minor: minimum minor version to include (default 7 = 0.7.x+).
+        On ARM64 Macs, solc versions < 0.7.0 are x86_64-only and may be
+        blocked by solc-select. Set to 0 to include all versions.
     """
     candidates: List[Tuple[Path, str]] = []
     all_sol = sorted(contracts_dir.rglob("*.sol"))
@@ -263,6 +268,7 @@ def discover_contracts(
 
     skipped_import = 0
     skipped_pragma = 0
+    skipped_old_solc = 0
 
     for sol_path in all_sol:
         if require_no_imports and _has_any_import(sol_path):
@@ -275,12 +281,24 @@ def discover_contracts(
             continue
 
         pragma_ver, is_exact = info
+
+        # Skip old solc versions that won't run on ARM64
+        parts = pragma_ver.split(".")
+        if len(parts) >= 2:
+            try:
+                minor = int(parts[1])
+                if minor < min_solc_minor:
+                    skipped_old_solc += 1
+                    continue
+            except ValueError:
+                pass
+
         solc_ver = _resolve_solc_version(pragma_ver, is_exact)
         candidates.append((sol_path, solc_ver))
 
     log.info(
-        "Candidates: %d  (skipped: %d with imports, %d no pragma)",
-        len(candidates), skipped_import, skipped_pragma,
+        "Candidates: %d  (skipped: %d imports, %d no pragma, %d solc<0.%d.0)",
+        len(candidates), skipped_import, skipped_pragma, skipped_old_solc, min_solc_minor,
     )
     return candidates
 
@@ -443,12 +461,18 @@ def main():
                         help="Per-contract Slither timeout in seconds")
     parser.add_argument("--include-relative-imports", action="store_true",
                         help="Also include contracts with relative imports")
+    parser.add_argument("--min-solc-minor", type=int, default=7,
+                        help="Minimum solc minor version (default 7 = 0.7.x+, set 0 for all)")
     args = parser.parse_args()
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     require_no_imports = not args.include_relative_imports
-    candidates = discover_contracts(CONTRACTS_DIR, require_no_imports=require_no_imports)
+    candidates = discover_contracts(
+        CONTRACTS_DIR,
+        require_no_imports=require_no_imports,
+        min_solc_minor=args.min_solc_minor,
+    )
 
     if not candidates:
         log.error("No candidate contracts found in %s", CONTRACTS_DIR)
