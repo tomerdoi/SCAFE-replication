@@ -650,17 +650,41 @@ def main():
                      f"PR-AUC={r['pr_auc_mean']:.4f}  "
                      f"F1={r['f1_mean']:.4f}")
 
-    # ── Save results ──
+    # ── Save results (merge with any existing results) ──
     if results:
-        results_df = pd.DataFrame(results)
         out_path = _OUT_DIR / "dl_baseline_comparison.csv"
-        results_df.to_csv(out_path, index=False)
+        json_path = _OUT_DIR / "dl_baseline_results.json"
+
+        # Load existing results and merge (replace models we just re-ran)
+        all_results = results
+        if out_path.exists():
+            existing_df = pd.read_csv(out_path)
+            new_model_names = {r["model"] for r in results}
+            kept = existing_df[~existing_df["model"].isin(new_model_names)]
+            all_results_df = pd.concat(
+                [kept, pd.DataFrame(results)], ignore_index=True)
+        else:
+            all_results_df = pd.DataFrame(results)
+
+        all_results_df.to_csv(out_path, index=False)
         logger.info(f"\nResults saved to {out_path}")
 
-        # Also save as JSON for easy reading
-        json_path = _OUT_DIR / "dl_baseline_results.json"
-        json_path.write_text(json.dumps(results, indent=2))
+        # JSON: merge similarly
+        all_json = results
+        if json_path.exists():
+            try:
+                existing_json = json.loads(json_path.read_text())
+                new_model_names = {r["model"] for r in results}
+                kept_json = [r for r in existing_json
+                             if r["model"] not in new_model_names]
+                all_json = kept_json + results
+            except Exception:
+                pass
+        json_path.write_text(json.dumps(all_json, indent=2))
         logger.info(f"JSON results saved to {json_path}")
+
+        # Use all_json for summary printing
+        results = all_json
 
         # Print summary
         print("\n" + "=" * 90)
