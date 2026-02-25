@@ -1,0 +1,18 @@
+\begin{table}[t]
+\centering
+\caption{Overview of evaluation datasets.}
+\label{tab:datasets}
+\begin{tabular}{lrrrrr}
+\hline
+\textbf{Dataset} & \textbf{Contracts} & \textbf{Clean} & \textbf{Vulnerable} & \textbf{Other} & \textbf{Pos.\ Rate} \\
+\hline
+DAppSCAN & 21{,}457 & 20{,}509 & 948 & 0 & 4.4\% \\
+FORGE & 4{,}872 & 0 & 1{,}244 & 3{,}628$^\dagger$ & 52.6\%$^\ddagger$ \\
+AccessControlVuln & 94 & 0 & 94 & 0 & 100\% \\
+\hline
+\textbf{Total} & \textbf{26{,}423} & 20{,}509 & 2{,}286 & 3{,}628 & --- \\
+\hline
+\end{tabular}
+\\[4pt]
+{\footnotesize $^\dagger$2{,}505 suspicious + 1{,}123 unknown. $^\ddagger$Vulnerable vs.\ unknown only.}
+\end{table}
