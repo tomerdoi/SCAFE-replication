@@ -1,0 +1,23 @@
+\begin{table}[t]
+\centering
+\caption{Comparison of our approach against deep learning baselines and Slither (static analysis tool) on DAppSCAN. All models evaluated with 5-fold GroupKFold CV. Slither metrics are computed on the 29.6\% of contracts it can compile.}
+\label{tab:dl_baselines}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{ll ccccc}
+\hline
+\textbf{Category} & \textbf{Model} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1} & \textbf{Prec.} & \textbf{Recall} \\
+\hline
+Static tool & Slither (medium) & ---$^\dagger$ & ---$^\dagger$ & 0.233 & 0.147 & 0.552 \\
+Rule-based & Baseline (risk\_z) & 0.815$\pm$0.015 & 0.168 & 0.255 & 0.170 & 0.518 \\
+\hline
+Deep learning & TextCNN & 0.905$\pm$0.012 & 0.364 & 0.416 & 0.347 & 0.526 \\
+Deep learning & BiLSTM & 0.906$\pm$0.014 & 0.415 & 0.427 & 0.415 & 0.462 \\
+Deep learning & CodeBERT (fine-tuned) & 0.936$\pm$0.013 & 0.660 & 0.625 & 0.824 & 0.511 \\
+\hline
+\textbf{Ours (ML)} & GradientBoosting & 0.894$\pm$0.009 & 0.363 & 0.400 & 0.341 & 0.505 \\
+\textbf{Ours (ML)} & Random Forest & 0.901$\pm$0.006 & 0.307 & 0.393 & 0.326 & 0.500 \\
+\hline
+\end{tabular}
+\\[4pt]
+{\footnotesize $^\dagger$Slither requires compilation; ROC/PR-AUC unavailable (binary output). Coverage: 29.6\% of dataset.}
+\end{table}
