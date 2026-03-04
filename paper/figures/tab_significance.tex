@@ -1,0 +1,28 @@
+\begin{table}[t]
+\centering
+\caption{Pairwise Welch's $t$-tests on 5-fold GroupKFold CV scores (merged data). $^{*}$Significant at $\alpha = 0.05$.}
+\label{tab:significance}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrrr}
+\toprule
+Comparison & Metric & $t$-stat & $p$-value \\
+\midrule
+\multicolumn{4}{l}{\textit{Our approach vs.\ lightweight DL baselines}} \\
+Ours vs TextCNN & ROC-AUC & $-1.30$ & $0.244$ \\
+Ours vs TextCNN & PR-AUC & $0.18$ & $0.863$ \\
+Ours vs BiLSTM & ROC-AUC & $-1.32$ & $0.224$ \\
+Ours vs BiLSTM & PR-AUC & $-0.89$ & $0.400$ \\
+\midrule
+\multicolumn{4}{l}{\textit{Our approach vs.\ CodeBERT}} \\
+Ours vs CodeBERT & ROC-AUC & $-5.43$ & $0.001^{*}$ \\
+Ours vs CodeBERT & PR-AUC & $-7.97$ & ${<}0.001^{*}$ \\
+\midrule
+\multicolumn{4}{l}{\textit{Lightweight DL baselines vs.\ CodeBERT}} \\
+TextCNN vs CodeBERT & ROC-AUC & $-5.55$ & $0.002^{*}$ \\
+TextCNN vs CodeBERT & F1 & $-7.97$ & ${<}0.001^{*}$ \\
+BiLSTM vs CodeBERT & ROC-AUC & $-3.60$ & $0.007^{*}$ \\
+BiLSTM vs CodeBERT & F1 & $-7.20$ & ${<}0.001^{*}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
