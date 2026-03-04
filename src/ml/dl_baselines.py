@@ -297,6 +297,37 @@ def load_dappscan_data() -> Tuple[pd.DataFrame, np.ndarray, np.ndarray]:
     return df, y, groups
 
 
+def load_merged_data() -> Tuple[pd.DataFrame, np.ndarray, np.ndarray]:
+    """Load merged DAppSCAN + FORGE data, return (df, labels, groups)."""
+    from src.ml.features import load_scored_csv
+
+    df = load_scored_csv()
+    df["label_status"] = df["label_status"].fillna("").astype(str)
+
+    dappscan = df[df["source_dataset"] == "DAppSCAN"].copy()
+    dappscan = dappscan[dappscan["label_status"].isin(
+        ["clean", "vulnerable"])].copy()
+
+    forge = df[df["source_dataset"] == "FORGE"].copy()
+    forge = forge[forge["label_status"].isin(
+        ["vulnerable", "unknown"])].copy()
+
+    merged = pd.concat([dappscan, forge], ignore_index=True)
+    merged["y"] = (merged["label_status"] == "vulnerable").astype(int)
+
+    y = merged["y"].values.astype(int)
+
+    group_key = merged["contract_id"].fillna("").astype(str)
+    unique_groups = sorted(group_key.unique())
+    group_map = {g: i for i, g in enumerate(unique_groups)}
+    groups = group_key.map(group_map).values.astype(int)
+
+    merged = merged.reset_index(drop=True)
+    logger.info(f"Loaded {len(merged)} merged contracts "
+                f"(pos={y.sum()}, neg={(y == 0).sum()})")
+    return merged, y, groups
+
+
 def load_sources(df: pd.DataFrame, max_tokens: int = 1024) -> List[List[str]]:
     """Read and tokenize all source files."""
     token_lists = []
@@ -334,6 +365,7 @@ def evaluate_token_model(
     n_epochs: int = 10,
     batch_size: int = 64,
     lr: float = 1e-3,
+    dataset: str = "DAppSCAN",
 ) -> Dict:
     """Run GroupKFold CV for a token-based DL model (TextCNN or BiLSTM)."""
     gkf = GroupKFold(n_splits=n_folds)
@@ -411,7 +443,7 @@ def evaluate_token_model(
         logger.info(f"    ROC-AUC={roc:.4f}  PR-AUC={pr:.4f}  F1={opt_f1:.4f}")
 
     elapsed = time.time() - t0
-    return _aggregate_results(model_name, fold_results, elapsed)
+    return _aggregate_results(model_name, fold_results, elapsed, dataset)
 
 
 # ── Fold evaluation (CodeBERT) ──────────────────────────────────────────────
@@ -428,6 +460,7 @@ def evaluate_codebert(
     batch_size: int = 16,
     lr: float = 2e-5,
     freeze_layers: int = 8,
+    dataset: str = "DAppSCAN",
 ) -> Dict:
     """Run GroupKFold CV for fine-tuned CodeBERT."""
     from transformers import AutoTokenizer
@@ -521,13 +554,13 @@ def evaluate_codebert(
         torch.mps.empty_cache() if DEVICE == "mps" else None
 
     elapsed = time.time() - t0
-    return _aggregate_results("codebert", fold_results, elapsed)
+    return _aggregate_results("codebert", fold_results, elapsed, dataset)
 
 
 # ── Result aggregation ──────────────────────────────────────────────────────
 
 def _aggregate_results(model_name: str, fold_results: List[DLFoldResult],
-                       elapsed: float) -> Dict:
+                       elapsed: float, dataset: str = "DAppSCAN") -> Dict:
     roc_aucs = [f.roc_auc for f in fold_results]
     pr_aucs = [f.pr_auc for f in fold_results]
     f1s = [f.f1 for f in fold_results]
@@ -542,7 +575,7 @@ def _aggregate_results(model_name: str, fold_results: List[DLFoldResult],
         }.get(model_name, model_name),
         "family": "deep_learning",
         "feature_set": "source_text",
-        "dataset": "DAppSCAN",
+        "dataset": dataset,
         "n_features": 0,
         "n_folds": len(fold_results),
         "roc_auc_mean": round(float(np.mean(roc_aucs)), 4),
@@ -579,16 +612,26 @@ def main():
     parser.add_argument("--bert-epochs", type=int, default=5)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--bert-batch-size", type=int, default=16)
+    parser.add_argument(
+        "--dataset", type=str, default="dappscan",
+        choices=["dappscan", "merged"],
+        help="Dataset to use: 'dappscan' (DAppSCAN only) or "
+             "'merged' (DAppSCAN + FORGE)")
     args = parser.parse_args()
 
     models_to_run = [m.strip() for m in args.models.split(",")]
+    dataset_label = "DAppSCAN" if args.dataset == "dappscan" else "Merged"
     logger.info(f"Device: {DEVICE}")
     logger.info(f"Models to run: {models_to_run}")
+    logger.info(f"Dataset: {dataset_label}")
 
     _OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # Load data
-    df, y, groups = load_dappscan_data()
+    if args.dataset == "merged":
+        df, y, groups = load_merged_data()
+    else:
+        df, y, groups = load_dappscan_data()
     logger.info("Tokenizing source files...")
     token_lists = load_sources(df, max_tokens=args.max_len)
     logger.info(f"  Median token count: "
@@ -609,6 +652,7 @@ def main():
             df=df, y=y, groups=groups, token_lists=token_lists,
             max_len=args.max_len, n_folds=args.n_folds,
             n_epochs=args.epochs, batch_size=args.batch_size,
+            dataset=dataset_label,
         )
         results.append(r)
         logger.info(f"TextCNN: ROC-AUC={r['roc_auc_mean']:.4f}  "
@@ -628,6 +672,7 @@ def main():
             df=df, y=y, groups=groups, token_lists=token_lists,
             max_len=args.max_len, n_folds=args.n_folds,
             n_epochs=args.epochs, batch_size=args.batch_size,
+            dataset=dataset_label,
         )
         results.append(r)
         logger.info(f"BiLSTM: ROC-AUC={r['roc_auc_mean']:.4f}  "
@@ -644,6 +689,7 @@ def main():
             max_len=args.bert_max_len, n_folds=args.n_folds,
             n_epochs=args.bert_epochs, batch_size=args.bert_batch_size,
             freeze_layers=8,
+            dataset=dataset_label,
         )
         results.append(r)
         logger.info(f"CodeBERT: ROC-AUC={r['roc_auc_mean']:.4f}  "
@@ -655,12 +701,16 @@ def main():
         out_path = _OUT_DIR / "dl_baseline_comparison.csv"
         json_path = _OUT_DIR / "dl_baseline_results.json"
 
-        # Load existing results and merge (replace models we just re-ran)
+        # Unique key: model + dataset (so DAppSCAN and Merged coexist)
+        new_keys = {(r["model"], r["dataset"]) for r in results}
+
         all_results = results
         if out_path.exists():
             existing_df = pd.read_csv(out_path)
-            new_model_names = {r["model"] for r in results}
-            kept = existing_df[~existing_df["model"].isin(new_model_names)]
+            keep_mask = ~existing_df.apply(
+                lambda row: (row["model"], row["dataset"]) in new_keys,
+                axis=1)
+            kept = existing_df[keep_mask]
             all_results_df = pd.concat(
                 [kept, pd.DataFrame(results)], ignore_index=True)
         else:
@@ -674,9 +724,8 @@ def main():
         if json_path.exists():
             try:
                 existing_json = json.loads(json_path.read_text())
-                new_model_names = {r["model"] for r in results}
                 kept_json = [r for r in existing_json
-                             if r["model"] not in new_model_names]
+                             if (r["model"], r["dataset"]) not in new_keys]
                 all_json = kept_json + results
             except Exception:
                 pass

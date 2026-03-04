@@ -1,26 +1,28 @@
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\caption{Comparison of all methods on DAppSCAN. All learning-based models evaluated with 5-fold GroupKFold CV. The last row shows our best model trained on merged data (DAppSCAN + FORGE).}
+\caption{Comparison of all methods on DAppSCAN-only and merged (DAppSCAN + FORGE) training data. All learning-based models evaluated with 5-fold GroupKFold CV on the same data split.}
 \label{tab:dl_baselines}
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{ll cccccc}
+\small
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{lll cccccc}
 \hline
-\textbf{Category} & \textbf{Method} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1} & \textbf{Prec.} & \textbf{Recall} & \textbf{Time}$^\ddagger$ \\
+\textbf{Category} & \textbf{Method} & \textbf{Data} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1} & \textbf{Prec.} & \textbf{Recall} & \textbf{Time}$^\ddagger$ \\
 \hline
-Static tool & Slither (medium) & ---$^\dagger$ & ---$^\dagger$ & 0.233 & 0.147 & 0.552 & --- \\
-Rule-based & Baseline (risk\_z) & 0.815$\pm$0.015 & 0.168 & 0.255 & 0.170 & 0.518 & $<$1s \\
+Static tool & Slither (medium) & DAppSCAN$^\dagger$ & --- & --- & 0.233 & 0.147 & 0.552 & --- \\
+Rule-based & Baseline (risk\_z) & DAppSCAN & 0.815$\pm$0.015 & 0.168 & 0.255 & 0.170 & 0.518 & $<$1s \\
 \hline
-Deep learning & TextCNN & 0.905$\pm$0.012 & 0.364 & 0.416 & 0.347 & 0.526 & 4.3m \\
-Deep learning & BiLSTM & 0.906$\pm$0.014 & 0.415 & 0.427 & 0.415 & 0.462 & 45.8m \\
-Deep learning & CodeBERT (fine-tuned) & \textbf{0.936}$\pm$0.013 & \textbf{0.660} & \textbf{0.625} & \textbf{0.824} & 0.511 & 6.9h \\
+Deep learning & TextCNN & DAppSCAN & 0.905$\pm$0.012 & 0.364 & 0.416 & 0.347 & 0.526 & 4.3m \\
+Deep learning & BiLSTM & DAppSCAN & 0.906$\pm$0.014 & 0.415 & 0.427 & 0.415 & 0.462 & 45.8m \\
+Deep learning & CodeBERT & DAppSCAN & 0.936$\pm$0.014 & \textbf{0.660} & 0.625 & \textbf{0.824} & 0.511 & 6.9h \\
+\textbf{Ours (ML)} & GradientBoosting & DAppSCAN & 0.894$\pm$0.009 & 0.363 & 0.400 & 0.341 & 0.505 & 5.5m \\
 \hline
-\textbf{Ours (DAppSCAN)} & Random Forest & 0.901$\pm$0.006 & 0.307 & 0.393 & 0.326 & 0.500 & 12s \\
-\textbf{Ours (DAppSCAN)} & GradientBoosting & 0.894$\pm$0.009 & 0.363 & 0.400 & 0.341 & 0.505 & 5.5m \\
-\hline
-\textbf{Ours (merged)} & GradientBoosting & 0.920$\pm$0.006 & 0.497 & 0.592 & 0.500 & \textbf{0.726} & 5.5m \\
+Deep learning & TextCNN & Merged & 0.924$\pm$0.003 & 0.495 & 0.591 & 0.507 & 0.713 & 4.7m \\
+Deep learning & BiLSTM & Merged & 0.926$\pm$0.008 & 0.511 & 0.594 & 0.514 & 0.705 & 28.1m \\
+Deep learning & CodeBERT & Merged & \textbf{0.942}$\pm$0.007 & 0.621 & \textbf{0.667} & 0.589 & \textbf{0.768} & 6.6h \\
+\textbf{Ours (ML)} & GradientBoosting & Merged & 0.920$\pm$0.006 & 0.497 & 0.592 & 0.500 & 0.726 & 5.5m \\
 \hline
 \end{tabular}
 \\[4pt]
-{\footnotesize $^\dagger$Slither produces binary output; ROC/PR-AUC unavailable. Coverage: 29.6\% of dataset only.}\\
+{\footnotesize $^\dagger$Slither requires compilation; covers only 29.6\% of the dataset. ROC/PR-AUC unavailable (binary output).}\\
 {\footnotesize $^\ddagger$Wall-clock time for full 5-fold CV. DL models ran on Apple M-series GPU (MPS); ML models on CPU only.}
-\end{table}
+\end{table*}

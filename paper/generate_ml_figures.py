@@ -407,7 +407,7 @@ def fig_dl_comparison():
     rows = []
     # Slither (medium threshold)
     sm = slither["metrics_threshold_medium"]
-    rows.append({"name": "Slither\n(static analysis)", "roc_auc": np.nan, "pr_auc": np.nan,
+    rows.append({"name": "Slither\n(static tool)", "roc_auc": np.nan, "pr_auc": np.nan,
                  "f1": sm["f1"], "precision": sm["precision"], "recall": sm["recall"],
                  "category": "tool", "roc_auc_std": 0, "pr_auc_std": 0})
 
@@ -417,17 +417,12 @@ def fig_dl_comparison():
                  "f1": brow["f1_mean"], "precision": brow["precision_mean"], "recall": brow["recall_mean"],
                  "category": "baseline", "roc_auc_std": brow["roc_auc_std"], "pr_auc_std": brow["pr_auc_std"]})
 
-    # DL baselines
-    for _, r in dl.iterrows():
-        rows.append({"name": r["display_name"], "roc_auc": r["roc_auc_mean"], "pr_auc": r["pr_auc_mean"],
+    # DL baselines -- merged data only for apples-to-apples comparison
+    dl_merged = dl[dl["dataset"] == "Merged"] if "dataset" in dl.columns else dl
+    for _, r in dl_merged.iterrows():
+        rows.append({"name": f"{r['display_name']}\n(merged)", "roc_auc": r["roc_auc_mean"], "pr_auc": r["pr_auc_mean"],
                       "f1": r["f1_mean"], "precision": r["precision_mean"], "recall": r["recall_mean"],
                       "category": "dl", "roc_auc_std": r["roc_auc_std"], "pr_auc_std": r["pr_auc_std"]})
-
-    # Best ML (GradientBoosting DAppSCAN-only)
-    ml_row = comp[(comp["model"] == "gbc") & (comp["feature_set"] == "all")].iloc[0]
-    rows.append({"name": "GBC\n(ours, DAppSCAN)", "roc_auc": ml_row["roc_auc_mean"], "pr_auc": ml_row["pr_auc_mean"],
-                 "f1": ml_row["f1_mean"], "precision": ml_row["precision_mean"], "recall": ml_row["recall_mean"],
-                 "category": "ours", "roc_auc_std": ml_row["roc_auc_std"], "pr_auc_std": ml_row["pr_auc_std"]})
 
     # Best ML (Merged)
     mg = cross[(cross["experiment"] == "C_merged_cv") & (cross["model"] == "gbc")].iloc[0]
