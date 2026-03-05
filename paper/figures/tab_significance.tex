@@ -1,28 +1,28 @@
 \begin{table}[t]
 \centering
-\caption{Pairwise Welch's $t$-tests on 5-fold GroupKFold CV scores (merged data). $^{*}$Significant at $\alpha = 0.05$.}
+\caption{Pairwise Welch's $t$-tests on 5-fold GroupKFold CV scores (merged data). Cohen's $d$ measures effect size ($|d|<0.5$: small, $0.5$--$0.8$: medium, $>0.8$: large). $^{*}$Significant at $\alpha = 0.05$.}
 \label{tab:significance}
 \small
-\setlength{\tabcolsep}{4pt}
+\setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{llrrr}
 \toprule
-Comparison & Metric & $t$-stat & $p$-value \\
+Comparison & Metric & $t$-stat & $p$-value & Cohen's $d$ \\
 \midrule
-\multicolumn{4}{l}{\textit{Our approach vs.\ lightweight DL baselines}} \\
-Ours vs TextCNN & ROC-AUC & $-1.30$ & $0.244$ \\
-Ours vs TextCNN & PR-AUC & $0.18$ & $0.863$ \\
-Ours vs BiLSTM & ROC-AUC & $-1.32$ & $0.224$ \\
-Ours vs BiLSTM & PR-AUC & $-0.89$ & $0.400$ \\
+\multicolumn{5}{l}{\textit{Our approach vs.\ lightweight DL baselines}} \\
+Ours vs TextCNN & ROC-AUC & $-1.30$ & $0.244$ & $-0.82$ \\
+Ours vs TextCNN & PR-AUC & $0.18$ & $0.863$ & $0.11$ \\
+Ours vs BiLSTM & ROC-AUC & $-1.32$ & $0.224$ & $-0.84$ \\
+Ours vs BiLSTM & PR-AUC & $-0.89$ & $0.400$ & $-0.56$ \\
 \midrule
-\multicolumn{4}{l}{\textit{Our approach vs.\ CodeBERT}} \\
-Ours vs CodeBERT & ROC-AUC & $-5.43$ & $0.001^{*}$ \\
-Ours vs CodeBERT & PR-AUC & $-7.97$ & ${<}0.001^{*}$ \\
+\multicolumn{5}{l}{\textit{Our approach vs.\ CodeBERT}} \\
+Ours vs CodeBERT & ROC-AUC & $-5.43$ & $0.001^{*}$ & $-3.44$ \\
+Ours vs CodeBERT & PR-AUC & $-7.97$ & ${<}0.001^{*}$ & $-5.04$ \\
 \midrule
-\multicolumn{4}{l}{\textit{Lightweight DL baselines vs.\ CodeBERT}} \\
-TextCNN vs CodeBERT & ROC-AUC & $-5.55$ & $0.002^{*}$ \\
-TextCNN vs CodeBERT & F1 & $-7.97$ & ${<}0.001^{*}$ \\
-BiLSTM vs CodeBERT & ROC-AUC & $-3.60$ & $0.007^{*}$ \\
-BiLSTM vs CodeBERT & F1 & $-7.20$ & ${<}0.001^{*}$ \\
+\multicolumn{5}{l}{\textit{Lightweight DL baselines vs.\ CodeBERT}} \\
+TextCNN vs CodeBERT & ROC-AUC & $-5.55$ & $0.002^{*}$ & $-3.52$ \\
+TextCNN vs CodeBERT & F1 & $-7.97$ & ${<}0.001^{*}$ & $-5.03$ \\
+BiLSTM vs CodeBERT & ROC-AUC & $-3.60$ & $0.007^{*}$ & $-2.28$ \\
+BiLSTM vs CodeBERT & F1 & $-7.20$ & ${<}0.001^{*}$ & $-4.55$ \\
 \bottomrule
 \end{tabular}
 \end{table}
