@@ -1,6 +1,6 @@
 \begin{table*}[t]
 \centering
-\caption{Comparison of all methods on DAppSCAN-only and merged (DAppSCAN + FORGE) training data. All learning-based models evaluated with 5-fold GroupKFold CV on the same data split.}
+\caption{Comparison of all methods on DAppSCAN-only and merged (DAppSCAN + FORGE) training data (mean $\pm$ std over 5 folds). All learning-based models evaluated with 5-fold GroupKFold CV on the same data split.}
 \label{tab:dl_baselines}
 \small
 \setlength{\tabcolsep}{2.5pt}
@@ -9,17 +9,17 @@
 \textbf{Category} & \textbf{Method} & \textbf{Data} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1} & \textbf{Prec.} & \textbf{Recall} & \textbf{Time}$^\ddagger$ \\
 \hline
 Static tool & Slither (medium) & DAppSCAN$^\dagger$ & --- & --- & 0.233 & 0.147 & 0.552 & --- \\
-Rule-based & Baseline (risk\_z) & DAppSCAN & 0.815$\pm$0.015 & 0.168 & 0.255 & 0.170 & 0.518 & $<$1s \\
+Rule-based & Baseline (risk\_z) & DAppSCAN & 0.815$\pm$0.015 & 0.168$\pm$0.008 & 0.255$\pm$0.012 & 0.170 & 0.518 & $<$1s \\
 \hline
-Deep learning & TextCNN & DAppSCAN & 0.905$\pm$0.012 & 0.364 & 0.416 & 0.347 & 0.526 & 4.3m \\
-Deep learning & BiLSTM & DAppSCAN & 0.906$\pm$0.014 & 0.415 & 0.427 & 0.415 & 0.462 & 45.8m \\
-Deep learning & CodeBERT & DAppSCAN & 0.936$\pm$0.014 & \textbf{0.660} & 0.625 & \textbf{0.824} & 0.511 & 6.9h \\
-\textbf{Ours (ML)} & GradientBoosting & DAppSCAN & 0.894$\pm$0.009 & 0.363 & 0.400 & 0.341 & 0.505 & 5.5m \\
+Deep learning & TextCNN & DAppSCAN & 0.905$\pm$0.012 & 0.364$\pm$0.056 & 0.416$\pm$0.032 & 0.347 & 0.526 & 4.3m \\
+Deep learning & BiLSTM & DAppSCAN & 0.906$\pm$0.014 & 0.415$\pm$0.040 & 0.427$\pm$0.027 & 0.415 & 0.462 & 45.8m \\
+Deep learning & CodeBERT & DAppSCAN & 0.936$\pm$0.014 & \textbf{0.660}$\pm$0.044 & 0.625$\pm$0.032 & \textbf{0.824} & 0.511 & 6.9h \\
+\textbf{Ours (ML)} & GradientBoosting & DAppSCAN & 0.894$\pm$0.009 & 0.363$\pm$0.024 & 0.400$\pm$0.022 & 0.341 & 0.505 & 5.5m \\
 \hline
-Deep learning & TextCNN & Merged & 0.924$\pm$0.003 & 0.495 & 0.591 & 0.507 & 0.713 & 4.7m \\
-Deep learning & BiLSTM & Merged & 0.926$\pm$0.008 & 0.511 & 0.594 & 0.514 & 0.705 & 28.1m \\
-Deep learning & CodeBERT & Merged & \textbf{0.942}$\pm$0.007 & 0.621 & \textbf{0.667} & 0.589 & \textbf{0.768} & 6.6h \\
-\textbf{Ours (ML)} & GradientBoosting & Merged & 0.920$\pm$0.006 & 0.497 & 0.592 & 0.500 & 0.726 & 5.5m \\
+Deep learning & TextCNN & Merged & 0.924$\pm$0.003 & 0.495$\pm$0.021 & 0.591$\pm$0.012 & 0.507 & 0.713 & 4.7m \\
+Deep learning & BiLSTM & Merged & 0.926$\pm$0.008 & 0.511$\pm$0.024 & 0.594$\pm$0.015 & 0.514 & 0.705 & 28.1m \\
+Deep learning & CodeBERT & Merged & \textbf{0.942}$\pm$0.007 & 0.621$\pm$0.024 & \textbf{0.667}$\pm$0.017 & 0.589 & \textbf{0.768} & 6.6h \\
+\textbf{Ours (ML)} & GradientBoosting & Merged & 0.920$\pm$0.006 & 0.497$\pm$0.025 & 0.592$\pm$0.014 & 0.500 & 0.726 & 5.5m \\
 \hline
 \end{tabular}
 \\[4pt]

@@ -10,21 +10,21 @@ Best result per metric in \textbf{bold}. Training time is for the full 5-fold CV
 Method & Data & ROC-AUC & PR-AUC & F1 & Prec. & Rec. & Time \\
 \midrule
 \multicolumn{8}{l}{\textit{Rule-based approaches}} \\
-Baseline (risk\_z) & DAppSCAN & $0.815 \pm 0.015$ & $0.168 \pm 0.008$ & $0.255$ & $0.170$ & $0.518$ & ${<}1$\,s \\
+Baseline (risk\_z) & DAppSCAN & $0.815 \pm 0.015$ & $0.168 \pm 0.008$ & $0.255 \pm 0.012$ & $0.170$ & $0.518$ & ${<}1$\,s \\
 Slither & DAppSCAN$^{\dagger}$ & -- & -- & $0.233$ & $0.148$ & $0.553$ & -- \\
 \midrule
 \multicolumn{8}{l}{\textit{Feature-engineered ML (our approach)}} \\
-GradientBoosting & DAppSCAN & $0.894 \pm 0.009$ & $0.363 \pm 0.024$ & $0.400$ & $0.341$ & $0.505$ & $5.5$\,min \\
-Random Forest & DAppSCAN & $\mathbf{0.901} \pm 0.006$ & $0.307 \pm 0.018$ & $0.393$ & $0.326$ & $0.500$ & $12$\,s \\
-GradientBoosting & Merged & $0.920 \pm 0.006$ & $0.497 \pm 0.025$ & $0.592$ & $0.500$ & $0.726$ & $5.5$\,min \\
+GradientBoosting & DAppSCAN & $0.894 \pm 0.009$ & $0.363 \pm 0.024$ & $0.400 \pm 0.022$ & $0.341$ & $0.505$ & $5.5$\,min \\
+Random Forest & DAppSCAN & $\mathbf{0.901} \pm 0.006$ & $0.307 \pm 0.018$ & $0.393 \pm 0.022$ & $0.326$ & $0.500$ & $12$\,s \\
+GradientBoosting & Merged & $0.920 \pm 0.006$ & $0.497 \pm 0.025$ & $0.592 \pm 0.014$ & $0.500$ & $0.726$ & $5.5$\,min \\
 \midrule
 \multicolumn{8}{l}{\textit{Deep learning baselines}} \\
-TextCNN & DAppSCAN & $0.905 \pm 0.012$ & $0.364 \pm 0.056$ & $0.416$ & $0.347$ & $0.526$ & $4.3$\,min \\
-BiLSTM & DAppSCAN & $0.906 \pm 0.014$ & $0.415 \pm 0.040$ & $0.427$ & $0.415$ & $0.462$ & $46$\,min \\
-CodeBERT & DAppSCAN & $0.936 \pm 0.014$ & $0.660 \pm 0.044$ & $0.625$ & $0.824$ & $0.511$ & $6.9$\,h \\
-TextCNN & Merged & $0.924 \pm 0.003$ & $0.495 \pm 0.021$ & $0.591$ & $0.507$ & $0.713$ & $4.7$\,min \\
-BiLSTM & Merged & $0.926 \pm 0.008$ & $0.511 \pm 0.024$ & $0.594$ & $0.514$ & $0.705$ & $28$\,min \\
-CodeBERT & Merged & $\mathbf{0.942} \pm 0.007$ & $\mathbf{0.621} \pm 0.024$ & $\mathbf{0.667}$ & $0.589$ & $\mathbf{0.768}$ & $6.6$\,h \\
+TextCNN & DAppSCAN & $0.905 \pm 0.012$ & $0.364 \pm 0.056$ & $0.416 \pm 0.032$ & $0.347$ & $0.526$ & $4.3$\,min \\
+BiLSTM & DAppSCAN & $0.906 \pm 0.014$ & $0.415 \pm 0.040$ & $0.427 \pm 0.027$ & $0.415$ & $0.462$ & $46$\,min \\
+CodeBERT & DAppSCAN & $0.936 \pm 0.014$ & $0.660 \pm 0.044$ & $0.625 \pm 0.032$ & $0.824$ & $0.511$ & $6.9$\,h \\
+TextCNN & Merged & $0.924 \pm 0.003$ & $0.495 \pm 0.021$ & $0.591 \pm 0.012$ & $0.507$ & $0.713$ & $4.7$\,min \\
+BiLSTM & Merged & $0.926 \pm 0.008$ & $0.511 \pm 0.024$ & $0.594 \pm 0.015$ & $0.514$ & $0.705$ & $28$\,min \\
+CodeBERT & Merged & $\mathbf{0.942} \pm 0.007$ & $\mathbf{0.621} \pm 0.024$ & $\mathbf{0.667} \pm 0.017$ & $0.589$ & $\mathbf{0.768}$ & $6.6$\,h \\
 \bottomrule
 \multicolumn{8}{l}{\scriptsize $^{\dagger}$Slither can only analyze 29.6\% of DAppSCAN contracts (6,341 of 21,457) due to compilation requirements.}
 \end{tabular}

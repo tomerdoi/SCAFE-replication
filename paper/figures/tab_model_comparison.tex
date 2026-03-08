@@ -1,24 +1,25 @@
 \begin{table}[t]
 \centering
-\caption{Classification performance on DAppSCAN (single-dataset) and merged (DAppSCAN + FORGE) training. Best values in \textbf{bold}.}
+\caption{Classification performance on DAppSCAN (single-dataset) and merged (DAppSCAN + FORGE) training (mean $\pm$ std over 5 folds). Best values in \textbf{bold}.}
 \label{tab:model_comparison}
-\setlength{\tabcolsep}{4pt}
+\setlength{\tabcolsep}{3pt}
+\small
 \begin{tabular}{ll ccccc}
 \hline
 \textbf{Training} & \textbf{Model} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1} & \textbf{Prec.} & \textbf{Recall} \\
 \hline
-DAppSCAN & Random Forest & 0.901$\pm$0.006 & 0.307 & 0.393 & 0.326 & 0.500 \\
-DAppSCAN & XGBoost & 0.897$\pm$0.010 & 0.348 & 0.393 & 0.333 & 0.492 \\
-DAppSCAN & GradientBoosting & 0.894$\pm$0.009 & 0.363 & 0.400 & 0.341 & 0.505 \\
-DAppSCAN & Extra Trees & 0.894$\pm$0.007 & 0.302 & 0.378 & 0.296 & 0.525 \\
-DAppSCAN & HistGradientBoosting & 0.887$\pm$0.008 & 0.302 & 0.382 & 0.324 & 0.485 \\
-DAppSCAN & Logistic Reg. & 0.856$\pm$0.006 & 0.256 & 0.338 & 0.303 & 0.414 \\
-DAppSCAN & Baseline (risk score) & 0.815$\pm$0.015 & 0.168 & 0.255 & 0.170 & 0.518 \\
+DAppSCAN & Random Forest & 0.901$\pm$0.006 & 0.307$\pm$0.018 & 0.393$\pm$0.022 & 0.326 & 0.500 \\
+DAppSCAN & XGBoost & 0.897$\pm$0.010 & 0.348$\pm$0.025 & 0.393$\pm$0.027 & 0.333 & 0.492 \\
+DAppSCAN & GradientBoosting & 0.894$\pm$0.009 & 0.363$\pm$0.024 & 0.400$\pm$0.022 & 0.341 & 0.505 \\
+DAppSCAN & Extra Trees & 0.894$\pm$0.007 & 0.302$\pm$0.020 & 0.378$\pm$0.019 & 0.296 & 0.525 \\
+DAppSCAN & HistGradientBoosting & 0.887$\pm$0.008 & 0.302$\pm$0.017 & 0.382$\pm$0.020 & 0.324 & 0.485 \\
+DAppSCAN & Logistic Reg. & 0.856$\pm$0.006 & 0.256$\pm$0.028 & 0.338$\pm$0.020 & 0.303 & 0.414 \\
+DAppSCAN & Baseline (risk score) & 0.815$\pm$0.015 & 0.168$\pm$0.008 & 0.255$\pm$0.012 & 0.170 & 0.518 \\
 \hline
-Merged & Random Forest & \textbf{0.920}$\pm$0.006 & 0.478 & 0.579 & 0.482 & \textbf{0.729} \\
-Merged & GradientBoosting & \textbf{0.920}$\pm$0.006 & \textbf{0.497} & \textbf{0.592} & 0.500 & 0.726 \\
-Merged & XGBoost & 0.918$\pm$0.006 & 0.491 & 0.582 & 0.503 & 0.696 \\
-Merged & HistGradientBoosting & 0.916$\pm$0.005 & 0.476 & 0.575 & \textbf{0.510} & 0.662 \\
+Merged & Random Forest & \textbf{0.920}$\pm$0.006 & 0.478$\pm$0.018 & 0.579$\pm$0.013 & 0.482 & \textbf{0.729} \\
+Merged & GradientBoosting & \textbf{0.920}$\pm$0.006 & \textbf{0.497}$\pm$0.025 & \textbf{0.592}$\pm$0.014 & 0.500 & 0.726 \\
+Merged & XGBoost & 0.918$\pm$0.006 & 0.491$\pm$0.022 & 0.582$\pm$0.014 & 0.503 & 0.696 \\
+Merged & HistGradientBoosting & 0.916$\pm$0.005 & 0.476$\pm$0.017 & 0.575$\pm$0.020 & \textbf{0.510} & 0.662 \\
 \hline
 \end{tabular}
 \end{table}
