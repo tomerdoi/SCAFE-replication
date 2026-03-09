@@ -1,0 +1,21 @@
+\begin{table}[t]
+\centering
+\caption{Computational efficiency comparison on merged data (5-fold GroupKFold CV, 26,423 contracts).}
+\label{tab:efficiency}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrccl}
+\toprule
+\textbf{Method} & \textbf{Training} & \textbf{GPU} & \textbf{Speedup} & \textbf{ROC-AUC} \\
+\midrule
+Feature extraction & 10\,min & No & -- & -- \\
+\midrule
+Ours (GradientBoosting) & 5.5\,min & No & 73$\times$ & 0.920 \\
+TextCNN & 4.7\,min & Yes & 85$\times$ & 0.924 \\
+BiLSTM & 28\,min & Yes & 14$\times$ & 0.926 \\
+CodeBERT (fine-tuned) & 6.6\,h & Yes & 1$\times$ & \textbf{0.942} \\
+\bottomrule
+\end{tabular}
+\\[4pt]
+{\footnotesize Speedup is relative to CodeBERT. Feature extraction is a one-time cost shared by all ML models. DL models ran on Apple M-series GPU (MPS); our ML model used CPU only.}
+\end{table}
