@@ -8,7 +8,7 @@
 \hline
 \textbf{Category} & \textbf{Method} & \textbf{Data} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1} & \textbf{Prec.} & \textbf{Recall} & \textbf{Time}$^\ddagger$ \\
 \hline
-Static tool & Slither (medium) & DAppSCAN$^\dagger$ & --- & --- & 0.233 & 0.147 & 0.552 & --- \\
+Static tool & Slither (medium) & DAppSCAN$^\dagger$ & --- & --- & 0.233 & 0.148 & 0.553 & --- \\
 Rule-based & Baseline (risk\_z) & DAppSCAN & 0.815$\pm$0.015 & 0.168$\pm$0.008 & 0.255$\pm$0.012 & 0.170 & 0.518 & $<$1s \\
 \hline
 Deep learning & TextCNN & DAppSCAN & 0.905$\pm$0.012 & 0.364$\pm$0.056 & 0.416$\pm$0.032 & 0.347 & 0.526 & 4.3m \\
@@ -22,7 +22,8 @@ Deep learning & CodeBERT & Merged & \textbf{0.942}$\pm$0.007 & 0.621$\pm$0.024 &
 \textbf{Ours (ML)} & GradientBoosting & Merged & 0.920$\pm$0.006 & 0.497$\pm$0.025 & 0.592$\pm$0.014 & 0.500 & 0.726 & 5.5m \\
 \hline
 \end{tabular}
-\\[4pt]
+\vspace{4pt}
+
 {\footnotesize $^\dagger$Slither requires compilation; covers only 29.6\% of the dataset. ROC/PR-AUC unavailable (binary output).}\\
 {\footnotesize $^\ddagger$Wall-clock time for full 5-fold CV. DL models ran on Apple M-series GPU (MPS); ML models on CPU only.}
 \end{table*}
