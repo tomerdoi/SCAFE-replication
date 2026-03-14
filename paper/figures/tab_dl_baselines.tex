@@ -14,16 +14,19 @@ Rule-based & Baseline (risk\_z) & DAppSCAN & 0.815$\pm$0.015 & 0.168$\pm$0.008 &
 Deep learning & TextCNN & DAppSCAN & 0.905$\pm$0.012 & 0.364$\pm$0.056 & 0.416$\pm$0.032 & 0.347 & 0.526 & 4.3m \\
 Deep learning & BiLSTM & DAppSCAN & 0.906$\pm$0.014 & 0.415$\pm$0.040 & 0.427$\pm$0.027 & 0.415 & 0.462 & 45.8m \\
 Deep learning & CodeBERT & DAppSCAN & 0.936$\pm$0.014 & \textbf{0.660}$\pm$0.044 & 0.625$\pm$0.032 & \textbf{0.824} & 0.511 & 6.9h \\
-\textbf{Ours (ML)} & GradientBoosting & DAppSCAN & 0.894$\pm$0.009 & 0.363$\pm$0.024 & 0.400$\pm$0.022 & 0.341 & 0.505 & 5.5m \\
+\textbf{Ours (ML)} & RandomForest & DAppSCAN & 0.907$\pm$0.005 & 0.371$\pm$0.024 & 0.423$\pm$0.024 & 0.364 & 0.525 & 0.1m \\
+\textbf{Ours (ML)} & GradientBoosting & DAppSCAN & 0.895$\pm$0.007 & 0.369$\pm$0.023 & 0.416$\pm$0.016 & 0.365 & 0.487 & 4.3m \\
 \hline
 Deep learning & TextCNN & Merged & 0.924$\pm$0.003 & 0.495$\pm$0.021 & 0.591$\pm$0.012 & 0.507 & 0.713 & 4.7m \\
 Deep learning & BiLSTM & Merged & 0.926$\pm$0.008 & 0.511$\pm$0.024 & 0.594$\pm$0.015 & 0.514 & 0.705 & 28.1m \\
 Deep learning & CodeBERT & Merged & \textbf{0.942}$\pm$0.007 & 0.621$\pm$0.024 & \textbf{0.667}$\pm$0.017 & 0.589 & \textbf{0.768} & 6.6h \\
-\textbf{Ours (ML)} & GradientBoosting & Merged & 0.920$\pm$0.006 & 0.497$\pm$0.025 & 0.592$\pm$0.014 & 0.500 & 0.726 & 5.5m \\
+\textbf{Ours (ML)} & RandomForest & Merged & 0.924$\pm$0.005 & 0.490$\pm$0.016 & 0.593$\pm$0.014 & 0.494 & 0.745 & 0.2m \\
+\textbf{Ours (ML)} & GradientBoosting & Merged & 0.921$\pm$0.006 & 0.506$\pm$0.023 & 0.597$\pm$0.012 & 0.503 & 0.734 & 4.3m \\
+\textbf{Ours (ML)} & Vote(RF+GBC+XGB) & Merged & 0.925$\pm$0.005 & 0.504$\pm$0.020 & 0.604$\pm$0.015 & 0.508 & 0.748 & 4.6m \\
 \hline
 \end{tabular}
 \vspace{4pt}
 
 {\footnotesize $^\dagger$Slither requires compilation; covers only 29.6\% of the dataset. ROC/PR-AUC unavailable (binary output).}\\
-{\footnotesize $^\ddagger$Wall-clock time for full 5-fold CV. DL models ran on Apple M-series GPU (MPS); ML models on CPU only.}
+{\footnotesize $^\ddagger$Training time only (full 5-fold CV); excludes preprocessing. Our method requires 10\,min feature extraction; DL methods require ${\sim}$1\,min tokenization. See Table~\ref{tab:efficiency} for end-to-end comparison. DL: Apple M-series GPU (MPS); ML: CPU only.}
 \end{table*}

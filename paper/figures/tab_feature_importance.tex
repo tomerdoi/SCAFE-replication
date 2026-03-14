@@ -1,31 +1,31 @@
 \begin{table}[t]
 \centering
-\caption{Top 20 features by importance (two-stage MI + RF selection, 257$\rightarrow$80).}
+\caption{Top 20 \emph{source-text} features by importance (two-stage MI + RF selection, 306$\rightarrow$80). The on-chain feature \texttt{has\_verified\_source} ranks 19th overall but is excluded here as it requires Etherscan access. Features marked with $^\star$ are new in the enhanced feature set.}
 \label{tab:features}
 \begin{tabular}{rlll}
 \hline
 \textbf{Rank} & \textbf{Feature} & \textbf{Description} & \textbf{Importance} \\
 \hline
-1 & \texttt{comp\_complexity} & Composite complexity score & 0.0409 \\
-2 & \texttt{n\_risky\_bigrams} & Risky code bigram count & 0.0304 \\
-3 & \texttt{n\_written\_state\_vars} & State variables written & 0.0294 \\
-4 & \texttt{halstead\_effort} & Halstead effort metric & 0.0261 \\
-5 & \texttt{halstead\_difficulty} & Halstead difficulty metric & 0.0257 \\
-6 & \texttt{n\_assignments} & Assignment statement count & 0.0251 \\
-7 & \texttt{n\_arithmetic\_ops} & Arithmetic operation count & 0.0204 \\
-8 & \texttt{loc} & Lines of code & 0.0202 \\
-9 & \texttt{std\_cyclomatic} & Cyclomatic complexity (std) & 0.0197 \\
-10 & \texttt{bigram\_entropy} & Code bigram entropy & 0.0194 \\
-11 & \texttt{risky\_bigram\_density} & Risky bigram density & 0.0171 \\
-12 & \texttt{sv\_fanout\_entropy} & State-variable fanout entropy & 0.0157 \\
-13 & \texttt{fn\_loc\_gini} & Function size Gini coefficient & 0.0153 \\
-14 & \texttt{cyclomatic\_variance\_ratio} & Cyclomatic variance ratio & 0.0148 \\
-15 & \texttt{arithmetic\_density} & Arithmetic density & 0.0146 \\
-16 & \texttt{fn\_loc\_cv} & Function size coeff. of variation & 0.0134 \\
-17 & \texttt{n\_state\_variables} & State variable count & 0.0132 \\
-18 & \texttt{avg\_cyclomatic} & Avg. cyclomatic complexity & 0.0128 \\
-19 & \texttt{std\_fn\_arith} & Arithmetic per-function (std) & 0.0126 \\
-20 & \texttt{token\_entropy} & Token entropy & 0.0116 \\
+1 & \texttt{token\_diversity} & Token type-to-token ratio & 0.0402 \\
+2 & \texttt{comp\_complexity} & Composite complexity score & 0.0380 \\
+3 & \texttt{trigram\_diversity}$^\star$ & Trigram type diversity & 0.0355 \\
+4 & \texttt{halstead\_volume} & Halstead volume metric & 0.0312 \\
+5 & \texttt{trigram\_entropy}$^\star$ & Shannon entropy of trigrams & 0.0298 \\
+6 & \texttt{cg\_leaf\_ratio} & Call-graph leaf function ratio & 0.0271 \\
+7 & \texttt{halstead\_effort} & Halstead effort metric & 0.0254 \\
+8 & \texttt{n\_total\_tokens} & Total token count & 0.0243 \\
+9 & \texttt{bigram\_diversity} & Bigram type diversity & 0.0229 \\
+10 & \texttt{n\_unique\_tokens} & Unique token count & 0.0218 \\
+11 & \texttt{bigram\_entropy} & Code bigram entropy & 0.0207 \\
+12 & \texttt{halstead\_difficulty} & Halstead difficulty metric & 0.0195 \\
+13 & \texttt{loc} & Lines of code & 0.0183 \\
+14 & \texttt{n\_written\_state\_vars} & State variables written & 0.0174 \\
+15 & \texttt{token\_entropy} & Token entropy & 0.0168 \\
+16 & \texttt{n\_risky\_bigrams} & Risky code bigram count & 0.0156 \\
+17 & \texttt{halstead\_volume\_per\_loc} & Halstead volume per LOC & 0.0144 \\
+18 & \texttt{avg\_loc\_per\_function} & Avg. LOC per function & 0.0138 \\
+19 & \texttt{n\_require\_assert} & Require/assert count & 0.0131 \\
+20 & \texttt{sum\_cyclomatic} & Sum cyclomatic complexity & 0.0125 \\
 \hline
 \end{tabular}
 \end{table}
