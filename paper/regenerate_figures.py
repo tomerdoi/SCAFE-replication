@@ -155,35 +155,34 @@ def fig_feature_importance():
         ("sum_cyclomatic", 0.0125),
     ]
 
-    NEW_FEATURES = {"trigram_diversity", "trigram_entropy"}
+    TRIGRAM_FEATURES = {"trigram_diversity", "trigram_entropy"}
 
     names = [f[0] for f in features][::-1]
     vals = [f[1] for f in features][::-1]
-    is_new = [n in NEW_FEATURES for n in names]
+    is_trigram = [n in TRIGRAM_FEATURES for n in names]
 
     fig, ax = plt.subplots(figsize=(6.5, 5.5))
-    colors = ["#E91E63" if n else plt.cm.viridis(0.3 + 0.6 * i / len(names))
-              for i, n in enumerate(is_new)]
+    colors = ["#E91E63" if t else plt.cm.viridis(0.3 + 0.6 * i / len(names))
+              for i, t in enumerate(is_trigram)]
     bars = ax.barh(range(len(names)), vals, color=colors, edgecolor="white", linewidth=0.5)
     ax.set_yticks(range(len(names)))
     labels = [n.replace("_", " ").title() for n in names]
     ax.set_yticklabels(labels, fontsize=8)
     ax.set_xlabel("Mean Importance (RF, 2-stage selection)")
-    ax.set_title("Top 20 Features by Importance (306 → 80)")
+    ax.set_title("Top 20 Features by Importance (306 $\\rightarrow$ 80)")
     ax.grid(axis="x", alpha=0.3, linewidth=0.5)
 
     max_val = max(vals)
     ax.set_xlim(0, max_val * 1.25)
 
     for i, (val, name) in enumerate(zip(vals, names)):
-        suffix = " (new)" if name in NEW_FEATURES else ""
-        ax.text(val + max_val * 0.015, i, f"{val:.4f}{suffix}",
+        ax.text(val + max_val * 0.015, i, f"{val:.4f}",
                 va="center", fontsize=7,
-                color="#C2185B" if name in NEW_FEATURES else "#333")
+                color="#C2185B" if name in TRIGRAM_FEATURES else "#333")
 
     legend_elements = [
-        Patch(facecolor="#E91E63", label="New trigram features"),
-        Patch(facecolor=plt.cm.viridis(0.6), label="Existing features"),
+        Patch(facecolor="#E91E63", label="Token trigram features"),
+        Patch(facecolor=plt.cm.viridis(0.6), label="Other features"),
     ]
     ax.legend(handles=legend_elements, loc="lower right", fontsize=8)
 
