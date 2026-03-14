@@ -43,6 +43,9 @@ TRIGRAM_FEATURES = {
 }
 
 
+OOF_DIR = _REPO / "data" / "derived" / "oof_predictions"
+
+
 def load_data(dataset="merged"):
     df = pd.read_csv(SCORED_V2, low_memory=False)
     df["label_status"] = df["label_status"].fillna("").astype(str)
@@ -63,7 +66,8 @@ def load_data(dataset="merged"):
     data["y"] = (data["label_status"] == "vulnerable").astype(int)
     y = data["y"].values.astype(int)
 
-    group_key = data["contract_id"].fillna("").astype(str)
+    contract_ids = data["contract_id"].fillna("").astype(str).values
+    group_key = pd.Series(contract_ids)
     unique_groups = sorted(group_key.unique())
     group_map = {g: i for i, g in enumerate(unique_groups)}
     groups = group_key.map(group_map).values.astype(int)
@@ -80,7 +84,7 @@ def load_data(dataset="merged"):
 
     print(f"  {dataset}: {len(y)} contracts (pos={y.sum()}, neg={(y==0).sum()}), "
           f"{len(feat_cols)} features", flush=True)
-    return X, y, groups, feat_cols
+    return X, y, groups, feat_cols, contract_ids
 
 
 def precompute_ranking(X, y, feat_names, exclude_feats=None):
@@ -153,7 +157,22 @@ def get_models(pos_weight):
     }
 
 
-def run_cv(X, y, groups, ranked_idx, k=80, n_folds=5, X_full=None, col_subset=None):
+def _save_oof(sample_indices, fold_indices, y_true, y_prob, contract_ids, model_name, dataset):
+    """Save per-sample out-of-fold predictions to CSV."""
+    OOF_DIR.mkdir(parents=True, exist_ok=True)
+    df = pd.DataFrame({
+        "sample_idx": sample_indices,
+        "contract_id": contract_ids,
+        "fold": fold_indices,
+        "y_true": y_true,
+        "y_prob": y_prob,
+    })
+    fname = f"ml_{model_name}_{dataset}.csv"
+    df.to_csv(OOF_DIR / fname, index=False)
+
+
+def run_cv(X, y, groups, ranked_idx, k=80, n_folds=5, X_full=None, col_subset=None,
+           contract_ids=None, dataset_name="merged"):
     if col_subset is not None:
         selected = sorted([col_subset[ranked_idx[i]] for i in range(min(k, len(ranked_idx)))])
     else:
@@ -166,11 +185,14 @@ def run_cv(X, y, groups, ranked_idx, k=80, n_folds=5, X_full=None, col_subset=No
     X_use = X_full if X_full is not None else X
 
     results = {}
-    all_fold_probs = {}
 
     for model_name, model_fn in models.items():
         t0 = time.time()
         fold_metrics = []
+        oof_sample_idx = []
+        oof_fold = []
+        oof_y_true = []
+        oof_y_prob = []
 
         for fold_idx, (train_idx, test_idx) in enumerate(gkf.split(X_use, y, groups)):
             Xtr = X_use[train_idx][:, selected]
@@ -184,7 +206,6 @@ def run_cv(X, y, groups, ranked_idx, k=80, n_folds=5, X_full=None, col_subset=No
             m = model_fn()
             m.fit(Xtr, ytr)
 
-            prob_te = m.predict_proba(Xtr)[:, 1] if hasattr(m, "predict_proba") else m.predict(Xtr).astype(float)
             prob_te = m.predict_proba(Xte)[:, 1] if hasattr(m, "predict_proba") else m.predict(Xte).astype(float)
 
             roc = roc_auc_score(yte, prob_te)
@@ -198,6 +219,11 @@ def run_cv(X, y, groups, ranked_idx, k=80, n_folds=5, X_full=None, col_subset=No
                 "roc": roc, "pr": pr, "f1": opt_f1,
                 "prec": prec, "rec": rec, "threshold": opt_t,
             })
+
+            oof_sample_idx.extend(test_idx.tolist())
+            oof_fold.extend([fold_idx] * len(test_idx))
+            oof_y_true.extend(yte.tolist())
+            oof_y_prob.extend(prob_te.tolist())
 
         elapsed = time.time() - t0
         rocs = [f["roc"] for f in fold_metrics]
@@ -224,15 +250,25 @@ def run_cv(X, y, groups, ranked_idx, k=80, n_folds=5, X_full=None, col_subset=No
               f"P={np.mean(precs):.3f} R={np.mean(recs):.3f}  "
               f"({elapsed:.1f}s)", flush=True)
 
+        if contract_ids is not None:
+            oof_cids = [contract_ids[i] for i in oof_sample_idx]
+            _save_oof(oof_sample_idx, oof_fold, oof_y_true, oof_y_prob,
+                      oof_cids, model_name, dataset_name)
+
     return results
 
 
-def run_vote_ensemble(X, y, groups, ranked_idx, k=80, n_folds=5):
+def run_vote_ensemble(X, y, groups, ranked_idx, k=80, n_folds=5,
+                      contract_ids=None, dataset_name="merged"):
     selected = sorted(ranked_idx[:k])
     gkf = GroupKFold(n_splits=n_folds)
     pos_weight = (y == 0).sum() / max((y == 1).sum(), 1)
 
     fold_metrics = []
+    oof_sample_idx = []
+    oof_fold = []
+    oof_y_true = []
+    oof_y_prob = []
     t0 = time.time()
 
     for fold_idx, (train_idx, test_idx) in enumerate(gkf.split(X, y, groups)):
@@ -275,6 +311,11 @@ def run_vote_ensemble(X, y, groups, ranked_idx, k=80, n_folds=5):
             "prec": prec, "rec": rec,
         })
 
+        oof_sample_idx.extend(test_idx.tolist())
+        oof_fold.extend([fold_idx] * len(test_idx))
+        oof_y_true.extend(yte.tolist())
+        oof_y_prob.extend(prob_te.tolist())
+
     elapsed = time.time() - t0
     rocs = [f["roc"] for f in fold_metrics]
     prs = [f["pr"] for f in fold_metrics]
@@ -300,7 +341,33 @@ def run_vote_ensemble(X, y, groups, ranked_idx, k=80, n_folds=5):
           f"P={np.mean(precs):.3f} R={np.mean(recs):.3f}  "
           f"({elapsed:.1f}s)", flush=True)
 
+    if contract_ids is not None:
+        oof_cids = [contract_ids[i] for i in oof_sample_idx]
+        _save_oof(oof_sample_idx, oof_fold, oof_y_true, oof_y_prob,
+                  oof_cids, "Vote_RF_GBC_XGB", dataset_name)
+
     return result
+
+
+def _save_fold_assignments(y, groups, contract_ids, dataset_name, n_folds=5):
+    """Save fold assignments so DL scripts can use identical splits."""
+    OOF_DIR.mkdir(parents=True, exist_ok=True)
+    gkf = GroupKFold(n_splits=n_folds)
+    fold_arr = np.full(len(y), -1, dtype=int)
+    for fold_idx, (_, test_idx) in enumerate(gkf.split(np.zeros(len(y)), y, groups)):
+        fold_arr[test_idx] = fold_idx
+
+    df = pd.DataFrame({
+        "sample_idx": np.arange(len(y)),
+        "contract_id": contract_ids,
+        "group": groups,
+        "y_true": y,
+        "fold": fold_arr,
+    })
+    fname = f"fold_assignments_{dataset_name}.csv"
+    df.to_csv(OOF_DIR / fname, index=False)
+    print(f"  Saved fold assignments: {fname} ({len(df)} samples, "
+          f"{n_folds} folds)", flush=True)
 
 
 def main():
@@ -312,27 +379,38 @@ def main():
 
     # === MERGED DATA ===
     print("\n--- Loading merged data ---", flush=True)
-    X_m, y_m, g_m, feats_m = load_data("merged")
+    X_m, y_m, g_m, feats_m, cids_m = load_data("merged")
+
+    print("--- Saving fold assignments (merged) ---", flush=True)
+    _save_fold_assignments(y_m, g_m, cids_m, "merged")
 
     print("--- Merged feature ranking ---", flush=True)
     ranked_m, ranked_names_m, _ = precompute_ranking(X_m, y_m, feats_m)
 
     print("\n--- Merged k=80 (individual models) ---", flush=True)
-    all_results["merged_k80"] = run_cv(X_m, y_m, g_m, ranked_m, k=80)
+    all_results["merged_k80"] = run_cv(
+        X_m, y_m, g_m, ranked_m, k=80,
+        contract_ids=cids_m, dataset_name="merged")
 
     print("\n--- Merged k=80 (Vote ensemble) ---", flush=True)
     all_results["merged_k80"]["Vote(RF+GBC+XGB)"] = run_vote_ensemble(
-        X_m, y_m, g_m, ranked_m, k=80)
+        X_m, y_m, g_m, ranked_m, k=80,
+        contract_ids=cids_m, dataset_name="merged")
 
     # === DAPPSCAN ONLY ===
     print("\n--- Loading DAppSCAN data ---", flush=True)
-    X_d, y_d, g_d, feats_d = load_data("dappscan")
+    X_d, y_d, g_d, feats_d, cids_d = load_data("dappscan")
+
+    print("--- Saving fold assignments (dappscan) ---", flush=True)
+    _save_fold_assignments(y_d, g_d, cids_d, "dappscan")
 
     print("--- DAppSCAN feature ranking ---", flush=True)
     ranked_d, ranked_names_d, _ = precompute_ranking(X_d, y_d, feats_d)
 
     print("\n--- DAppSCAN k=80 (individual models) ---", flush=True)
-    all_results["dappscan_k80"] = run_cv(X_d, y_d, g_d, ranked_d, k=80)
+    all_results["dappscan_k80"] = run_cv(
+        X_d, y_d, g_d, ranked_d, k=80,
+        contract_ids=cids_d, dataset_name="dappscan")
 
     # === TRIGRAM ABLATION (merged, k=80, no trigram features) ===
     print("\n--- Trigram ablation (merged, no trigrams) ---", flush=True)

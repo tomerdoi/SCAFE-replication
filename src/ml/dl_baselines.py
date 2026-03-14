@@ -45,6 +45,7 @@ logger = logging.getLogger(__name__)
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _OUT_DIR = _REPO_ROOT / "data" / "derived" / "dl_results"
+_OOF_DIR = _REPO_ROOT / "data" / "derived" / "oof_predictions"
 
 DEVICE = (
     "mps" if torch.backends.mps.is_available()
@@ -338,6 +339,24 @@ def load_sources(df: pd.DataFrame, max_tokens: int = 1024) -> List[List[str]]:
     return token_lists
 
 
+# ── OOF predictions ──────────────────────────────────────────────────────────
+
+def _save_dl_oof(sample_indices, fold_indices, y_true, y_prob,
+                 contract_ids, model_name, dataset):
+    """Save per-sample out-of-fold predictions to CSV."""
+    _OOF_DIR.mkdir(parents=True, exist_ok=True)
+    oof_df = pd.DataFrame({
+        "sample_idx": sample_indices,
+        "contract_id": contract_ids,
+        "fold": fold_indices,
+        "y_true": y_true,
+        "y_prob": y_prob,
+    })
+    fname = f"dl_{model_name}_{dataset}.csv"
+    oof_df.to_csv(_OOF_DIR / fname, index=False)
+    logger.info(f"  Saved OOF predictions: {fname} ({len(oof_df)} samples)")
+
+
 # ── Fold evaluation (TextCNN / BiLSTM) ──────────────────────────────────────
 
 @dataclass
@@ -370,6 +389,11 @@ def evaluate_token_model(
     """Run GroupKFold CV for a token-based DL model (TextCNN or BiLSTM)."""
     gkf = GroupKFold(n_splits=n_folds)
     fold_results: List[DLFoldResult] = []
+    oof_sample_idx: List[int] = []
+    oof_fold: List[int] = []
+    oof_y_true: List[int] = []
+    oof_y_prob: List[float] = []
+    contract_ids = df["contract_id"].fillna("").astype(str).values
     t0 = time.time()
 
     for fold_idx, (train_idx, test_idx) in enumerate(gkf.split(
@@ -389,7 +413,6 @@ def evaluate_token_model(
         X_test = np.stack([encode_tokens(t, vocab, max_len)
                            for t in test_tokens])
 
-        # Class weights for loss
         n_pos = int(y_train.sum())
         n_neg = int(len(y_train) - n_pos)
         pos_weight = torch.tensor([n_neg / max(n_pos, 1)],
@@ -411,7 +434,6 @@ def evaluate_token_model(
         for epoch in range(n_epochs):
             loss = train_epoch(model, train_loader, optimizer, criterion,
                                DEVICE)
-            # Quick validation loss for early stopping
             model.eval()
             val_probs = predict(model, test_loader, DEVICE)
             val_loss = nn.functional.binary_cross_entropy(
@@ -442,7 +464,17 @@ def evaluate_token_model(
         ))
         logger.info(f"    ROC-AUC={roc:.4f}  PR-AUC={pr:.4f}  F1={opt_f1:.4f}")
 
+        oof_sample_idx.extend(test_idx.tolist())
+        oof_fold.extend([fold_idx] * len(test_idx))
+        oof_y_true.extend(y_test.tolist())
+        oof_y_prob.extend(y_prob.tolist())
+
     elapsed = time.time() - t0
+
+    oof_cids = [contract_ids[i] for i in oof_sample_idx]
+    _save_dl_oof(oof_sample_idx, oof_fold, oof_y_true, oof_y_prob,
+                 oof_cids, model_name, dataset)
+
     return _aggregate_results(model_name, fold_results, elapsed, dataset)
 
 
@@ -468,6 +500,11 @@ def evaluate_codebert(
     tokenizer = AutoTokenizer.from_pretrained(model_name_hf)
     gkf = GroupKFold(n_splits=n_folds)
     fold_results: List[DLFoldResult] = []
+    oof_sample_idx: List[int] = []
+    oof_fold: List[int] = []
+    oof_y_true: List[int] = []
+    oof_y_prob: List[float] = []
+    contract_ids = df["contract_id"].fillna("").astype(str).values
     t0 = time.time()
 
     sources = [read_source(str(p)) for p in df["local_source_path"]]
@@ -481,7 +518,6 @@ def evaluate_codebert(
         train_srcs = [sources[i] for i in train_idx]
         test_srcs = [sources[i] for i in test_idx]
 
-        # Tokenize
         train_enc = tokenizer(
             train_srcs, padding="max_length", truncation=True,
             max_length=max_len, return_tensors="np",
@@ -550,10 +586,20 @@ def evaluate_codebert(
         ))
         logger.info(f"    ROC-AUC={roc:.4f}  PR-AUC={pr:.4f}  F1={opt_f1:.4f}")
 
+        oof_sample_idx.extend(test_idx.tolist())
+        oof_fold.extend([fold_idx] * len(test_idx))
+        oof_y_true.extend(y_test.tolist())
+        oof_y_prob.extend(y_prob.tolist())
+
         del model
         torch.mps.empty_cache() if DEVICE == "mps" else None
 
     elapsed = time.time() - t0
+
+    oof_cids = [contract_ids[i] for i in oof_sample_idx]
+    _save_dl_oof(oof_sample_idx, oof_fold, oof_y_true, oof_y_prob,
+                 oof_cids, "codebert", dataset)
+
     return _aggregate_results("codebert", fold_results, elapsed, dataset)
 
 
