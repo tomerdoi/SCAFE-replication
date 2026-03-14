@@ -155,16 +155,12 @@ def fig_feature_importance():
         ("sum_cyclomatic", 0.0125),
     ]
 
-    TRIGRAM_FEATURES = {"trigram_diversity", "trigram_entropy"}
-
     names = [f[0] for f in features][::-1]
     vals = [f[1] for f in features][::-1]
-    is_trigram = [n in TRIGRAM_FEATURES for n in names]
 
     fig, ax = plt.subplots(figsize=(6.5, 5.5))
-    colors = ["#E91E63" if t else plt.cm.viridis(0.3 + 0.6 * i / len(names))
-              for i, t in enumerate(is_trigram)]
-    bars = ax.barh(range(len(names)), vals, color=colors, edgecolor="white", linewidth=0.5)
+    colors = [plt.cm.viridis(0.3 + 0.6 * i / len(names)) for i in range(len(names))]
+    ax.barh(range(len(names)), vals, color=colors, edgecolor="white", linewidth=0.5)
     ax.set_yticks(range(len(names)))
     labels = [n.replace("_", " ").title() for n in names]
     ax.set_yticklabels(labels, fontsize=8)
@@ -177,14 +173,7 @@ def fig_feature_importance():
 
     for i, (val, name) in enumerate(zip(vals, names)):
         ax.text(val + max_val * 0.015, i, f"{val:.4f}",
-                va="center", fontsize=7,
-                color="#C2185B" if name in TRIGRAM_FEATURES else "#333")
-
-    legend_elements = [
-        Patch(facecolor="#E91E63", label="Token trigram features"),
-        Patch(facecolor=plt.cm.viridis(0.6), label="Other features"),
-    ]
-    ax.legend(handles=legend_elements, loc="lower right", fontsize=8)
+                va="center", fontsize=7, color="#333")
 
     fig.tight_layout()
     _save(fig, "fig_feature_importance")

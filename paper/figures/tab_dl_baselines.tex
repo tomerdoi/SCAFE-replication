@@ -3,7 +3,7 @@
 \caption{Comparison of all methods on DAppSCAN-only and merged (DAppSCAN + FORGE) training data (mean $\pm$ std over 5 folds). All learning-based models evaluated with 5-fold GroupKFold CV on the same data split.}
 \label{tab:dl_baselines}
 \small
-\setlength{\tabcolsep}{2.5pt}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lll cccccc}
 \hline
 \textbf{Category} & \textbf{Method} & \textbf{Data} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1} & \textbf{Prec.} & \textbf{Recall} & \textbf{Time}$^\ddagger$ \\
@@ -24,7 +24,7 @@ Deep learning & CodeBERT & Merged & \textbf{0.942}$\pm$0.007 & 0.621$\pm$0.024 &
 \textbf{Ours (ML)} & GradientBoosting & Merged & 0.921$\pm$0.006 & 0.506$\pm$0.023 & 0.597$\pm$0.012 & 0.503 & 0.734 & 4.3m \\
 \textbf{Ours (ML)} & Vote(RF+GBC+XGB) & Merged & 0.925$\pm$0.005 & 0.504$\pm$0.020 & 0.604$\pm$0.015 & 0.508 & 0.748 & 4.6m \\
 \hline
-\end{tabular}
+\end{tabular}}
 \vspace{4pt}
 
 {\footnotesize $^\dagger$Slither requires compilation; covers only 29.6\% of the dataset. ROC/PR-AUC unavailable (binary output).}\\

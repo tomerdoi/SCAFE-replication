@@ -2,7 +2,7 @@
 \centering
 \caption{Cross-dataset transfer results (GradientBoosting). Models trained on one dataset and evaluated on another.}
 \label{tab:cross_dataset}
-\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{ll ccccc r}
 \hline
 \textbf{Train On} & \textbf{Test On} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1} & \textbf{Prec.} & \textbf{Recall} & \textbf{N} \\
@@ -14,5 +14,5 @@ FORGE & DAppSCAN & 0.643 & 0.075 & 0.151 & 0.099 & 0.314 & 21,457 \\
 FORGE & FORGE (CV) & 0.553 & 0.561 & 0.703 & 0.546 & 0.986 & 2,367 \\
 DAppSCAN+FORGE & Merged (CV) & 0.921 & 0.506 & 0.597 & 0.503 & 0.734 & 23,824 \\
 \hline
-\end{tabular}
+\end{tabular}}
 \end{table}

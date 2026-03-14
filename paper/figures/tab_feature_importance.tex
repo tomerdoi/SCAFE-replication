@@ -1,6 +1,6 @@
 \begin{table}[t]
 \centering
-\caption{Top 20 \emph{source-text} features by importance (two-stage MI + RF selection, 306$\rightarrow$80). The on-chain feature \texttt{has\_verified\_source} ranks 19th overall but is excluded here as it requires Etherscan access. Token-trigram features are marked with $^\star$.}
+\caption{Top 20 \emph{source-text} features by importance (two-stage MI + RF selection, 306$\rightarrow$80). The on-chain feature \texttt{has\_verified\_source} ranks 19th overall but is excluded here as it requires Etherscan access.}
 \label{tab:features}
 \begin{tabular}{rlll}
 \hline
@@ -8,9 +8,9 @@
 \hline
 1 & \texttt{token\_diversity} & Token type-to-token ratio & 0.0402 \\
 2 & \texttt{comp\_complexity} & Composite complexity score & 0.0380 \\
-3 & \texttt{trigram\_diversity}$^\star$ & Trigram type diversity & 0.0355 \\
+3 & \texttt{trigram\_diversity} & Trigram type diversity & 0.0355 \\
 4 & \texttt{halstead\_volume} & Halstead volume metric & 0.0312 \\
-5 & \texttt{trigram\_entropy}$^\star$ & Shannon entropy of trigrams & 0.0298 \\
+5 & \texttt{trigram\_entropy} & Shannon entropy of trigrams & 0.0298 \\
 6 & \texttt{cg\_leaf\_ratio} & Call-graph leaf function ratio & 0.0271 \\
 7 & \texttt{halstead\_effort} & Halstead effort metric & 0.0254 \\
 8 & \texttt{n\_total\_tokens} & Total token count & 0.0243 \\

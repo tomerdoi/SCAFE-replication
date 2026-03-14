@@ -4,7 +4,7 @@
 Best result per metric in \textbf{bold}. Time column shows training time only (excludes preprocessing); see Table~\ref{tab:efficiency} for end-to-end comparison.}
 \label{tab:comprehensive}
 \small
-\setlength{\tabcolsep}{3.5pt}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{llcccccr}
 \toprule
 Method & Data & ROC-AUC & PR-AUC & F1 & Prec. & Rec. & Time \\
@@ -29,5 +29,5 @@ BiLSTM & Merged & $0.926 \pm 0.008$ & $0.511 \pm 0.024$ & $0.594 \pm 0.015$ & $0
 CodeBERT & Merged & $\mathbf{0.942} \pm 0.007$ & $0.621 \pm 0.024$ & $\mathbf{0.667} \pm 0.017$ & $0.589$ & $\mathbf{0.768}$ & $6.6$\,h \\
 \bottomrule
 \multicolumn{8}{l}{\scriptsize $^{\dagger}$Slither can only analyze 29.6\% of DAppSCAN contracts (6,341 of 21,457) due to compilation requirements.}
-\end{tabular}
+\end{tabular}}
 \end{table*}
