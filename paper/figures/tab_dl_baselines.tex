@@ -8,7 +8,7 @@
 \hline
 \textbf{Category} & \textbf{Method} & \textbf{Data} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1} & \textbf{Prec.} & \textbf{Recall} & \textbf{Time}$^\ddagger$ \\
 \hline
-Static tool & Slither (medium) & DAppSCAN$^\dagger$ & --- & --- & 0.233 & 0.148 & 0.553 & --- \\
+Static tool & Slither (medium) & DAppSCAN$^\dagger$ & --- & --- & 0.233 & 0.148 & 0.553 & N/A \\
 Rule-based & Baseline (risk\_z) & DAppSCAN & 0.815$\pm$0.015 & 0.168$\pm$0.008 & 0.255$\pm$0.012 & 0.170 & 0.518 & $<$1s \\
 \hline
 Deep learning & TextCNN & DAppSCAN & 0.905$\pm$0.012 & 0.364$\pm$0.056 & 0.416$\pm$0.032 & 0.347 & 0.526 & 4.3m \\
@@ -27,6 +27,6 @@ Deep learning & CodeBERT & Merged & \textbf{0.942}$\pm$0.007 & 0.621$\pm$0.024 &
 \end{tabular}}
 \vspace{4pt}
 
-{\footnotesize $^\dagger$Slither requires compilation; covers only 29.6\% of the dataset. ROC/PR-AUC unavailable (binary output).}\\
+{\footnotesize $^\dagger$Slither requires compilation; covers only 29.6\% of the dataset. ROC/PR-AUC unavailable (binary output). Time = N/A (rule-based tool, no training phase).}\\
 {\footnotesize $^\ddagger$Training time only (full 5-fold CV); excludes preprocessing. Our method requires 10\,min feature extraction; DL methods require ${\sim}$1\,min tokenization. See Table~\ref{tab:efficiency} for end-to-end comparison. DL: Apple M-series GPU (MPS); ML: CPU only.}
 \end{table*}
