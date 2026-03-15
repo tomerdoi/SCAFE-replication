@@ -23,11 +23,18 @@ Vote(RF+GBC+XGB) & Merged & $0.925 \pm 0.005$ & $0.504 \pm 0.020$ & $0.604 \pm 0
 \multicolumn{8}{l}{\textit{Deep learning baselines}} \\
 TextCNN & DAppSCAN & $0.905 \pm 0.012$ & $0.364 \pm 0.056$ & $0.416 \pm 0.032$ & $0.347$ & $0.526$ & $4.3$\,min \\
 BiLSTM & DAppSCAN & $0.906 \pm 0.014$ & $0.415 \pm 0.040$ & $0.427 \pm 0.027$ & $0.415$ & $0.462$ & $46$\,min \\
-CodeBERT & DAppSCAN & $0.936 \pm 0.014$ & $\mathbf{0.660} \pm 0.044$ & $0.625 \pm 0.032$ & $\mathbf{0.824}$ & $0.511$ & $6.9$\,h \\
+CodeBERT & DAppSCAN & $0.936 \pm 0.014$ & $0.660 \pm 0.044$ & $0.625 \pm 0.032$ & $\mathbf{0.824}$ & $0.511$ & $6.9$\,h \\
 TextCNN & Merged & $0.924 \pm 0.003$ & $0.495 \pm 0.021$ & $0.591 \pm 0.012$ & $0.507$ & $0.713$ & $4.7$\,min \\
 BiLSTM & Merged & $0.926 \pm 0.008$ & $0.511 \pm 0.024$ & $0.594 \pm 0.015$ & $0.514$ & $0.705$ & $28$\,min \\
-CodeBERT & Merged & $\mathbf{0.942} \pm 0.007$ & $0.621 \pm 0.024$ & $\mathbf{0.667} \pm 0.017$ & $0.589$ & $\mathbf{0.768}$ & $6.6$\,h \\
+CodeBERT & Merged & $0.942 \pm 0.007$ & $0.621 \pm 0.024$ & $0.667 \pm 0.017$ & $0.589$ & $0.768$ & $6.6$\,h \\
+\midrule
+\multicolumn{8}{l}{\textit{Hybrid ensemble (ML + CodeBERT late fusion)$^{\ddagger}$}} \\
+Weighted avg & DAppSCAN & $\mathbf{0.962} \pm 0.004$ & $0.710 \pm 0.023$ & $0.639 \pm 0.022$ & $0.770$ & $0.561$ & ${\sim}7$\,h \\
+Stack: All ML+DL & DAppSCAN & $0.961 \pm 0.006$ & $\mathbf{0.717} \pm 0.014$ & $0.648 \pm 0.017$ & $0.750$ & $0.577$ & ${\sim}7$\,h \\
+Weighted avg & Merged & $0.950 \pm 0.003$ & $0.626 \pm 0.032$ & $0.670 \pm 0.013$ & $0.587$ & $0.783$ & ${\sim}6.8$\,h \\
+Stack: Vote+CB & Merged & $0.948 \pm 0.004$ & $0.541 \pm 0.019$ & $\mathbf{0.675} \pm 0.015$ & $0.579$ & $\mathbf{0.809}$ & ${\sim}6.8$\,h \\
 \bottomrule
-\multicolumn{8}{l}{\scriptsize $^{\dagger}$Slither can only analyze 29.6\% of DAppSCAN contracts (6,341 of 21,457) due to compilation requirements.}
+\multicolumn{8}{l}{\scriptsize $^{\dagger}$Slither can only analyze 29.6\% of DAppSCAN contracts (6,341 of 21,457) due to compilation requirements.}\\
+\multicolumn{8}{l}{\scriptsize $^{\ddagger}$Hybrid ensembles from the same OOF CV runs as Table~\ref{tab:ensemble}; time $\approx$ ML + CodeBERT.}
 \end{tabular}}
 \end{table*}

@@ -9,10 +9,13 @@
 \hline
 DAppSCAN & DAppSCAN (CV) & 0.895 & 0.369 & 0.416 & 0.365 & 0.487 & 21,457 \\
 DAppSCAN & FORGE & 0.492 & 0.527 & 0.689 & 0.525 & 0.999 & 2,367 \\
-DAppSCAN & AccessControlVuln & --- & --- & --- & --- & 1.000 & 94 \\
+DAppSCAN & AccessControlVuln & ---$^{\dagger}$ & ---$^{\dagger}$ & 1.000$^{\dagger}$ & 1.000$^{\dagger}$ & 1.000 & 94 \\
 FORGE & DAppSCAN & 0.643 & 0.075 & 0.151 & 0.099 & 0.314 & 21,457 \\
 FORGE & FORGE (CV) & 0.553 & 0.561 & 0.703 & 0.546 & 0.986 & 2,367 \\
 DAppSCAN+FORGE & Merged (CV) & 0.921 & 0.506 & 0.597 & 0.503 & 0.734 & 23,824 \\
 \hline
 \end{tabular}}
+\vspace{4pt}
+
+{\footnotesize $^{\dagger}$AccessControlVuln contains only positive samples (94 vulnerable, 0 clean). ROC-AUC and PR-AUC are undefined (require both classes). F1 and Precision are trivially 1.0 since FP\,=\,0.}
 \end{table}

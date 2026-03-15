@@ -1,0 +1,22 @@
+\begin{table}[t]
+\centering
+\caption{Hybrid ML\,+\,CodeBERT ensemble results (5-fold GroupKFold CV, mean $\pm$ std). ``Weighted avg'' selects $\alpha$ via nested leave-one-fold-out CV (inner loop on 4 training folds, applied to the held-out fold); ``Stack'' uses a leave-one-fold-out logistic meta-learner. Bold indicates best per metric per dataset. Baseline metrics are from the same CV runs as the ensemble; due to stochastic DL training, CodeBERT values may differ slightly from Table~\ref{tab:dl_baselines}.}
+\label{tab:ensemble}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{ll ccc}
+\toprule
+\textbf{Dataset} & \textbf{Configuration} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1} \\
+\midrule
+Merged & Best ML (Vote ensemble)                     & $0.925 \pm 0.005$ & $0.504 \pm 0.020$ & $0.605 \pm 0.015$ \\
+Merged & CodeBERT                                    & $0.944 \pm 0.003$ & $0.621 \pm 0.015$ & $0.664 \pm 0.014$ \\
+Merged & Weighted avg ($\alpha \approx 0.09$)        & $\mathbf{0.950} \pm 0.003$ & $\mathbf{0.626} \pm 0.032$ & $0.670 \pm 0.013$ \\
+Merged & Stack: Vote + CodeBERT                      & $0.948 \pm 0.004$ & $0.541 \pm 0.019$ & $\mathbf{0.675} \pm 0.015$ \\
+\midrule
+DAppSCAN & Best ML (RandomForest)                    & $0.907 \pm 0.005$ & $0.371 \pm 0.024$ & $0.425 \pm 0.024$ \\
+DAppSCAN & CodeBERT                                  & $0.922 \pm 0.013$ & $0.624 \pm 0.039$ & $0.590 \pm 0.038$ \\
+DAppSCAN & Weighted avg ($\alpha \approx 0.54$)      & $\mathbf{0.962} \pm 0.004$ & $0.710 \pm 0.023$ & $0.639 \pm 0.022$ \\
+DAppSCAN & Stack: All ML + All DL                    & $0.961 \pm 0.006$ & $\mathbf{0.717} \pm 0.014$ & $\mathbf{0.648} \pm 0.017$ \\
+\bottomrule
+\end{tabular}}
+\end{table}

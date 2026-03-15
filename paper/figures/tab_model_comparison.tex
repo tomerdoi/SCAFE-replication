@@ -1,6 +1,6 @@
 \begin{table}[t]
 \centering
-\caption{Classification performance on DAppSCAN (single-dataset) and merged (DAppSCAN + FORGE) training (mean $\pm$ std over 5 folds). Best values in \textbf{bold}.}
+\caption{Classification performance on DAppSCAN (single-dataset) and merged (DAppSCAN + FORGE) training (mean $\pm$ std over 5 folds). Best values per section in \textbf{bold}.}
 \label{tab:model_comparison}
 \setlength{\tabcolsep}{3pt}
 \small
@@ -8,10 +8,10 @@
 \hline
 \textbf{Training} & \textbf{Model} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1} & \textbf{Prec.} & \textbf{Recall} \\
 \hline
-DAppSCAN & Random Forest & 0.907$\pm$0.005 & 0.371$\pm$0.024 & 0.423$\pm$0.024 & 0.364 & 0.525 \\
-DAppSCAN & Extra Trees & 0.901$\pm$0.006 & 0.335$\pm$0.018 & 0.394$\pm$0.016 & 0.307 & 0.555 \\
+DAppSCAN & Random Forest & \textbf{0.907}$\pm$0.005 & 0.371$\pm$0.024 & \textbf{0.423}$\pm$0.024 & 0.364 & 0.525 \\
+DAppSCAN & Extra Trees & 0.901$\pm$0.006 & 0.335$\pm$0.018 & 0.394$\pm$0.016 & 0.307 & \textbf{0.555} \\
 DAppSCAN & GradientBoosting & 0.895$\pm$0.007 & 0.369$\pm$0.023 & 0.416$\pm$0.016 & 0.365 & 0.487 \\
-DAppSCAN & XGBoost & 0.894$\pm$0.009 & 0.377$\pm$0.025 & 0.412$\pm$0.023 & 0.366 & 0.479 \\
+DAppSCAN & XGBoost & 0.894$\pm$0.009 & \textbf{0.377}$\pm$0.025 & 0.412$\pm$0.023 & \textbf{0.366} & 0.479 \\
 DAppSCAN & HistGradientBoosting & 0.888$\pm$0.009 & 0.320$\pm$0.016 & 0.386$\pm$0.014 & 0.348 & 0.457 \\
 DAppSCAN & Logistic Reg. & 0.865$\pm$0.008 & 0.236$\pm$0.023 & 0.343$\pm$0.019 & 0.276 & 0.469 \\
 DAppSCAN & Baseline (risk score) & 0.815$\pm$0.015 & 0.168$\pm$0.008 & 0.255$\pm$0.012 & 0.170 & 0.518 \\
