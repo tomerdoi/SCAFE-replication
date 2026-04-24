@@ -357,6 +357,38 @@ def _save_dl_oof(sample_indices, fold_indices, y_true, y_prob,
     logger.info(f"  Saved OOF predictions: {fname} ({len(oof_df)} samples)")
 
 
+def _save_dl_oof_incremental(sample_indices, fold_indices, y_true, y_prob,
+                             contract_ids, model_name, dataset, fold_idx):
+    """Append one fold's OOF predictions to a partial CSV for crash recovery."""
+    _OOF_DIR.mkdir(parents=True, exist_ok=True)
+    partial = _OOF_DIR / f"dl_{model_name}_{dataset}_partial.csv"
+    chunk = pd.DataFrame({
+        "sample_idx": sample_indices,
+        "contract_id": contract_ids,
+        "fold": fold_indices,
+        "y_true": y_true,
+        "y_prob": y_prob,
+    })
+    write_header = not partial.exists() or fold_idx == 0
+    if fold_idx == 0 and partial.exists():
+        partial.unlink()
+    chunk.to_csv(partial, mode="a", header=write_header, index=False)
+    logger.info(f"  Saved incremental OOF fold {fold_idx}: "
+                f"{partial.name} ({len(chunk)} samples)")
+
+
+def _load_partial_oof(model_name, dataset):
+    """Load partial OOF CSV and return (DataFrame, set of completed folds)."""
+    partial = _OOF_DIR / f"dl_{model_name}_{dataset}_partial.csv"
+    if not partial.exists():
+        return None, set()
+    df = pd.read_csv(partial)
+    completed = set(int(f) for f in df["fold"].unique())
+    logger.info(f"  Resuming from partial OOF: folds {sorted(completed)} "
+                f"already done ({len(df)} samples)")
+    return df, completed
+
+
 # ── Fold evaluation (TextCNN / BiLSTM) ──────────────────────────────────────
 
 @dataclass
@@ -486,6 +518,7 @@ def evaluate_codebert(
     groups: np.ndarray,
     *,
     model_name_hf: str = "microsoft/codebert-base",
+    model_label: Optional[str] = None,
     max_len: int = 512,
     n_folds: int = 5,
     n_epochs: int = 5,
@@ -494,9 +527,10 @@ def evaluate_codebert(
     freeze_layers: int = 8,
     dataset: str = "DAppSCAN",
 ) -> Dict:
-    """Run GroupKFold CV for fine-tuned CodeBERT."""
+    """Run GroupKFold CV for fine-tuned CodeBERT (or compatible model)."""
     from transformers import AutoTokenizer
 
+    label = model_label or "codebert"
     tokenizer = AutoTokenizer.from_pretrained(model_name_hf)
     gkf = GroupKFold(n_splits=n_folds)
     fold_results: List[DLFoldResult] = []
@@ -509,8 +543,33 @@ def evaluate_codebert(
 
     sources = [read_source(str(p)) for p in df["local_source_path"]]
 
+    prev_oof, completed_folds = _load_partial_oof(label, dataset)
+
     for fold_idx, (train_idx, test_idx) in enumerate(gkf.split(
             np.zeros(len(y)), y, groups)):
+
+        if fold_idx in completed_folds and prev_oof is not None:
+            chunk = prev_oof[prev_oof["fold"] == fold_idx]
+            y_test = y[test_idx]
+            y_prob = chunk.sort_values("sample_idx")["y_prob"].values
+            roc = roc_auc_score(y_test, y_prob)
+            pr = average_precision_score(y_test, y_prob)
+            opt_t, opt_f1 = _optimal_f1_threshold(y_test, y_prob)
+            y_pred = (y_prob >= opt_t).astype(int)
+            prec = precision_score(y_test, y_pred, zero_division=0.0)
+            rec = recall_score(y_test, y_pred, zero_division=0.0)
+            fold_results.append(DLFoldResult(
+                fold_idx=fold_idx, roc_auc=roc, pr_auc=pr,
+                f1=opt_f1, precision=prec, recall=rec, threshold=opt_t,
+            ))
+            oof_sample_idx.extend(chunk["sample_idx"].tolist())
+            oof_fold.extend(chunk["fold"].tolist())
+            oof_y_true.extend(chunk["y_true"].tolist())
+            oof_y_prob.extend(chunk["y_prob"].tolist())
+            logger.info(f"  Fold {fold_idx + 1}/{n_folds} RESUMED from disk "
+                        f"(ROC-AUC={roc:.4f}  PR-AUC={pr:.4f}  F1={opt_f1:.4f})")
+            continue
+
         logger.info(f"  CodeBERT fold {fold_idx + 1}/{n_folds} "
                      f"(train={len(train_idx)}, test={len(test_idx)})")
 
@@ -591,6 +650,13 @@ def evaluate_codebert(
         oof_y_true.extend(y_test.tolist())
         oof_y_prob.extend(y_prob.tolist())
 
+        fold_cids = [contract_ids[i] for i in test_idx]
+        _save_dl_oof_incremental(
+            test_idx.tolist(), [fold_idx] * len(test_idx),
+            y_test.tolist(), y_prob.tolist(),
+            fold_cids, label, dataset, fold_idx,
+        )
+
         del model
         torch.mps.empty_cache() if DEVICE == "mps" else None
 
@@ -598,9 +664,14 @@ def evaluate_codebert(
 
     oof_cids = [contract_ids[i] for i in oof_sample_idx]
     _save_dl_oof(oof_sample_idx, oof_fold, oof_y_true, oof_y_prob,
-                 oof_cids, "codebert", dataset)
+                 oof_cids, label, dataset)
 
-    return _aggregate_results("codebert", fold_results, elapsed, dataset)
+    partial = _OOF_DIR / f"dl_{label}_{dataset}_partial.csv"
+    if partial.exists():
+        partial.unlink()
+        logger.info(f"  Cleaned up partial file: {partial.name}")
+
+    return _aggregate_results(label, fold_results, elapsed, dataset)
 
 
 # ── Result aggregation ──────────────────────────────────────────────────────
@@ -618,6 +689,7 @@ def _aggregate_results(model_name: str, fold_results: List[DLFoldResult],
             "textcnn": "TextCNN",
             "bilstm": "BiLSTM",
             "codebert": "CodeBERT (fine-tuned)",
+            "unixcoder": "UniXcoder (fine-tuned)",
         }.get(model_name, model_name),
         "family": "deep_learning",
         "feature_set": "source_text",

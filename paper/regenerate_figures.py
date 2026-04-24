@@ -20,6 +20,8 @@ sys.path.insert(0, str(_REPO))
 
 _FINAL = _REPO / "data" / "derived" / "ml_results" / "final_results.json"
 _DL = _REPO / "data" / "derived" / "dl_results" / "dl_baseline_results.json"
+_UNIXCODER = _REPO / "data" / "derived" / "ml_results" / "unixcoder_results.json"
+_SCAFE_SEM = _REPO / "data" / "derived" / "ml_results" / "scafe_sem_results.json"
 _CROSS_CSV = _REPO / "data" / "derived" / "ml_results" / "cross_dataset_evaluation.csv"
 _SLITHER = _REPO / "data" / "derived" / "slither_results" / "slither_summary.json"
 _OLD_COMP = _REPO / "data" / "derived" / "ml_results" / "model_comparison.csv"
@@ -45,9 +47,29 @@ with open(_FINAL) as f:
 with open(_DL) as f:
     DL_LIST = json.load(f)
 
+SCAFE_SEM = {}
+if _SCAFE_SEM.exists():
+    with open(_SCAFE_SEM) as f:
+        SCAFE_SEM = json.load(f)
+
 DL = {}
 for d in DL_LIST:
     DL[(d["model"], d["dataset"])] = d
+
+if _UNIXCODER.exists():
+    with open(_UNIXCODER) as f:
+        _ux = json.load(f)
+    for ds_key, ds_label in [("merged", "Merged"), ("dappscan", "DAppSCAN")]:
+        if ds_key in _ux:
+            d = _ux[ds_key]
+            DL[("unixcoder", ds_label)] = {
+                "model": "unixcoder", "dataset": ds_label,
+                "roc_auc_mean": d["roc_auc_mean"], "roc_auc_std": d.get("roc_auc_std", 0),
+                "pr_auc_mean": d["pr_auc_mean"], "pr_auc_std": d.get("pr_auc_std", 0),
+                "f1_mean": d["f1_mean"], "f1_std": d.get("f1_std", 0),
+                "precision_mean": d.get("precision_mean", 0),
+                "recall_mean": d.get("recall_mean", 0),
+            }
 
 MODEL_DISPLAY = {
     "RandomForest": "Random Forest",
@@ -368,20 +390,22 @@ def fig_dl_comparison():
     rows.append({"name": "Baseline\n(risk score)", "roc_auc": 0.815, "pr_auc": 0.168,
                  "f1": 0.255, "category": "baseline", "std_roc": 0.015, "std_pr": 0.008, "std_f1": 0.012})
 
-    for model_key, display in [("textcnn", "TextCNN"), ("bilstm", "BiLSTM"), ("codebert", "CodeBERT")]:
+    for model_key, display in [("textcnn", "TextCNN"), ("bilstm", "BiLSTM"),
+                                ("codebert", "CodeBERT"), ("unixcoder", "UniXcoder")]:
         d = DL[(model_key, "Merged")]
         rows.append({"name": f"{display}\n(merged)", "roc_auc": d["roc_auc_mean"],
                      "pr_auc": d["pr_auc_mean"], "f1": d["f1_mean"],
                      "category": "dl", "std_roc": d["roc_auc_std"],
                      "std_pr": d["pr_auc_std"], "std_f1": d["f1_std"]})
 
-    v = FINAL["merged_k80"]["Vote(RF+GBC+XGB)"]
+    sem = SCAFE_SEM.get("merged", {})
+    v = sem.get("Vote(RF+GBC+XGB)", FINAL["merged_k80"]["Vote(RF+GBC+XGB)"])
     rows.append({"name": "Vote Ens.\n(ours)", "roc_auc": v["roc_auc_mean"],
                  "pr_auc": v["pr_auc_mean"], "f1": v["f1_mean"],
                  "category": "ours", "std_roc": v["roc_auc_std"],
                  "std_pr": v["pr_auc_std"], "std_f1": v["f1_std"]})
 
-    g = FINAL["merged_k80"]["GradientBoosting"]
+    g = sem.get("GradientBoosting", FINAL["merged_k80"]["GradientBoosting"])
     rows.append({"name": "GBC\n(ours)", "roc_auc": g["roc_auc_mean"],
                  "pr_auc": g["pr_auc_mean"], "f1": g["f1_mean"],
                  "category": "ours", "std_roc": g["roc_auc_std"],

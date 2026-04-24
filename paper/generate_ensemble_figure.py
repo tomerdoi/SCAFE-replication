@@ -10,16 +10,16 @@ OUT = Path(__file__).resolve().parent / "figures"
 
 datasets = {
     "Merged": {
-        "Best ML\n(Vote)":         {"ROC-AUC": 0.925, "PR-AUC": 0.504, "F1": 0.605},
-        "CodeBERT":                {"ROC-AUC": 0.944, "PR-AUC": 0.621, "F1": 0.664},
-        "Weighted\navg":           {"ROC-AUC": 0.950, "PR-AUC": 0.626, "F1": 0.670},
-        "Stack:\nVote+CB":         {"ROC-AUC": 0.948, "PR-AUC": 0.541, "F1": 0.675},
+        "Best ML\n(Vote)":         {"ROC-AUC": 0.932, "PR-AUC": 0.589, "F1": 0.611},
+        "UniXcoder":               {"ROC-AUC": 0.953, "PR-AUC": 0.645, "F1": 0.679},
+        "Weighted\navg":           {"ROC-AUC": 0.959, "PR-AUC": 0.662, "F1": 0.683},
+        "Stack:\nSCAFE+UX":       {"ROC-AUC": 0.952, "PR-AUC": 0.550, "F1": 0.688},
     },
     "DAppSCAN": {
         "Best ML\n(RF)":           {"ROC-AUC": 0.907, "PR-AUC": 0.371, "F1": 0.425},
-        "CodeBERT":                {"ROC-AUC": 0.922, "PR-AUC": 0.624, "F1": 0.590},
-        "Weighted\navg":           {"ROC-AUC": 0.962, "PR-AUC": 0.710, "F1": 0.639},
-        "Stack:\nAll ML+DL":       {"ROC-AUC": 0.961, "PR-AUC": 0.717, "F1": 0.648},
+        "UniXcoder":               {"ROC-AUC": 0.948, "PR-AUC": 0.691, "F1": 0.653},
+        "Weighted\navg":           {"ROC-AUC": 0.967, "PR-AUC": 0.730, "F1": 0.675},
+        "Stack:\nSCAFE+UX":       {"ROC-AUC": 0.967, "PR-AUC": 0.706, "F1": 0.672},
     },
 }
 
