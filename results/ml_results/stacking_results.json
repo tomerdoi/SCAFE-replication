@@ -1,0 +1,96 @@
+{
+  "stacking_k80": {
+    "Stack(RF+GBC+XGB+HGB)\u2192LR": {
+      "roc_auc_mean": 0.9142,
+      "roc_auc_std": 0.0047,
+      "pr_auc_mean": 0.4681,
+      "pr_auc_std": 0.0153,
+      "f1_mean": 0.5449,
+      "f1_std": 0.0105,
+      "time_s": 461.6
+    },
+    "Vote(RF+GBC+XGB) soft": {
+      "roc_auc_mean": 0.9248,
+      "roc_auc_std": 0.0054,
+      "pr_auc_mean": 0.5042,
+      "pr_auc_std": 0.0196,
+      "f1_mean": 0.5919,
+      "f1_std": 0.0192,
+      "time_s": 271.6
+    },
+    "Stack(RF+GBC+ET)\u2192LR": {
+      "roc_auc_mean": 0.9166,
+      "roc_auc_std": 0.0058,
+      "pr_auc_mean": 0.4733,
+      "pr_auc_std": 0.0157,
+      "f1_mean": 0.5378,
+      "f1_std": 0.0159,
+      "time_s": 460.1
+    },
+    "GBC tuned": {
+      "roc_auc_mean": 0.9228,
+      "roc_auc_std": 0.0059,
+      "pr_auc_mean": 0.5101,
+      "pr_auc_std": 0.026,
+      "f1_mean": 0.5914,
+      "f1_std": 0.0183,
+      "time_s": 336.1
+    },
+    "XGB tuned": {
+      "roc_auc_mean": 0.9204,
+      "roc_auc_std": 0.0061,
+      "pr_auc_mean": 0.5036,
+      "pr_auc_std": 0.0226,
+      "f1_mean": 0.5617,
+      "f1_std": 0.0145,
+      "time_s": 12.1
+    }
+  },
+  "stacking_k100": {
+    "Stack(RF+GBC+XGB+HGB)\u2192LR": {
+      "roc_auc_mean": 0.9154,
+      "roc_auc_std": 0.0054,
+      "pr_auc_mean": 0.47,
+      "pr_auc_std": 0.015,
+      "f1_mean": 0.551,
+      "f1_std": 0.0094,
+      "time_s": 549.2
+    },
+    "Vote(RF+GBC+XGB) soft": {
+      "roc_auc_mean": 0.9254,
+      "roc_auc_std": 0.0058,
+      "pr_auc_mean": 0.5043,
+      "pr_auc_std": 0.0208,
+      "f1_mean": 0.5879,
+      "f1_std": 0.0205,
+      "time_s": 319.4
+    },
+    "Stack(RF+GBC+ET)\u2192LR": {
+      "roc_auc_mean": 0.9151,
+      "roc_auc_std": 0.006,
+      "pr_auc_mean": 0.4703,
+      "pr_auc_std": 0.0169,
+      "f1_mean": 0.5343,
+      "f1_std": 0.0184,
+      "time_s": 548.9
+    },
+    "GBC tuned": {
+      "roc_auc_mean": 0.9231,
+      "roc_auc_std": 0.0066,
+      "pr_auc_mean": 0.5104,
+      "pr_auc_std": 0.0265,
+      "f1_mean": 0.5891,
+      "f1_std": 0.0144,
+      "time_s": 399.2
+    },
+    "XGB tuned": {
+      "roc_auc_mean": 0.9207,
+      "roc_auc_std": 0.0058,
+      "pr_auc_mean": 0.5022,
+      "pr_auc_std": 0.0224,
+      "f1_mean": 0.5638,
+      "f1_std": 0.0212,
+      "time_s": 12.8
+    }
+  }
+}

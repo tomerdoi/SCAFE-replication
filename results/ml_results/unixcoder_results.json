@@ -1,0 +1,39 @@
+{
+  "merged": {
+    "roc_auc_mean": 0.953058997940383,
+    "roc_auc_std": 0.0031780412040052102,
+    "roc_auc_folds": [
+      0.9580395488504694,
+      0.95112575235925,
+      0.9528845464074598,
+      0.9546058013236921,
+      0.9486393407610436
+    ],
+    "pr_auc_mean": 0.6453413557071042,
+    "pr_auc_std": 0.010553971970514404,
+    "f1_mean": 0.6789885010180361,
+    "f1_std": 0.01095241784572627,
+    "precision_mean": 0.5995874340613583,
+    "recall_mean": 0.78345576128165,
+    "display_name": "UniXcoder (fine-tuned)",
+    "model": "unixcoder"
+  },
+  "dappscan": {
+    "model": "unixcoder",
+    "display_name": "UniXcoder (fine-tuned)",
+    "family": "deep_learning",
+    "feature_set": "source_text",
+    "dataset": "DAppSCAN",
+    "n_features": 0,
+    "n_folds": 5,
+    "roc_auc_mean": 0.9477,
+    "roc_auc_std": 0.0062,
+    "pr_auc_mean": 0.6909,
+    "pr_auc_std": 0.0133,
+    "f1_mean": 0.653,
+    "f1_std": 0.0108,
+    "precision_mean": 0.9352,
+    "recall_mean": 0.5021,
+    "train_time_s": 22440.9
+  }
+}

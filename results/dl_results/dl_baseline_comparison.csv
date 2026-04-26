@@ -1,0 +1,7 @@
+model,display_name,family,feature_set,dataset,n_features,n_folds,roc_auc_mean,roc_auc_std,pr_auc_mean,pr_auc_std,f1_mean,f1_std,precision_mean,recall_mean,train_time_s
+textcnn,TextCNN,deep_learning,source_text,Merged,0,5,0.9275,0.0039,0.4988,0.0123,0.6003,0.0051,0.519,0.7143,364.6
+bilstm,BiLSTM,deep_learning,source_text,Merged,0,5,0.9283,0.0039,0.5195,0.0158,0.5984,0.013,0.5274,0.6931,1989.8
+codebert,CodeBERT (fine-tuned),deep_learning,source_text,Merged,0,5,0.9438,0.0029,0.6206,0.0154,0.6644,0.0139,0.5894,0.7615,23899.4
+textcnn,TextCNN,deep_learning,source_text,DAppSCAN,0,5,0.911,0.0083,0.4163,0.0454,0.4297,0.0256,0.4175,0.4574,319.5
+bilstm,BiLSTM,deep_learning,source_text,DAppSCAN,0,5,0.9068,0.0062,0.4061,0.0275,0.4361,0.0181,0.4329,0.4433,2075.6
+codebert,CodeBERT (fine-tuned),deep_learning,source_text,DAppSCAN,0,5,0.9224,0.0129,0.6241,0.0393,0.5893,0.038,0.8932,0.4444,20552.8

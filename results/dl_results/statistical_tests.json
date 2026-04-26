@@ -1,0 +1,236 @@
+{
+  "test_type": "Welch's two-sample t-test (two-sided)",
+  "note": "Computed from 5-fold GroupKFold CV summary statistics (mean, std). Conservative compared to paired test.",
+  "methods": {
+    "Ours (GBC, merged)": {
+      "roc_auc_mean": 0.9204,
+      "roc_auc_std": 0.0062,
+      "pr_auc_mean": 0.4973,
+      "pr_auc_std": 0.0251,
+      "f1_mean": 0.5918,
+      "f1_std": NaN,
+      "n_folds": 5
+    },
+    "Ours (GBC, DAppSCAN)": {
+      "roc_auc_mean": 0.8942,
+      "roc_auc_std": 0.0089,
+      "pr_auc_mean": 0.3627,
+      "pr_auc_std": 0.024,
+      "f1_mean": 0.3996,
+      "f1_std": 0.0219,
+      "n_folds": 5
+    },
+    "TextCNN (DAppSCAN)": {
+      "roc_auc_mean": 0.9049,
+      "roc_auc_std": 0.0123,
+      "pr_auc_mean": 0.3644,
+      "pr_auc_std": 0.0556,
+      "f1_mean": 0.4158,
+      "f1_std": 0.0321,
+      "n_folds": 5
+    },
+    "BiLSTM (DAppSCAN)": {
+      "roc_auc_mean": 0.9058,
+      "roc_auc_std": 0.0138,
+      "pr_auc_mean": 0.4153,
+      "pr_auc_std": 0.0401,
+      "f1_mean": 0.4274,
+      "f1_std": 0.0273,
+      "n_folds": 5
+    },
+    "CodeBERT (fine-tuned) (DAppSCAN)": {
+      "roc_auc_mean": 0.9356,
+      "roc_auc_std": 0.0135,
+      "pr_auc_mean": 0.6599,
+      "pr_auc_std": 0.0441,
+      "f1_mean": 0.6252,
+      "f1_std": 0.0321,
+      "n_folds": 5
+    },
+    "TextCNN (Merged)": {
+      "roc_auc_mean": 0.9244,
+      "roc_auc_std": 0.003,
+      "pr_auc_mean": 0.4947,
+      "pr_auc_std": 0.0206,
+      "f1_mean": 0.5909,
+      "f1_std": 0.0122,
+      "n_folds": 5
+    },
+    "BiLSTM (Merged)": {
+      "roc_auc_mean": 0.9262,
+      "roc_auc_std": 0.0076,
+      "pr_auc_mean": 0.5111,
+      "pr_auc_std": 0.024,
+      "f1_mean": 0.5935,
+      "f1_std": 0.0146,
+      "n_folds": 5
+    },
+    "CodeBERT (fine-tuned) (Merged)": {
+      "roc_auc_mean": 0.9424,
+      "roc_auc_std": 0.0066,
+      "pr_auc_mean": 0.6209,
+      "pr_auc_std": 0.0239,
+      "f1_mean": 0.6666,
+      "f1_std": 0.0174,
+      "n_folds": 5
+    }
+  },
+  "pairwise_tests": [
+    {
+      "method_a": "Ours (GBC, merged)",
+      "method_b": "TextCNN (Merged)",
+      "note": "Key: parity with simple DL",
+      "metric": "roc_auc",
+      "mean_a": 0.9204,
+      "mean_b": 0.9244,
+      "diff": -0.004,
+      "t_statistic": -1.2986,
+      "df": 5.78,
+      "p_value": 0.2435,
+      "significant_005": false
+    },
+    {
+      "method_a": "Ours (GBC, merged)",
+      "method_b": "TextCNN (Merged)",
+      "note": "Key: parity with simple DL",
+      "metric": "pr_auc",
+      "mean_a": 0.4973,
+      "mean_b": 0.4947,
+      "diff": 0.0026,
+      "t_statistic": 0.179,
+      "df": 7.71,
+      "p_value": 0.8625,
+      "significant_005": false
+    },
+    {
+      "method_a": "Ours (GBC, merged)",
+      "method_b": "BiLSTM (Merged)",
+      "note": "Key: parity with simple DL",
+      "metric": "roc_auc",
+      "mean_a": 0.9204,
+      "mean_b": 0.9262,
+      "diff": -0.0058,
+      "t_statistic": -1.3223,
+      "df": 7.69,
+      "p_value": 0.224,
+      "significant_005": false
+    },
+    {
+      "method_a": "Ours (GBC, merged)",
+      "method_b": "BiLSTM (Merged)",
+      "note": "Key: parity with simple DL",
+      "metric": "pr_auc",
+      "mean_a": 0.4973,
+      "mean_b": 0.5111,
+      "diff": -0.0138,
+      "t_statistic": -0.8886,
+      "df": 7.98,
+      "p_value": 0.4002,
+      "significant_005": false
+    },
+    {
+      "method_a": "Ours (GBC, merged)",
+      "method_b": "CodeBERT (fine-tuned) (Merged)",
+      "note": "CodeBERT advantage",
+      "metric": "roc_auc",
+      "mean_a": 0.9204,
+      "mean_b": 0.9424,
+      "diff": -0.022,
+      "t_statistic": -5.4325,
+      "df": 7.97,
+      "p_value": 0.0006,
+      "significant_005": true
+    },
+    {
+      "method_a": "Ours (GBC, merged)",
+      "method_b": "CodeBERT (fine-tuned) (Merged)",
+      "note": "CodeBERT advantage",
+      "metric": "pr_auc",
+      "mean_a": 0.4973,
+      "mean_b": 0.6209,
+      "diff": -0.1236,
+      "t_statistic": -7.9743,
+      "df": 7.98,
+      "p_value": 0.0,
+      "significant_005": true
+    },
+    {
+      "method_a": "TextCNN (Merged)",
+      "method_b": "CodeBERT (fine-tuned) (Merged)",
+      "note": "DL internal gap",
+      "metric": "roc_auc",
+      "mean_a": 0.9244,
+      "mean_b": 0.9424,
+      "diff": -0.018,
+      "t_statistic": -5.5517,
+      "df": 5.59,
+      "p_value": 0.0018,
+      "significant_005": true
+    },
+    {
+      "method_a": "TextCNN (Merged)",
+      "method_b": "CodeBERT (fine-tuned) (Merged)",
+      "note": "DL internal gap",
+      "metric": "pr_auc",
+      "mean_a": 0.4947,
+      "mean_b": 0.6209,
+      "diff": -0.1262,
+      "t_statistic": -8.9435,
+      "df": 7.83,
+      "p_value": 0.0,
+      "significant_005": true
+    },
+    {
+      "method_a": "TextCNN (Merged)",
+      "method_b": "CodeBERT (fine-tuned) (Merged)",
+      "note": "DL internal gap",
+      "metric": "f1",
+      "mean_a": 0.5909,
+      "mean_b": 0.6666,
+      "diff": -0.0757,
+      "t_statistic": -7.9653,
+      "df": 7.17,
+      "p_value": 0.0001,
+      "significant_005": true
+    },
+    {
+      "method_a": "BiLSTM (Merged)",
+      "method_b": "CodeBERT (fine-tuned) (Merged)",
+      "note": "DL internal gap",
+      "metric": "roc_auc",
+      "mean_a": 0.9262,
+      "mean_b": 0.9424,
+      "diff": -0.0162,
+      "t_statistic": -3.5988,
+      "df": 7.85,
+      "p_value": 0.0072,
+      "significant_005": true
+    },
+    {
+      "method_a": "BiLSTM (Merged)",
+      "method_b": "CodeBERT (fine-tuned) (Merged)",
+      "note": "DL internal gap",
+      "metric": "pr_auc",
+      "mean_a": 0.5111,
+      "mean_b": 0.6209,
+      "diff": -0.1098,
+      "t_statistic": -7.2488,
+      "df": 8.0,
+      "p_value": 0.0001,
+      "significant_005": true
+    },
+    {
+      "method_a": "BiLSTM (Merged)",
+      "method_b": "CodeBERT (fine-tuned) (Merged)",
+      "note": "DL internal gap",
+      "metric": "f1",
+      "mean_a": 0.5935,
+      "mean_b": 0.6666,
+      "diff": -0.0731,
+      "t_statistic": -7.1963,
+      "df": 7.77,
+      "p_value": 0.0001,
+      "significant_005": true
+    }
+  ]
+}

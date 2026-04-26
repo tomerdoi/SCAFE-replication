@@ -1,0 +1,20 @@
+{
+  "dataset_filter": "DAppSCAN",
+  "label_filter": "clean_vs_vulnerable",
+  "n_folds": 5,
+  "scale_features": true,
+  "feature_sets": [
+    "all",
+    "static_only",
+    "components_only"
+  ],
+  "models": [
+    "logreg",
+    "logreg_l1",
+    "rf",
+    "et",
+    "hgb",
+    "gbc",
+    "xgb"
+  ]
+}

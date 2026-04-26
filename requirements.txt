@@ -1,0 +1,22 @@
+# Core data processing
+pandas>=1.5.0
+numpy>=1.23.0
+openpyxl
+
+# Visualization (for paper figures)
+matplotlib>=3.6.0
+seaborn>=0.12.0
+
+# Machine learning
+scikit-learn>=1.2.0
+xgboost>=1.7.0
+
+# Statistical analysis
+scipy>=1.10.0
+
+# Data export
+pyarrow>=10.0.0
+
+# Deep learning baselines (optional, GPU recommended)
+torch>=2.0.0
+transformers>=4.30.0
