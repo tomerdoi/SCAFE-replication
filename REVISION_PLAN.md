@@ -148,6 +148,8 @@ Each action lists: **scope**, **inputs**, **outputs**, **validation criteria**, 
 - **A-FORGE-2**: Acknowledge FORGE's construction (LLM-driven Semantic Chunkers + MapReduce Extractors) in the Methodology section. Justify why dropping `unknown` is the **correct** response to that semantic.
 - **A-FORGE-3**: Run all primary experiments (ML, DL, ensemble, two-stage, hybrid) on **scheme (a)** as headlines.
 - **A-FORGE-4**: Show schemes (b) and (c) as label-noise robustness ablation, demonstrating the qualitative story is preserved but absolute numbers differ.
+  - **Hard rule:** If the ranking of methods (SCAFE vs. UniXcoder vs. baselines) inverts between schemes (a) and (b) on any primary metric, report both schemes with equal prominence in the main table — do not suppress inconvenient results.
+- **A-FORGE-5 (Fold balance check):** Before any re-runs, verify that the 5-fold GroupKFold split is balanced: no single project contributes more than 15% of the positives in any single fold. Report fold sizes (n_contracts, n_positive, n_negative) in the Experimental Setup section. This pre-empts a reviewer query on whether results are driven by one dominant project in a single fold.
 
 **Outputs:**
 - New scored CSV with strict labels: `data/derived/unified_contract_eval_scored_strict.csv`
@@ -169,6 +171,7 @@ Each action lists: **scope**, **inputs**, **outputs**, **validation criteria**, 
   - In each outer fold, run an **inner GroupKFold** on the training set.
   - Select F1-optimal threshold on the **inner OOF predictions**.
   - Freeze that threshold and apply to the outer test fold.
+  - **Hyper-parameter tuning is also nested within the inner GroupKFold** — RF depth, GBC learning rate, XGB parameters etc. are all selected via inner-fold cross-validation, never touching the outer test fold. This closes the same leakage vector as threshold tuning and pre-empts any second-round reviewer query on HP selection.
 - **A-THRESH-2**: Add an additional **"deployed-threshold" experiment** that satisfies R1-39/R1-40 literally:
   - Hold out 20% of projects as a frozen calibration set (never used for training or test).
   - Tune threshold on this calibration set.
@@ -196,7 +199,7 @@ Each action lists: **scope**, **inputs**, **outputs**, **validation criteria**, 
 
 - **A-PARSE-1 (Tree-sitter migration):**
   - Replace `python-solidity-parser` with `tree-sitter-solidity` for AST construction.
-  - Maintain backwards compatibility: fall back to regex-only features if tree-sitter fails (very rare).
+  - **Hard failure rule:** If tree-sitter fails to parse a contract (status = `failed`, not `partial-with-errors`), that contract is flagged in the registry and reported separately in the parser-failure table — it is **not silently excluded** from training. AST-derived features for that contract are set to NaN / 0 with a `ts_parse_failed` indicator column, and the impact on classification metrics is reported. This is the only defensible position: excluding failed contracts silently would be a new data-selection bias; imputing zeros is conservative and transparent.
   - Re-extract all 306 structural features.
 
 - **A-PARSE-2 (Parser failure-rate analysis):**
@@ -222,10 +225,11 @@ Each action lists: **scope**, **inputs**, **outputs**, **validation criteria**, 
   - Validate that our inline-assembly features (already counting `mload`, `sstore`, `calldatacopy`, `call`, `delegatecall` opcodes) produce stable counts comparable to Slither's IR-derived equivalents.
 
 - **A-PARSE-5 (Slither feature-level correlation study):**
-  - Subset: ~500 contracts where Slither successfully compiles.
+  - Subset: **at least 1,500 contracts** where Slither successfully compiles (raised from 500 to make the statistical argument stronger; Slither results already exist in `data/derived/slither_results/`).
   - For each feature with a Slither IR equivalent (cyclomatic, function counts, call-graph edges, state-variable writes, delegatecall sites, assembly counts), compute:
     - Pearson + Spearman correlation between SCAFE-regex/tree-sitter-derived value and Slither-IR-derived value.
     - Per-feature absolute / relative error.
+  - **Hard feature-drop rule:** Any feature whose Spearman r < 0.70 against its Slither IR equivalent is either (a) dropped from the final feature set, or (b) retained with an explicit caveat in the paper explaining why. This rule is stated in the paper — it prevents R1 from claiming the correlation study is cosmetic.
   - New table: `tab_feature_validation.tex`.
   - New figure: scatter plots for top 5 features.
 
@@ -328,6 +332,12 @@ Each action lists: **scope**, **inputs**, **outputs**, **validation criteria**, 
 
 - **A-RW-2**: For each LLM/agentic paper, write 2–3 sentences explaining (a) approach, (b) what it does well, (c) explicit positioning vs. SCAFE (cost, reproducibility, scale, interpretability).
 
+- **A-RW-2b (Per-paper reproducibility disclaimer — mandatory text in paper):** For each of the four papers R1 named explicitly, the revised §2.2 must include the following points verbatim or equivalent:
+  - **Trace (IEEE TSE 2026):** "Trace addresses non-compilable repositories by using an LLM to synthesize missing code snippets for CFG construction. Although it shares SCAFE's compilation-free motivation, no public implementation is available as of submission, and the method requires LLM API access for snippet generation. We therefore include Trace in our qualitative positioning table (Table 1) but cannot reproduce its results on our corpus."
+  - **SolAgent (2026):** "SolAgent employs a multi-agent dual-loop architecture integrating the Forge compiler environment and static analyzers. Direct comparison is not feasible: SolAgent requires both a running Forge compilation environment and a GPT-4-class API, neither of which is reproducible at the scale of 26,000 contracts within our resource constraints. We discuss SolAgent's approach and contrast it against SCAFE in Table 1."
+  - **LLMSA / LLMDFA (NeurIPS 2024/2025):** "LLMSA and LLMDFA perform neuro-symbolic data-flow summarization via compositional LLM prompting. These methods operate at the function-summary level and require per-function LLM calls with a proprietary chain-of-thought protocol not released publicly. We include them in the related work discussion and positioning table but do not reproduce them empirically."
+  - **PropertyGPT (NDSS 2025):** "PropertyGPT targets formal verification of smart contracts via RAG-driven property generation, feeding generated properties into an SMT/Certora prover. This is a fundamentally different task from binary vulnerability classification; the output is a set of verified/falsified formal properties, not a vulnerability label. We cite PropertyGPT as a complementary approach and note that SCAFE and PropertyGPT occupy different points on the verification–classification spectrum."
+
 - **A-RW-3**: Update the "Position of This Work" subsection. Add a row to Table 1 (`tab_related_comparison.tex`) for LLM/agentic methods:
 
   | Method | Compile-free | Interpretable | Risk score | GPU-free | Contract-level | API-free |
@@ -362,7 +372,14 @@ Each action lists: **scope**, **inputs**, **outputs**, **validation criteria**, 
 - **A-SHAP-1**: Add `shap` dependency. Use `shap.TreeExplainer` on the trained Vote ensemble (or its strongest individual component: GradientBoosting or XGBoost).
 - **A-SHAP-2**: Compute SHAP values for the **entire test fold** (~5,000 contracts) — this is fast for tree models.
 - **A-SHAP-3**: Generate explanatory artifacts:
-  - **Waterfall plots** for 6 representative cases: 2 true positives (one DeFi, one access-control), 2 false positives (borderline high-complexity but clean), 2 false negatives (subtle vulnerabilities the model missed). Choose contracts from the actual results.
+  - **Waterfall plots** for 6 representative cases, selected **deterministically** from saved SHAP values — no hand-picking:
+    - TP-1: contract with highest SHAP magnitude (most confidently flagged true positive)
+    - TP-2: contract with median SHAP magnitude among true positives
+    - FP-1: false positive with highest predicted probability (hardest false alarm)
+    - FP-2: false positive with median predicted probability among false positives
+    - FN-1: false negative with lowest predicted probability (most missed vulnerable contract)
+    - FN-2: false negative with second-lowest predicted probability
+  - Selection procedure is stated in the paper caption: "Cases selected deterministically by rank on predicted probability from saved OOF predictions; no cherry-picking." This makes the examples fully reproducible and reviewer-proof.
   - **SHAP summary plot** (bee-swarm) showing feature contributions across the corpus.
   - **SHAP dependence plot** for top 3 features showing per-contract feature value vs. SHAP value.
 - **A-SHAP-4**: Add a new paper subsection "Per-Contract Attribution via SHAP" in the Discussion / Error Analysis section.
@@ -398,10 +415,16 @@ Each action lists: **scope**, **inputs**, **outputs**, **validation criteria**, 
 - **A-CLAIMS-3**: Add a sentence in the Limitations section:
   - "SCAFE provides per-contract feature attribution, not line-level vulnerability localization. For precise locations within flagged contracts, integration with line-level tools (Slither, Mythril) is recommended; we leave this hybrid as future work."
 
+- **A-CLAIMS-4 (Fallback contribution statement — write before re-runs):** Draft and lock the contribution narrative now, in a form that is robust regardless of how the re-run numbers land. Two scenarios must both be covered by the same framing:
+  - **Scenario A (SCAFE ROC-AUC ≥ LLM baselines):** "SCAFE achieves competitive detection performance while being fully CPU-bound, API-free, and sub-second per contract — making it the only approach in our comparison that is deployable at ecosystem scale without GPU infrastructure or external API access."
+  - **Scenario B (LLM baselines slightly outperform SCAFE on ROC-AUC):** "Zero-shot LLMs achieve marginally higher ROC-AUC at the cost of 100–1000× higher inference time and API dependency. SCAFE occupies a distinct, complementary point: it serves as a scalable, GPU-free, explainable pre-screening layer; the SCAFE+LLM hybrid (Table X) demonstrates that both approaches provide complementary signal, with the hybrid achieving the best overall results."
+  - The framing in **Scenario B is already supported by A-LLM-6 (the late-fusion ensemble)**. Promote A-LLM-6 from "Optional" to **mandatory** — run SCAFE+Qwen OOF late-fusion regardless of individual results, so the hybrid is always available as the headline contribution if needed.
+
 **Outputs:**
 - Recalibrated wording throughout the paper.
+- Mandatory A-LLM-6 late-fusion result (SCAFE + best LLM baseline).
 
-**Validation:** No remaining claims of "auditor-actionable" without qualification.
+**Validation:** No remaining claims of "auditor-actionable" without qualification. Contribution statement is written in a form that survives both number scenarios.
 
 **Estimated time:** ~1 h.
 
