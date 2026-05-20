@@ -263,11 +263,18 @@ Each action lists: **scope**, **inputs**, **outputs**, **validation criteria**, 
 
 **Sub-actions:**
 
-- **A-LLM-1 (Model selection):**
-  - **Qwen2.5-Coder-7B-Instruct** — current SOTA open code model (Alibaba, 2024).
-  - **DeepSeek-Coder-V2-Lite-Instruct (16B)** — strong recent code model (DeepSeek, 2025).
-  - **(Optional 3rd)** CodeLlama-13B-Instruct as a well-known reference baseline.
-  - Justification in paper: "Local open-source LLMs provide reproducible, no-API-cost comparison; consistent with SCAFE's reproducibility ethos."
+- **A-LLM-0 (Prerequisites — run before inference):**
+  - Verify Ollama server is running: `ollama serve` (start in a background terminal if not running).
+  - Pull the one missing model: `ollama pull qwen2.5-coder:7b-instruct` (~4 GB download).
+  - Verify all three models are available: `ollama list` should show `qwen2.5-coder:7b-instruct`, `codellama:latest`, `qwen2.5:7b`.
+  - Disable system sleep for overnight runs: `sudo pmset -a sleep 0` (re-enable after with `sudo pmset -a sleep 1`).
+
+- **A-LLM-1 (Model selection — 3 baselines, all already on machine after A-LLM-0):**
+  - **Qwen2.5-Coder-7B-Instruct** — current SOTA code-specialized model (Alibaba, 2024). Primary LLM baseline.
+  - **CodeLlama-7B** (already downloaded) — well-known Meta code LLM; widely cited in related work; serves as a reference baseline.
+  - **Qwen2.5-7B** (general, already downloaded) — provides a "code-specialized vs. general LLM" ablation showing that code specialization matters; costs zero extra inference time since the model is already present.
+  - Justification in paper: "All three models run locally without API access; consistent with SCAFE's reproducibility ethos. The Qwen2.5-Coder vs. Qwen2.5-general comparison additionally quantifies the benefit of code specialization for vulnerability detection."
+  - **DeepSeek-Coder-V2-Lite (16B) dropped**: not needed — three baselines already span the relevant comparison axes (recency, code-specialization, size/general).
 
 - **A-LLM-2 (Prompt design):**
   - Zero-shot binary classification prompt:
@@ -300,8 +307,8 @@ Each action lists: **scope**, **inputs**, **outputs**, **validation criteria**, 
 **Outputs:**
 - `scripts/run_local_llm_baseline.py` (crash-safe, resumable).
 - `data/derived/llm_results/qwen25_coder_7b_predictions.jsonl` (incremental).
-- `data/derived/llm_results/deepseek_coder_v2_lite_predictions.jsonl` (incremental).
-- (Optional) `data/derived/llm_results/codellama_13b_predictions.jsonl`.
+- `data/derived/llm_results/codellama_7b_predictions.jsonl` (incremental).
+- `data/derived/llm_results/qwen25_general_7b_predictions.jsonl` (incremental).
 - New table: `tab_llm_baselines.tex` (model, ROC-AUC, F1, time, truncation rate, GPU usage).
 - Updated `tab_comprehensive_summary.tex` and `tab_significance.tex` with LLM rows.
 
