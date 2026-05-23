@@ -63,9 +63,11 @@ def _build_logistic_regression():
 
 def _build_logistic_regression_l1():
     from sklearn.linear_model import LogisticRegression
+    # Use l1_ratio=1 (elastic-net formulation) to achieve L1 without the
+    # deprecated penalty='l1' warning introduced in sklearn ≥1.8.
     return LogisticRegression(
         C=0.5,
-        penalty="l1",
+        l1_ratio=1.0,
         class_weight="balanced",
         solver="saga",
         max_iter=3000,

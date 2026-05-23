@@ -91,7 +91,7 @@ class ModelResult:
 
 
 def _optimal_f1_threshold(y_true: np.ndarray, y_prob: np.ndarray) -> Tuple[float, float]:
-    """Find the threshold that maximizes F1 score."""
+    """Find the threshold that maximizes F1 score on the provided data."""
     thresholds = np.linspace(0.01, 0.99, 99)
     best_f1, best_t = 0.0, 0.5
     for t in thresholds:
@@ -102,6 +102,56 @@ def _optimal_f1_threshold(y_true: np.ndarray, y_prob: np.ndarray) -> Tuple[float
     return best_t, best_f1
 
 
+def _nested_threshold(
+    estimator: BaseEstimator,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    groups_train: np.ndarray,
+    n_inner_folds: int = 3,
+) -> float:
+    """
+    Select F1-optimal threshold via inner GroupKFold on training data only.
+
+    The threshold is tuned entirely on inner OOF predictions derived from the
+    training fold — never touching the outer test fold. This eliminates the
+    threshold-selection data leakage identified by Reviewer 1 (R1-33..R1-40).
+
+    Returns the threshold value to freeze and apply to the outer test fold.
+    """
+    inner_gkf = GroupKFold(n_splits=n_inner_folds)
+    inner_probs: List[float] = []
+    inner_labels: List[int] = []
+
+    for _, (inner_train_idx, inner_val_idx) in enumerate(
+        inner_gkf.split(X_train, y_train, groups_train)
+    ):
+        X_it, X_iv = X_train[inner_train_idx], X_train[inner_val_idx]
+        y_it, y_iv = y_train[inner_train_idx], y_train[inner_val_idx]
+
+        inner_est = clone(estimator)
+        if hasattr(inner_est, "scale_pos_weight"):
+            n_neg = int((y_it == 0).sum())
+            n_pos = int((y_it == 1).sum())
+            inner_est.set_params(scale_pos_weight=max(1.0, n_neg / max(1, n_pos)))
+
+        inner_est.fit(X_it, y_it)
+
+        if hasattr(inner_est, "predict_proba"):
+            probs = inner_est.predict_proba(X_iv)[:, 1]
+        elif hasattr(inner_est, "decision_function"):
+            probs = inner_est.decision_function(X_iv)
+        else:
+            probs = inner_est.predict(X_iv).astype(float)
+
+        inner_probs.extend(probs.tolist())
+        inner_labels.extend(y_iv.tolist())
+
+    opt_t, _ = _optimal_f1_threshold(
+        np.array(inner_labels), np.array(inner_probs)
+    )
+    return opt_t
+
+
 # ── Core CV evaluation ───────────────────────────────────────────────────────
 
 def evaluate_model(
@@ -109,16 +159,22 @@ def evaluate_model(
     dataset: PreparedDataset,
     *,
     n_folds: int = 5,
+    n_inner_folds: int = 3,
     scale_features: bool = True,
 ) -> ModelResult:
     """
     Run GroupKFold cross-validation for a single model.
 
+    Threshold selection uses nested inner GroupKFold on the training fold only
+    (A-THRESH fix): the threshold is never tuned on the outer test fold,
+    eliminating the oracle-threshold data leakage identified by Reviewer 1.
+
     Parameters
     ----------
     model_config : the model to evaluate
     dataset : prepared dataset (X, y, groups, feature_names)
-    n_folds : number of CV folds
+    n_folds : number of outer CV folds
+    n_inner_folds : number of inner folds for nested threshold selection
     scale_features : whether to StandardScale features (important for linear models)
     """
     X, y, groups = dataset.X, dataset.y, dataset.groups
@@ -131,8 +187,9 @@ def evaluate_model(
     for fold_idx, (train_idx, test_idx) in enumerate(gkf.split(X, y, groups)):
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
+        groups_train = groups[train_idx]
 
-        # Optional scaling
+        # Optional scaling (fit on train, transform both — no leakage)
         if scale_features:
             scaler = StandardScaler()
             X_train = scaler.fit_transform(X_train)
@@ -145,11 +202,18 @@ def evaluate_model(
             n_pos = int((y_train == 1).sum())
             est.set_params(scale_pos_weight=max(1.0, n_neg / max(1, n_pos)))
 
-        # Fit
+        # ── Nested threshold selection (A-THRESH) ──────────────────────
+        # Select F1-optimal threshold on inner OOF predictions from training
+        # fold only — freeze it before seeing any test data.
+        opt_t = _nested_threshold(
+            est, X_train, y_train, groups_train, n_inner_folds=n_inner_folds
+        )
+
+        # Fit final model on full training fold
         est.fit(X_train, y_train)
         fitted_models.append(est)
 
-        # Predict
+        # Predict on outer test fold
         if hasattr(est, "predict_proba"):
             y_prob = est.predict_proba(X_test)[:, 1]
         elif hasattr(est, "decision_function"):
@@ -157,11 +221,11 @@ def evaluate_model(
         else:
             y_prob = est.predict(X_test).astype(float)
 
-        # Metrics
+        # Apply frozen threshold from inner CV — no test-set information used
+        y_pred = (y_prob >= opt_t).astype(int)
         roc = roc_auc_score(y_test, y_prob)
         pr = average_precision_score(y_test, y_prob)
-        opt_t, opt_f1 = _optimal_f1_threshold(y_test, y_prob)
-        y_pred = (y_prob >= opt_t).astype(int)
+        opt_f1 = f1_score(y_test, y_pred, zero_division=0.0)
         prec = precision_score(y_test, y_pred, zero_division=0.0)
         rec = recall_score(y_test, y_pred, zero_division=0.0)
 
