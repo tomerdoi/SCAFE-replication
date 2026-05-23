@@ -163,6 +163,9 @@ def run_shap(dataset, oof_probs, oof_true, model, X_train, out_dir: Path, fig_di
 
     # ── Figure (b): Waterfall plots — 6 deterministic cases ──────────────
     # Select deterministically by rank on OOF predicted probability
+    import io
+    from PIL import Image
+
     y_true = oof_true
     y_prob = oof_probs
     y_pred = (y_prob >= 0.5).astype(int)   # approximate — use 0.5 for case selection
@@ -182,11 +185,6 @@ def run_shap(dataset, oof_probs, oof_true, model, X_train, out_dir: Path, fig_di
     fn_sorted = fn_idx[np.argsort(y_prob[fn_idx])]
     fn_cases = fn_sorted[:2] if len(fn_sorted) >= 2 else fn_sorted
 
-    n_panels = len(tp_cases) + len(fp_cases) + len(fn_cases)
-    fig_b, axes = plt.subplots(n_panels, 1, figsize=(12, 4 * n_panels))
-    if n_panels == 1:
-        axes = [axes]
-
     panel_labels = (
         [f"TP-{i+1}  (p={y_prob[c]:.3f})" for i, c in enumerate(tp_cases)] +
         [f"FP-{i+1}  (p={y_prob[c]:.3f})" for i, c in enumerate(fp_cases)] +
@@ -194,22 +192,44 @@ def run_shap(dataset, oof_probs, oof_true, model, X_train, out_dir: Path, fig_di
     )
     case_indices = list(tp_cases) + list(fp_cases) + list(fn_cases)
 
-    for ax, case_idx, label in zip(axes, case_indices, panel_labels):
+    # Render each waterfall in its own isolated figure → PNG buffer, then tile.
+    # This avoids the doubled-label / overlapping-text bug when embedding
+    # shap.waterfall_plot inside a subplot grid.
+    png_buffers = []
+    for case_idx, label in zip(case_indices, panel_labels):
         shap_exp = shap.Explanation(
             values=shap_values[case_idx],
             base_values=explainer.expected_value,
             data=X_scaled[case_idx],
             feature_names=feature_names,
         )
-        plt.sca(ax)
-        shap.waterfall_plot(shap_exp, max_display=12, show=False)
-        ax.set_title(f"SHAP Waterfall — {label}", fontsize=9)
+        fig_single = plt.figure(figsize=(9, 4.5))
+        shap.waterfall_plot(shap_exp, max_display=10, show=False)
+        plt.title(f"SHAP Waterfall — {label}", fontsize=10, pad=6)
+        plt.tight_layout()
+        buf = io.BytesIO()
+        plt.savefig(buf, format="png", bbox_inches="tight", dpi=180)
+        plt.close(fig_single)
+        buf.seek(0)
+        png_buffers.append(Image.open(buf).copy())
 
-    plt.tight_layout()
+    # Tile into a 3-row × 2-column grid
+    n_rows, n_cols = 3, 2
+    imgs = png_buffers[:n_rows * n_cols]
+    # Pad to 6 if fewer
+    while len(imgs) < n_rows * n_cols:
+        imgs.append(imgs[-1])
+
+    cell_w = max(im.width  for im in imgs)
+    cell_h = max(im.height for im in imgs)
+    grid_img = Image.new("RGB", (n_cols * cell_w, n_rows * cell_h), (255, 255, 255))
+    for i, im in enumerate(imgs):
+        row, col = divmod(i, n_cols)
+        grid_img.paste(im, (col * cell_w, row * cell_h))
+
     out_b = fig_dir / "fig_shap_waterfall.pdf"
-    plt.savefig(out_b, bbox_inches="tight", dpi=150)
-    plt.close()
-    print(f"Saved waterfall plots → {out_b}")
+    grid_img.save(str(out_b), "PDF", resolution=150)
+    print(f"Saved waterfall plots (tiled 3×2) → {out_b}")
 
     return shap_summary_df
 
