@@ -4,7 +4,10 @@ Deep error analysis: SCAFE-Sem vs CodeBERT.
 
 Identifies exactly which contracts each method gets right/wrong,
 characterizes the error patterns, and suggests targeted improvements.
+
+Use --protocol strict to load STRICT-label OOFs (excludes FORGE-unknown).
 """
+import argparse
 import sys
 import warnings
 from pathlib import Path
@@ -20,6 +23,7 @@ sys.path.insert(0, str(_REPO))
 
 OOF_DIR = _REPO / "data" / "derived" / "oof_predictions"
 SCORED_V2 = _REPO / "data" / "derived" / "unified_contract_eval_scored_v2.csv"
+SCORED_STRICT = _REPO / "data" / "derived" / "unified_contract_eval_scored_strict.csv"
 
 
 def optimal_f1_threshold(y_true, y_prob):
@@ -32,13 +36,38 @@ def optimal_f1_threshold(y_true, y_prob):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--protocol", choices=["legacy", "strict"], default="legacy")
+    args = parser.parse_args()
+    protocol = args.protocol
+
+    if protocol == "strict":
+        sem_oof = OOF_DIR / "sem_Vote_RF_GBC_XGB_strict_struct_plus_both.csv"
+        if not sem_oof.exists():
+            # Fall back to the strict ml-Vote SCAFE OOF (no semantic) if SCAFE-Sem strict not available
+            sem_oof = OOF_DIR / "ml_Vote_RF_GBC_XGB_strict_merged.csv"
+        cb_oof = OOF_DIR / "dl_codebert_strict_merged.csv"
+        scored_csv = SCORED_STRICT
+        forge_labels = ["vulnerable"]  # strict: drop unknown + suspicious
+    else:
+        sem_oof = OOF_DIR / "sem_Vote_RF_GBC_XGB_merged.csv"
+        cb_oof = OOF_DIR / "dl_codebert_Merged.csv"
+        scored_csv = SCORED_V2
+        forge_labels = ["vulnerable", "unknown"]
+
     print("=" * 100)
-    print("ERROR ANALYSIS: SCAFE-Sem vs CodeBERT (merged data)")
+    print(f"ERROR ANALYSIS: SCAFE-Sem vs CodeBERT  [protocol={protocol}]")
+    print(f"  SEM OOF: {sem_oof.name}")
+    print(f"  CB  OOF: {cb_oof.name}")
     print("=" * 100)
 
-    # Load OOF predictions
-    sem = pd.read_csv(OOF_DIR / "sem_Vote_RF_GBC_XGB_merged.csv")
-    cb = pd.read_csv(OOF_DIR / "dl_codebert_Merged.csv")
+    if not sem_oof.exists() or not cb_oof.exists():
+        missing = [p.name for p in (sem_oof, cb_oof) if not p.exists()]
+        print(f"  Missing OOF: {missing}.  Aborting.")
+        return
+
+    sem = pd.read_csv(sem_oof)
+    cb = pd.read_csv(cb_oof)
 
     # Merge
     df = sem.merge(
@@ -115,14 +144,14 @@ def main():
 
     # ── 4) Feature analysis of errors ───────────────────────────────────────
     print("\n--- Feature Analysis of Errors ---")
-    scored = pd.read_csv(SCORED_V2, low_memory=False)
+    scored = pd.read_csv(scored_csv, low_memory=False)
     scored['source_dataset'] = scored['source_dataset'].fillna('').astype(str)
     scored['label_status'] = scored['label_status'].fillna('').astype(str)
 
     dappscan = scored[scored['source_dataset'] == 'DAppSCAN'].copy()
     dappscan = dappscan[dappscan['label_status'].isin(['clean', 'vulnerable'])]
     forge = scored[scored['source_dataset'] == 'FORGE'].copy()
-    forge = forge[forge['label_status'].isin(['vulnerable', 'unknown'])]
+    forge = forge[forge['label_status'].isin(forge_labels)]
     data = pd.concat([dappscan, forge], ignore_index=True)
     data['y'] = (data['label_status'] == 'vulnerable').astype(int)
     data['contract_id'] = data['contract_id'].fillna('').astype(str)

@@ -7,8 +7,12 @@ contracts that SCAFE flags above a recall-oriented threshold to CodeBERT
 
 This achieves similar detection performance to running CodeBERT on everything,
 but at a fraction of the computational cost.
+
+Use --protocol strict to load STRICT-label OOFs (excludes FORGE-unknown).
 """
 
+import argparse
+import json
 import pandas as pd
 import numpy as np
 from sklearn.metrics import roc_auc_score, average_precision_score, f1_score, precision_score, recall_score
@@ -17,6 +21,14 @@ import warnings
 warnings.filterwarnings('ignore')
 
 OOF_DIR = Path(__file__).parent.parent / "data" / "derived" / "oof_predictions"
+RESULTS_DIR = Path(__file__).parent.parent / "data" / "derived" / "ml_results"
+
+_DATASET_TAGS = {
+    ("legacy", "merged"): ("merged", "Merged"),
+    ("legacy", "dappscan"): ("dappscan", "DAppSCAN"),
+    ("strict", "merged"): ("strict_merged", "strict_merged"),
+    ("strict", "dappscan"): ("strict_dappscan", "strict_dappscan"),
+}
 
 def load_oof(prefix, model, dataset):
     path = OOF_DIR / f"{prefix}_{model}_{dataset}.csv"
@@ -150,26 +162,37 @@ def analyze_scafe_as_prefilter_only(scafe_df, scafe_recall_targets=[0.99, 0.97, 
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--protocol", choices=["legacy", "strict"], default="legacy")
+    parser.add_argument("--datasets", nargs="+", default=["merged", "dappscan"])
+    parser.add_argument("--out", default=None)
+    args = parser.parse_args()
+    protocol = args.protocol
+
     print("=" * 80)
-    print("TWO-STAGE PIPELINE ANALYSIS: SCAFE PRE-FILTER + CodeBERT")
+    print(f"TWO-STAGE PIPELINE ANALYSIS [protocol={protocol}]")
     print("=" * 80)
-    
-    for dataset in ['merged', 'dappscan']:
+
+    all_results = {}
+    for dataset in args.datasets:
         dataset_label = 'Merged (DAppSCAN + FORGE)' if dataset == 'merged' else 'DAppSCAN'
-        suffix = dataset if dataset == 'merged' else 'dappscan'
-        cb_suffix = 'Merged' if dataset == 'merged' else 'DAppSCAN'
-        
+        suffix, cb_suffix = _DATASET_TAGS[(protocol, dataset)]
+
         print(f"\n{'='*80}")
-        print(f"DATASET: {dataset_label}")
+        print(f"DATASET: {dataset_label}  [protocol={protocol}]")
         print(f"{'='*80}")
-        
+
         # Load predictions - use Vote for merged, RF for DAppSCAN
-        if dataset == 'merged':
-            scafe_vote = load_oof('ml', 'Vote_RF_GBC_XGB', suffix)
-        else:
-            scafe_vote = load_oof('ml', 'RandomForest', suffix)
-        scafe_gb = load_oof('ml', 'GradientBoosting', suffix)
-        codebert = load_oof('dl', f'codebert', cb_suffix)
+        try:
+            if dataset == 'merged':
+                scafe_vote = load_oof('ml', 'Vote_RF_GBC_XGB', suffix)
+            else:
+                scafe_vote = load_oof('ml', 'RandomForest', suffix)
+            scafe_gb = load_oof('ml', 'GradientBoosting', suffix)
+            codebert = load_oof('dl', 'codebert', cb_suffix)
+        except FileNotFoundError as e:
+            print(f"  Missing OOF file: {e}.  Skipping {dataset}.")
+            continue
         
         print(f"\nContracts: {len(scafe_vote)}, Positive rate: {scafe_vote['y_true'].mean():.3f}")
         
@@ -209,7 +232,20 @@ def main():
             speedup = cb_time_min / two_stage_time
             label = f"{row['scafe_recall_target']:.0%}"
             print(f"Two-stage ({label} recall): SCAFE={scafe_time_min:.1f} + CB on {frac*100:.1f}%={frac*cb_time_min:.0f} min → total={two_stage_time:.0f} min ({speedup:.1f}x faster, F1={row['f1_mean']:.3f})")
-    
+
+        all_results[dataset] = {
+            "prefilter": prefilter.to_dict(orient="records"),
+            "two_stage": two_stage.to_dict(orient="records"),
+        }
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = (
+        Path(args.out) if args.out
+        else RESULTS_DIR / f"two_stage_results_{protocol}.json"
+    )
+    out_path.write_text(json.dumps(all_results, indent=2, default=str))
+    print(f"\n  Saved two-stage summary → {out_path}")
+
     print("\n" + "=" * 80)
     print("DONE")
 

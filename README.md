@@ -7,7 +7,7 @@ If you change the risk-score formula (e.g. in `src/risk/contract_risk.py`) and w
 
 ```bash
 rm -f data/derived/unified_contract_eval_contract_risk.csv
-/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.evaluation.unified_contract_eval_risk_score_eval
+python -m src.evaluation.unified_contract_eval_risk_score_eval
 ```
 
 This will re-score using the local caches under:
@@ -24,7 +24,7 @@ Important: ensure the `unified_contract_eval_risk_score_eval.py` run is configur
 If you already have cached Etherscan payloads under `data/etherscan_sources/` (this repo does), you can run:
 
 ```bash
-/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.pipelines.main_contract_risk_pipeline
+python -m src.pipelines.main_contract_risk_pipeline
 ```
 
 Outputs:
@@ -40,7 +40,7 @@ This repo includes a best-effort collector that builds a **reproducible CSV** fr
 General “web incidents” preset:
 
 ```bash
-/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.datasets.incidents_public_dataset --general-web --since-days 365
+python -m src.datasets.incidents_public_dataset --general-web --since-days 365
 ```
 
 Outputs:
@@ -52,7 +52,7 @@ Outputs:
 If you want to refresh or expand coverage, set `ETHERSCAN_API_KEY` (via `secrets.json` or env) and run:
 
 ```bash
-/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.clients.etherscan_source --addresses-csv data/contract_registry.csv --fetch-all --skip-existing
+python -m src.clients.etherscan_source --addresses-csv data/contract_registry.csv --fetch-all --skip-existing
 ```
 
 ### Optional: labels for AUC/AP evaluation
@@ -69,7 +69,7 @@ AVS case study code/data now lives under:
 You can also run the AVS pipeline via the new module path:
 
 ```bash
-/Users/tomer.doitshman/PycharmProjects/sc_review/venv/bin/python -m src.case_studies.avs.pipelines.main_pipeline
+python -m src.case_studies.avs.pipelines.main_pipeline
 ```
 
 

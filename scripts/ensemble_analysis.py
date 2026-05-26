@@ -5,8 +5,18 @@ to explore whether a hybrid approach beats either family alone.
 All metrics are computed PER-FOLD and reported as mean ± std, consistent
 with the main experiment tables. The weighted-average α is selected via
 nested leave-one-fold-out CV to avoid optimistic bias.
+
+Protocol selection
+------------------
+By default (legacy), loads OOF files matching ml_{Model}_{merged|dappscan}.csv
+and dl_{model}_{Merged|DAppSCAN}.csv.
+
+Pass --protocol strict to load STRICT-label OOFs (excludes FORGE-unknown):
+  ml_{Model}_strict_merged.csv,  dl_{model}_strict_merged.csv  (etc.)
 """
 
+import argparse
+import json
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -17,12 +27,21 @@ import warnings
 warnings.filterwarnings("ignore")
 
 OOF_DIR = Path(__file__).resolve().parent.parent / "data" / "derived" / "oof_predictions"
+RESULTS_DIR = Path(__file__).resolve().parent.parent / "data" / "derived" / "ml_results"
 
 ML_MODELS = [
     "RandomForest", "GradientBoosting", "XGBoost",
     "ExtraTrees", "HistGradientBoosting", "LogisticRegression",
 ]
-DL_MODELS = ["textcnn", "bilstm", "codebert"]
+DL_MODELS = ["textcnn", "bilstm", "codebert", "unixcoder"]
+
+# Maps logical dataset name to (ml_suffix, dl_suffix) for OOF file names.
+_DATASET_TAGS = {
+    ("legacy", "merged"): ("merged", "Merged"),
+    ("legacy", "dappscan"): ("dappscan", "DAppSCAN"),
+    ("strict", "merged"): ("strict_merged", "strict_merged"),
+    ("strict", "dappscan"): ("strict_dappscan", "strict_dappscan"),
+}
 
 
 def optimal_f1_threshold(y_true, y_prob):
@@ -72,26 +91,27 @@ def load_oof(prefix, model, dataset):
     return df.sort_values("sample_idx").reset_index(drop=True)
 
 
-def load_all(dataset):
-    """Load all OOF predictions for a dataset, return aligned DataFrame."""
+def load_all(dataset, protocol="legacy"):
+    """Load all OOF predictions for a dataset under the given protocol."""
     base = None
     probs = {}
 
+    ml_tag, dl_tag = _DATASET_TAGS[(protocol, dataset)]
+
     for m in ML_MODELS:
-        df = load_oof("ml", m, dataset)
+        df = load_oof("ml", m, ml_tag)
         if df is None:
             continue
         if base is None:
             base = df[["sample_idx", "contract_id", "fold", "y_true"]].copy()
         probs[f"ml_{m}"] = df["y_prob"].values
 
-    vote_df = load_oof("ml", "Vote_RF_GBC_XGB", dataset)
+    vote_df = load_oof("ml", "Vote_RF_GBC_XGB", ml_tag)
     if vote_df is not None:
         probs["ml_Vote"] = vote_df["y_prob"].values
 
     for m in DL_MODELS:
-        ds_tag = "Merged" if dataset == "merged" else "DAppSCAN"
-        df = load_oof("dl", m, ds_tag)
+        df = load_oof("dl", m, dl_tag)
         if df is None:
             continue
         probs[f"dl_{m}"] = df.sort_values("sample_idx")["y_prob"].values
@@ -172,13 +192,13 @@ def run_stacking(base, prob_df, feature_cols):
     return per_fold_score(base, meta_pred)
 
 
-def analyse_dataset(dataset):
+def analyse_dataset(dataset, protocol="legacy"):
     print(f"\n{'='*72}")
-    print(f"  ENSEMBLE ANALYSIS — {dataset.upper()} dataset")
+    print(f"  ENSEMBLE ANALYSIS — {dataset.upper()} dataset  [protocol={protocol}]")
     print(f"  (all metrics: per-fold mean ± std, 5-fold GroupKFold)")
     print(f"{'='*72}\n")
 
-    base, prob_df = load_all(dataset)
+    base, prob_df = load_all(dataset, protocol=protocol)
     if base is None:
         print("  No data found, skipping.")
         return
@@ -265,8 +285,47 @@ def analyse_dataset(dataset):
     }
 
 
+def _serialize(obj):
+    """Convert per_fold_score dict / DataFrame to plain-JSON friendly."""
+    if obj is None:
+        return None
+    if isinstance(obj, pd.DataFrame):
+        return obj.to_dict(orient="records")
+    if isinstance(obj, dict):
+        return {k: (float(v) if isinstance(v, (np.floating, np.integer)) else v)
+                for k, v in obj.items()}
+    return obj
+
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--protocol", choices=["legacy", "strict"], default="legacy")
+    parser.add_argument(
+        "--datasets", nargs="+", default=["merged", "dappscan"],
+        help="Subset of datasets to analyse",
+    )
+    parser.add_argument(
+        "--out", default=None,
+        help="Optional JSON output path. Defaults to "
+             "ml_results/ensemble_results_{protocol}.json",
+    )
+    args = parser.parse_args()
+
     results = {}
-    for ds in ["merged", "dappscan"]:
-        results[ds] = analyse_dataset(ds)
+    for ds in args.datasets:
+        results[ds] = analyse_dataset(ds, protocol=args.protocol)
     print("\n\nDone.")
+
+    # Write JSON summary so the orchestrator can pick it up
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = (
+        Path(args.out) if args.out
+        else RESULTS_DIR / f"ensemble_results_{args.protocol}.json"
+    )
+    serial = {}
+    for ds, r in results.items():
+        if r is None:
+            continue
+        serial[ds] = {k: _serialize(v) for k, v in r.items()}
+    out_path.write_text(json.dumps(serial, indent=2, default=str))
+    print(f"  Saved ensemble summary → {out_path}")

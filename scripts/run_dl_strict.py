@@ -29,7 +29,12 @@ import pandas as pd
 _REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO))
 
-from src.ml.dl_baselines import evaluate_codebert, _OUT_DIR, _OOF_DIR
+from src.ml.dl_baselines import (
+    evaluate_codebert, evaluate_token_model,
+    TextCNN, BiLSTMClassifier,
+    tokenize_solidity, read_source,
+    _OUT_DIR, _OOF_DIR,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -77,6 +82,77 @@ def load_strict_merged() -> tuple:
         f"pos_rate={y.mean():.1%}"
     )
     return merged, y, groups
+
+
+def run_token_model(model_label: str, df, y, groups, existing: dict,
+                    token_lists=None) -> dict:
+    """Run TextCNN or BiLSTM on the strict corpus.
+
+    `token_lists` should be the pre-tokenized solidity source for each
+    contract in df (in the same order).
+    """
+    key = f"{model_label}_{DATASET_LABEL}"
+    if key in existing:
+        r = existing[key]
+        print(
+            f"  [SKIP] {model_label} strict_merged already done  "
+            f"ROC-AUC={r['roc_auc_mean']:.4f}  PR-AUC={r['pr_auc_mean']:.4f}  "
+            f"F1={r['f1_mean']:.4f}",
+            flush=True,
+        )
+        return r
+
+    if model_label == "textcnn":
+        model_cls = TextCNN
+        kwargs = dict(embed_dim=128, num_filters=64,
+                      filter_sizes=(3, 4, 5), dropout=0.5)
+        n_epochs = 10
+        batch_size = 64
+        lr = 1e-3
+    else:  # bilstm
+        model_cls = BiLSTMClassifier
+        kwargs = dict(embed_dim=128, hidden_dim=256, dropout=0.4)
+        n_epochs = 10
+        batch_size = 64
+        lr = 1e-3
+
+    print(f"\n{'='*80}", flush=True)
+    print(f"Running {model_label} on STRICT MERGED  ({len(df)} contracts)", flush=True)
+    print(f"{'='*80}", flush=True)
+
+    if token_lists is None:
+        print("  Tokenizing sources...", flush=True)
+        sources = [
+            read_source(sp) for sp in
+            df["local_source_path"].fillna("").astype(str).values
+        ]
+        token_lists = [tokenize_solidity(s) for s in sources]
+
+    t0 = time.time()
+    result = evaluate_token_model(
+        model_name=model_label,
+        model_cls=model_cls,
+        model_kwargs=kwargs,
+        df=df, y=y, groups=groups,
+        token_lists=token_lists,
+        max_len=1024,
+        n_folds=5,
+        n_epochs=n_epochs,
+        batch_size=batch_size,
+        lr=lr,
+        dataset=DATASET_LABEL,
+    )
+    elapsed = time.time() - t0
+    result["model"]     = model_label
+    result["dataset"]   = DATASET_LABEL
+    result["elapsed_s"] = round(elapsed, 1)
+    print(
+        f"\n  {model_label} strict_merged DONE in {elapsed/60:.1f} m  "
+        f"ROC-AUC={result['roc_auc_mean']:.4f}±{result['roc_auc_std']:.4f}  "
+        f"PR-AUC={result['pr_auc_mean']:.4f}  F1={result['f1_mean']:.4f}",
+        flush=True,
+    )
+    return result
 
 
 def run_model(model_hf: str, model_label: str, df, y, groups, existing: dict) -> dict:
@@ -131,7 +207,8 @@ def main():
     parser = argparse.ArgumentParser(description="Run DL baselines on strict-label corpus")
     parser.add_argument(
         "--models", default="unixcoder,codebert",
-        help="Comma-separated list of models to run: unixcoder, codebert (default: both)",
+        help="Comma-separated list of models to run: "
+             "unixcoder, codebert, textcnn, bilstm (default: unixcoder,codebert)",
     )
     args = parser.parse_args()
     models_to_run = [m.strip().lower() for m in args.models.split(",")]
@@ -152,19 +229,37 @@ def main():
 
     all_results = dict(existing)
 
-    model_map = {
+    transformer_map = {
         "unixcoder": (UNIXCODER_HF, "unixcoder"),
         "codebert":  (CODEBERT_HF,  "codebert"),
     }
+    token_model_keys = {"textcnn", "bilstm"}
 
     total_t0 = time.time()
+    # Pre-tokenize once if any token model requested
+    token_lists = None
+    if any(k in token_model_keys for k in models_to_run):
+        print("Tokenizing sources for TextCNN/BiLSTM...", flush=True)
+        sources = [
+            read_source(sp) for sp in
+            df["local_source_path"].fillna("").astype(str).values
+        ]
+        token_lists = [tokenize_solidity(s) for s in sources]
+        print(f"  Tokenized {len(token_lists)} contracts", flush=True)
+
     for model_key in models_to_run:
-        if model_key not in model_map:
+        if model_key in transformer_map:
+            hf, label = transformer_map[model_key]
+            r = run_model(hf, label, df, y, groups, all_results)
+        elif model_key in token_model_keys:
+            r = run_token_model(
+                model_key, df, y, groups, all_results,
+                token_lists=token_lists,
+            )
+        else:
             print(f"Unknown model '{model_key}', skipping.", flush=True)
             continue
-        hf, label = model_map[model_key]
-        r = run_model(hf, label, df, y, groups, all_results)
-        all_results[f"{label}_{DATASET_LABEL}"] = r
+        all_results[f"{model_key}_{DATASET_LABEL}"] = r
 
         # Save after every model so progress is not lost
         _OUT_DIR.mkdir(parents=True, exist_ok=True)
