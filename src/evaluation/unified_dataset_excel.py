@@ -324,6 +324,47 @@ def _rows_from_dappscan() -> List[UnifiedRow]:
     return rows
 
 
+def _rows_from_empirical() -> List[UnifiedRow]:
+    """Load the deduplicated, source-bearing Empirical corpus."""
+    manifest_path = DATA_DIR / "derived" / "empirical_analysis" / "manifest.csv"
+    source_root = DATA_DIR / "derived" / "empirical_analysis"
+    if not manifest_path.exists():
+        from src.datasets.empirical_analysis import build_normalized_corpus
+
+        build_normalized_corpus()
+    if not manifest_path.exists():
+        return []
+
+    rows: List[UnifiedRow] = []
+    manifest = pd.read_csv(manifest_path, low_memory=False).fillna("")
+    for _, item in manifest.iterrows():
+        contract_ids = json.loads(str(item.get("contract_ids", "[]")))
+        addresses = sorted({
+            _norm_addr(contract_id)
+            for contract_id in contract_ids
+            if _is_addr(_norm_addr(contract_id))
+        })
+        vuln_types = json.loads(str(item.get("vulnerability_types", "[]")))
+        provenance = json.loads(str(item.get("provenance", "[]")))
+        rows.append(
+            UnifiedRow(
+                source_dataset="Empirical-Analysis",
+                source_subdataset=";".join(provenance),
+                chain="eth",
+                address=addresses[0] if len(addresses) == 1 else "",
+                contract_id=f"empirical:{item['source_hash']}",
+                label_status=str(item["label_status"]),
+                vuln_present=int(str(item["label_status"]) == "vulnerable"),
+                vuln_types=";".join(str(value) for value in vuln_types),
+                vuln_severity="",
+                local_source_path=str(source_root / str(item["source_file"])),
+                local_bytecode_path="",
+                local_metadata_path=str(manifest_path),
+            )
+        )
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # Build + write
 # ---------------------------------------------------------------------------
@@ -333,6 +374,7 @@ def build_unified_df() -> pd.DataFrame:
     rows.extend(_rows_from_access_control())
     rows.extend(_rows_from_forge())
     rows.extend(_rows_from_dappscan())
+    rows.extend(_rows_from_empirical())
 
     df = pd.DataFrame([r.__dict__ for r in rows])
 
