@@ -365,6 +365,41 @@ def _rows_from_empirical() -> List[UnifiedRow]:
     return rows
 
 
+def _rows_from_lisa() -> List[UnifiedRow]:
+    """Load LISA-Bench audit findings without inventing clean labels."""
+    manifest_path = DATA_DIR / "derived" / "lisa_bench" / "manifest.csv"
+    source_root = DATA_DIR / "derived" / "lisa_bench"
+    if not manifest_path.exists():
+        from src.datasets.lisa_bench import build_normalized_corpus
+
+        build_normalized_corpus()
+    if not manifest_path.exists():
+        return []
+
+    rows: List[UnifiedRow] = []
+    manifest = pd.read_csv(manifest_path, low_memory=False).fillna("")
+    for _, item in manifest.iterrows():
+        vulnerability_types = json.loads(str(item.get("vulnerability_types", "[]")))
+        impacts = json.loads(str(item.get("impacts", "[]")))
+        rows.append(
+            UnifiedRow(
+                source_dataset="LISA-Bench",
+                source_subdataset="audit_findings",
+                chain="",
+                address="",
+                contract_id=f"lisa:{item['source_hash']}",
+                label_status="vulnerable",
+                vuln_present=1,
+                vuln_types=";".join(str(value) for value in vulnerability_types),
+                vuln_severity=";".join(str(value) for value in impacts),
+                local_source_path=str(source_root / str(item["source_file"])),
+                local_bytecode_path="",
+                local_metadata_path=str(manifest_path),
+            )
+        )
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # Build + write
 # ---------------------------------------------------------------------------
@@ -375,6 +410,7 @@ def build_unified_df() -> pd.DataFrame:
     rows.extend(_rows_from_forge())
     rows.extend(_rows_from_dappscan())
     rows.extend(_rows_from_empirical())
+    rows.extend(_rows_from_lisa())
 
     df = pd.DataFrame([r.__dict__ for r in rows])
 
