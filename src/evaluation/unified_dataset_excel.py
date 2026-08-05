@@ -400,6 +400,40 @@ def _rows_from_lisa() -> List[UnifiedRow]:
     return rows
 
 
+def _rows_from_dive() -> List[UnifiedRow]:
+    """Load DIVE only after complete Solidity sources are available."""
+    manifest_path = DATA_DIR / "derived" / "dive" / "manifest.csv"
+    source_root = DATA_DIR / "derived" / "dive"
+    if not manifest_path.exists():
+        from src.datasets.dive import build_normalized_corpus
+
+        build_normalized_corpus()
+    if not manifest_path.exists():
+        return []
+
+    rows: List[UnifiedRow] = []
+    manifest = pd.read_csv(manifest_path, low_memory=False).fillna("")
+    for _, item in manifest.iterrows():
+        vulnerability_types = json.loads(str(item.get("vulnerability_types", "[]")))
+        rows.append(
+            UnifiedRow(
+                source_dataset="DIVE",
+                source_subdataset="multi_tool_consensus",
+                chain="eth",
+                address="",
+                contract_id=f"dive:{item['source_hash']}",
+                label_status=str(item["label_status"]),
+                vuln_present=int(str(item["label_status"]) == "vulnerable"),
+                vuln_types=";".join(str(value) for value in vulnerability_types),
+                vuln_severity="",
+                local_source_path=str(source_root / str(item["source_file"])),
+                local_bytecode_path="",
+                local_metadata_path=str(manifest_path),
+            )
+        )
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # Build + write
 # ---------------------------------------------------------------------------
@@ -411,6 +445,7 @@ def build_unified_df() -> pd.DataFrame:
     rows.extend(_rows_from_dappscan())
     rows.extend(_rows_from_empirical())
     rows.extend(_rows_from_lisa())
+    rows.extend(_rows_from_dive())
 
     df = pd.DataFrame([r.__dict__ for r in rows])
 
