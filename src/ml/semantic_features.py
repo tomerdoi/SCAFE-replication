@@ -1,11 +1,13 @@
 """
 Semantic feature extraction for SCAFE-Sem.
 
-Two complementary semantic feature streams:
+Three complementary semantic feature streams:
   1. Identifier Semantic Profiling — extracts function/variable/contract names,
      decomposes them into constituent words, and computes risk/safety/DeFi
      word profiles plus structural naming statistics.
-  2. Code Token LSA — tokenizes Solidity source, builds TF-IDF, and applies
+  2. Context Profiling — counts call, guard, state, and ordering patterns
+     associated with vulnerability classes.
+  3. Code Token LSA — tokenizes Solidity source, builds TF-IDF, and applies
      Truncated SVD to discover latent code topics (fitted per fold to avoid leakage).
 
 Both streams are compilation-free and run on CPU.
@@ -102,6 +104,8 @@ _RE_WORD_TOKEN = re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*')
 
 def read_source(path_str: str) -> str:
     """Read Solidity source from a file path or directory of .sol files."""
+    if not path_str:
+        return ""
     p = Path(path_str)
     if not p.exists():
         return ""
@@ -197,6 +201,106 @@ def compute_identifier_features(source: str) -> Dict[str, float]:
         feats[f'name_count_{w}'] = float(wc.get(w, 0))
 
     return feats
+
+
+def add_identifier_features_to_frame(
+    frame: pd.DataFrame,
+    *,
+    source_column: str = "local_source_path",
+) -> pd.DataFrame:
+    """Add leakage-safe identifier features, caching repeated source paths."""
+
+    if source_column not in frame.columns:
+        raise KeyError(f"Missing source column: {source_column}")
+    cache: Dict[str, Dict[str, float]] = {}
+    rows: List[Dict[str, float]] = []
+    for value in frame[source_column].fillna("").astype(str):
+        if value not in cache:
+            cache[value] = compute_identifier_features(read_source(value))
+        rows.append(cache[value])
+    semantic = pd.DataFrame(rows, index=frame.index).fillna(0.0)
+    semantic = semantic.add_prefix("semantic_")
+    return pd.concat([frame, semantic], axis=1)
+
+
+def compute_context_features(source: str) -> Dict[str, float]:
+    """Extract compilation-free call, guard, state, and ordering signals."""
+
+    lines = source.splitlines()
+    lower = source.lower()
+    external_calls = len(re.findall(r"\.(?:call|delegatecall|send|transfer)\b", lower))
+    state_write_candidates = len(
+        re.findall(r"\b(?:balances|owner|admin|allowance|state|status)\b[^;\n]*=", lower)
+    )
+    guard_count = len(re.findall(r"\b(?:require|assert|revert)\s*\(", lower))
+    access_guard_count = len(
+        re.findall(r"\b(?:msg\.sender|tx\.origin)\b|only[a-z0-9_]*", lower)
+    )
+    unchecked_count = len(re.findall(r"\bunchecked\s*\{|\bassembly\s*\{", lower))
+    arithmetic_count = len(re.findall(r"[+\-*/%]\s*=?", source))
+    timestamp_count = len(re.findall(r"\b(?:block\.timestamp|now)\b", lower))
+    randomness_count = len(
+        re.findall(r"\b(?:block\.hash|blockhash|prevrandao|difficulty)\b", lower)
+    )
+    loop_count = len(re.findall(r"\b(?:for|while)\s*\(", lower))
+    payable_count = len(re.findall(r"\bpayable\b", lower))
+    external_function_count = len(
+        re.findall(r"\bfunction\b[^{}\n]*\bexternal\b", lower)
+    )
+
+    call_lines = [
+        index
+        for index, line in enumerate(lines)
+        if re.search(r"\.(?:call|delegatecall|send|transfer)\b", line.lower())
+    ]
+    write_lines = [
+        index
+        for index, line in enumerate(lines)
+        if re.search(r"\b(?:balances|owner|admin|allowance|state|status)\b[^;\n]*=", line.lower())
+    ]
+    calls_before_writes = sum(
+        any(write_line > call_line for write_line in write_lines)
+        for call_line in call_lines
+    )
+    return {
+        "context_external_call_count": float(external_calls),
+        "context_state_write_count": float(state_write_candidates),
+        "context_guard_count": float(guard_count),
+        "context_access_guard_count": float(access_guard_count),
+        "context_unchecked_assembly_count": float(unchecked_count),
+        "context_arithmetic_count": float(arithmetic_count),
+        "context_timestamp_count": float(timestamp_count),
+        "context_randomness_count": float(randomness_count),
+        "context_loop_count": float(loop_count),
+        "context_payable_count": float(payable_count),
+        "context_external_function_count": float(external_function_count),
+        "context_call_before_state_write_count": float(calls_before_writes),
+        "context_call_to_guard_ratio": external_calls / max(guard_count, 1),
+        "context_state_write_to_call_ratio": state_write_candidates / max(external_calls, 1),
+    }
+
+
+def add_semantic_features_to_frame(
+    frame: pd.DataFrame,
+    *,
+    source_column: str = "local_source_path",
+) -> pd.DataFrame:
+    """Add identifier and targeted context features with source-path caching."""
+
+    if source_column not in frame.columns:
+        raise KeyError(f"Missing source column: {source_column}")
+    cache: Dict[str, Dict[str, float]] = {}
+    rows: List[Dict[str, float]] = []
+    for value in frame[source_column].fillna("").astype(str):
+        if value not in cache:
+            source = read_source(value)
+            features = compute_identifier_features(source)
+            features.update(compute_context_features(source))
+            cache[value] = features
+        rows.append(cache[value])
+    semantic = pd.DataFrame(rows, index=frame.index).fillna(0.0)
+    semantic = semantic.add_prefix("semantic_")
+    return pd.concat([frame, semantic], axis=1)
 
 
 def tokenize_solidity(source: str) -> str:

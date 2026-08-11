@@ -9,13 +9,17 @@ CV experiment:
 * source-derived numeric features only (no bytecode or activity features);
 * dataset-specific GroupKFold for within-dataset estimates;
 * train-on-one-dataset/test-on-another transfer estimates;
-* fixed 0.5 decision threshold, avoiding test-label threshold tuning;
+* fixed or train-only calibrated decision thresholds, never test-label tuning;
 * positive-only datasets report recall/coverage only.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
+import hashlib
+from pathlib import Path
+import re
 from typing import Iterable, Optional, Sequence
 
 import numpy as np
@@ -30,10 +34,82 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 from sklearn.model_selection import GroupKFold
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 from src.ml.features import _EXCLUDE, _ONCHAIN_FEATURES
 from src.ml.models import get_all_models
+
+
+CANONICAL_VULNERABILITY_TYPES = (
+    "reentrancy",
+    "access_control",
+    "arithmetic",
+    "unchecked_calls",
+    "denial_service",
+    "time_manipulation",
+    "bad_randomness",
+    "front_running",
+    "delegatecall",
+    "other",
+)
+
+
+def canonicalize_vulnerability_type(value: object) -> str:
+    """Map SWC/CWE/DASP labels to SCAFE's shared taxonomy."""
+
+    text = str(value or "").strip().lower()
+    if not text:
+        return ""
+    if "reentr" in text:
+        return "reentrancy"
+    if any(token in text for token in ("access", "authoriz", "tx.origin", "cwe-269", "cwe-284", "cwe-285")):
+        return "access_control"
+    if any(token in text for token in ("arithmetic", "overflow", "underflow", "cwe-682")):
+        return "arithmetic"
+    if any(token in text for token in ("unchecked", "low-level", "low_level", "failed call", "cwe-252", "cwe-703")):
+        return "unchecked_calls"
+    if any(token in text for token in ("denial", "dos", "gas limit", "gasless", "cwe-691", "cwe-754", "cwe-755")):
+        return "denial_service"
+    if any(
+        token in text
+        for token in (
+            "timestamp",
+            "time manipulation",
+            "time_manipulation",
+            "block values",
+            "cwe-829",
+        )
+    ):
+        return "time_manipulation"
+    if any(token in text for token in ("random", "weak sources")):
+        return "bad_randomness"
+    if any(token in text for token in ("front-running", "front_running", "transaction order", "cwe-362")):
+        return "front_running"
+    if "delegatecall" in text:
+        return "delegatecall"
+    return "other"
+
+
+def canonicalize_vulnerability_types(value: object) -> str:
+    """Canonicalize a semicolon-separated multi-label field."""
+
+    labels = {
+        canonicalize_vulnerability_type(token)
+        for token in str(value or "").split(";")
+        if canonicalize_vulnerability_type(token)
+    }
+    return ";".join(sorted(labels))
+
+
+def add_canonical_vulnerability_types(frame: pd.DataFrame) -> pd.DataFrame:
+    """Return a copy with normalized multi-label taxonomy values."""
+
+    result = frame.copy()
+    result["taxonomy_types"] = result.get(
+        "vuln_types", pd.Series("", index=result.index)
+    ).map(canonicalize_vulnerability_types)
+    return result
 
 
 @dataclass(frozen=True)
@@ -112,6 +188,55 @@ def select_dataset(frame: pd.DataFrame, spec: DatasetSpec) -> pd.DataFrame:
     return selected
 
 
+@lru_cache(maxsize=100_000)
+def source_identity_hash(path_value: str) -> str:
+    """Return a whitespace/comment-insensitive source identity hash."""
+
+    if not path_value:
+        return ""
+    path = Path(path_value)
+    if not path.exists():
+        return ""
+    try:
+        if path.is_file():
+            source = path.read_text(encoding="utf-8", errors="ignore")
+        elif path.is_dir():
+            source = "\n".join(
+                item.read_text(encoding="utf-8", errors="ignore")
+                for item in sorted(path.rglob("*.sol"))
+            )
+        else:
+            return ""
+    except OSError:
+        return ""
+    source = re.sub(r"/\*.*?\*/", " ", source, flags=re.DOTALL)
+    source = re.sub(r"//.*?$", " ", source, flags=re.MULTILINE)
+    source = re.sub(r"\s+", " ", source).strip()
+    return hashlib.sha256(source.encode("utf-8")).hexdigest()
+
+
+def exclude_test_source_duplicates(
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+) -> tuple[pd.DataFrame, int]:
+    """Remove train rows whose source is also present in held-out test."""
+
+    if "local_source_path" not in train or "local_source_path" not in test:
+        return train, 0
+    test_hashes = {
+        source_identity_hash(value)
+        for value in test["local_source_path"].fillna("").astype(str)
+    }
+    test_hashes.discard("")
+    if not test_hashes:
+        return train, 0
+    train_hashes = train["local_source_path"].fillna("").astype(str).map(
+        source_identity_hash
+    )
+    duplicate_mask = train_hashes.isin(test_hashes)
+    return train.loc[~duplicate_mask].copy(), int(duplicate_mask.sum())
+
+
 def _groups(frame: pd.DataFrame, spec: DatasetSpec) -> np.ndarray:
     if spec.group_by_project and "source_subdataset" in frame:
         keys = frame["source_subdataset"].replace("", pd.NA).fillna(frame["contract_id"])
@@ -138,6 +263,53 @@ def _fit(
         estimator.set_params(scale_pos_weight=negatives / positives)
     estimator.fit(x_train, y_train)
     return FittedModel(estimator, scaler, list(feature_columns))
+
+
+def _optimal_f1_threshold(y_true: np.ndarray, probabilities: np.ndarray) -> float:
+    """Choose a threshold using labels from a training-only validation split."""
+
+    best_threshold = 0.5
+    best_f1 = -1.0
+    for threshold in np.linspace(0.01, 0.99, 99):
+        score = f1_score(
+            y_true,
+            (probabilities >= threshold).astype(int),
+            zero_division=0,
+        )
+        if score > best_f1:
+            best_f1 = score
+            best_threshold = float(threshold)
+    return best_threshold
+
+
+def _fit_with_train_calibration(
+    train: pd.DataFrame,
+    feature_columns: Sequence[str],
+    model_name: str,
+) -> tuple[FittedModel, float]:
+    """Fit on all training data and calibrate a threshold without test labels."""
+
+    if train["y"].nunique() < 2 or len(train) < 10:
+        return _fit(train, feature_columns, model_name), 0.5
+    calibration_train, calibration_valid = train_test_split(
+        train,
+        test_size=0.2,
+        random_state=42,
+        stratify=train["y"],
+    )
+    calibration_model = _fit(
+        calibration_train.reset_index(drop=True),
+        feature_columns,
+        model_name,
+    )
+    calibration_probabilities = calibration_model.predict_probability(
+        calibration_valid
+    )
+    threshold = _optimal_f1_threshold(
+        calibration_valid["y"].to_numpy(dtype=int),
+        calibration_probabilities,
+    )
+    return _fit(train, feature_columns, model_name), threshold
 
 
 def _metrics(
@@ -244,24 +416,236 @@ def run_transfer(
     feature_columns: Sequence[str],
     *,
     model_names: Iterable[str] = ("rf", "et", "hgb", "xgb"),
+    exclude_duplicate_sources: bool = True,
 ) -> list[dict]:
     """Train on one labelled dataset and evaluate on another."""
 
     train = select_dataset(frame, train_spec)
     test = select_dataset(frame, test_spec)
+    duplicate_count = 0
+    if exclude_duplicate_sources:
+        train, duplicate_count = exclude_test_source_duplicates(train, test)
     if train["y"].nunique() < 2:
         raise ValueError(f"Training dataset {train_spec.name!r} needs both classes")
     rows: list[dict] = []
     for model_name in model_names:
         fitted = _fit(train, feature_columns, model_name)
         probabilities = fitted.predict_probability(test)
-        rows.append(
-            _metrics(
+        result = _metrics(
+            test["y"].to_numpy(dtype=int),
+            probabilities,
+            dataset=test_spec.name,
+            model=model_name,
+            experiment=f"transfer_{train_spec.name}_to_{test_spec.name}",
+        )
+        result["n_train"] = int(len(train))
+        result["n_duplicate_train_excluded"] = duplicate_count
+        rows.append(result)
+    return rows
+
+
+def run_leave_one_dataset_out(
+    frame: pd.DataFrame,
+    specs: Sequence[DatasetSpec],
+    feature_columns: Sequence[str],
+    *,
+    model_names: Iterable[str] = ("rf", "et", "hgb", "xgb"),
+    calibrate_threshold: bool = False,
+    exclude_duplicate_sources: bool = True,
+) -> tuple[list[dict], pd.DataFrame]:
+    """Train on every dataset except one and test on the held-out dataset."""
+
+    selected = {spec.name: select_dataset(frame, spec) for spec in specs}
+    rows: list[dict] = []
+    prediction_parts: list[pd.DataFrame] = []
+    for target in specs:
+        test = selected[target.name]
+        train_parts = [
+            selected[spec.name] for spec in specs if spec.name != target.name
+        ]
+        train = pd.concat(train_parts, ignore_index=True)
+        duplicate_count = 0
+        if exclude_duplicate_sources:
+            train, duplicate_count = exclude_test_source_duplicates(train, test)
+        if train["y"].nunique() < 2:
+            continue
+        for model_name in model_names:
+            if calibrate_threshold:
+                fitted, threshold = _fit_with_train_calibration(
+                    train, feature_columns, model_name
+                )
+            else:
+                fitted, threshold = _fit(train, feature_columns, model_name), 0.5
+            probabilities = fitted.predict_probability(test)
+            result = _metrics(
                 test["y"].to_numpy(dtype=int),
                 probabilities,
-                dataset=test_spec.name,
+                dataset=target.name,
                 model=model_name,
-                experiment=f"transfer_{train_spec.name}_to_{test_spec.name}",
+                experiment="leave_one_dataset_out",
+                threshold=threshold,
             )
-        )
-    return rows
+            result["train_datasets"] = ",".join(
+                spec.name for spec in specs if spec.name != target.name
+            )
+            result["n_train"] = int(len(train))
+            result["n_duplicate_train_excluded"] = duplicate_count
+            rows.append(result)
+            prediction_parts.append(
+                pd.DataFrame(
+                    {
+                        "dataset": target.name,
+                        "model": model_name,
+                        "contract_id": test["contract_id"].to_numpy(),
+                        "label_status": test["label_status"].to_numpy(),
+                        "vuln_types": test.get(
+                            "vuln_types", pd.Series("", index=test.index)
+                        ).to_numpy(),
+                        "y_true": test["y"].to_numpy(dtype=int),
+                        "y_prob": probabilities,
+                        "y_pred": (probabilities >= threshold).astype(int),
+                    }
+                )
+            )
+    predictions = (
+        pd.concat(prediction_parts, ignore_index=True)
+        if prediction_parts
+        else pd.DataFrame()
+    )
+    return rows, predictions
+
+
+def vulnerability_error_analysis(predictions: pd.DataFrame) -> pd.DataFrame:
+    """Summarize recall and false-positive rate by vulnerability type."""
+
+    if predictions.empty:
+        return pd.DataFrame()
+    rows: list[dict] = []
+    for (dataset, model), group in predictions.groupby(["dataset", "model"]):
+        positive_rows = group[group["y_true"] == 1]
+        types: set[str] = set()
+        for value in positive_rows["vuln_types"].fillna(""):
+            types.update(
+                token.strip()
+                for token in str(value).split(";")
+                if token.strip()
+            )
+        for vulnerability_type in sorted(types):
+            mask = positive_rows["vuln_types"].fillna("").map(
+                lambda value: vulnerability_type in {
+                    token.strip() for token in str(value).split(";") if token.strip()
+                }
+            )
+            subset = positive_rows[mask]
+            rows.append(
+                {
+                    "dataset": dataset,
+                    "model": model,
+                    "analysis_level": "vulnerability_type",
+                    "vulnerability_type": vulnerability_type,
+                    "n": int(len(subset)),
+                    "recall": float(subset["y_pred"].mean()) if len(subset) else float("nan"),
+                    "mean_probability": float(subset["y_prob"].mean()) if len(subset) else float("nan"),
+                    "false_negative_count": int((subset["y_pred"] == 0).sum()),
+                }
+            )
+        clean = group[group["y_true"] == 0]
+        if not clean.empty:
+            rows.append(
+                {
+                    "dataset": dataset,
+                    "model": model,
+                    "analysis_level": "clean_control",
+                    "vulnerability_type": "clean",
+                    "n": int(len(clean)),
+                    "recall": float("nan"),
+                    "mean_probability": float(clean["y_prob"].mean()),
+                    "false_negative_count": int((clean["y_pred"] == 1).sum()),
+                    "false_positive_rate": float(clean["y_pred"].mean()),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def run_leave_one_dataset_out_ovr(
+    frame: pd.DataFrame,
+    specs: Sequence[DatasetSpec],
+    feature_columns: Sequence[str],
+    *,
+    vulnerability_types: Sequence[str] = CANONICAL_VULNERABILITY_TYPES,
+    model_names: Iterable[str] = ("rf", "et", "hgb", "xgb"),
+    calibrate_threshold: bool = False,
+    exclude_duplicate_sources: bool = True,
+) -> tuple[list[dict], pd.DataFrame]:
+    """Run held-out-dataset one-vs-rest models for each taxonomy type."""
+
+    normalized = add_canonical_vulnerability_types(frame)
+    selected = {spec.name: select_dataset(normalized, spec) for spec in specs}
+    rows: list[dict] = []
+    prediction_parts: list[pd.DataFrame] = []
+    for vulnerability_type in vulnerability_types:
+        for target in specs:
+            test = selected[target.name].copy()
+            test["y"] = test["taxonomy_types"].map(
+                lambda value: vulnerability_type in str(value).split(";")
+            ).astype(int)
+            train = pd.concat(
+                [
+                    selected[spec.name]
+                    for spec in specs
+                    if spec.name != target.name
+                ],
+                ignore_index=True,
+            )
+            duplicate_count = 0
+            if exclude_duplicate_sources:
+                train, duplicate_count = exclude_test_source_duplicates(
+                    train, test
+                )
+            train["y"] = train["taxonomy_types"].map(
+                lambda value: vulnerability_type in str(value).split(";")
+            ).astype(int)
+            if train["y"].nunique() < 2 or test["y"].nunique() < 2:
+                continue
+            for model_name in model_names:
+                if calibrate_threshold:
+                    fitted, threshold = _fit_with_train_calibration(
+                        train, feature_columns, model_name
+                    )
+                else:
+                    fitted, threshold = _fit(train, feature_columns, model_name), 0.5
+                probabilities = fitted.predict_probability(test)
+                result = _metrics(
+                    test["y"].to_numpy(dtype=int),
+                    probabilities,
+                    dataset=target.name,
+                    model=model_name,
+                    experiment="leave_one_dataset_out_ovr",
+                    threshold=threshold,
+                )
+                result["vulnerability_type"] = vulnerability_type
+                result["train_datasets"] = ",".join(
+                    spec.name for spec in specs if spec.name != target.name
+                )
+                result["n_train"] = int(len(train))
+                result["n_duplicate_train_excluded"] = duplicate_count
+                rows.append(result)
+                prediction_parts.append(
+                    pd.DataFrame(
+                        {
+                            "dataset": target.name,
+                            "model": model_name,
+                            "vulnerability_type": vulnerability_type,
+                            "contract_id": test["contract_id"].to_numpy(),
+                            "y_true": test["y"].to_numpy(dtype=int),
+                            "y_prob": probabilities,
+                            "y_pred": (probabilities >= threshold).astype(int),
+                        }
+                    )
+                )
+    predictions = (
+        pd.concat(prediction_parts, ignore_index=True)
+        if prediction_parts
+        else pd.DataFrame()
+    )
+    return rows, predictions
