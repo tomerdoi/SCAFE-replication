@@ -9,6 +9,7 @@ from src.ml.baseline_comparison import (
     exclude_test_source_duplicates,
     select_dataset,
     source_feature_columns,
+    summarize_repeated_lodo,
 )
 
 
@@ -77,3 +78,24 @@ def test_duplicate_sources_are_removed_from_training(tmp_path):
     filtered, removed = exclude_test_source_duplicates(train, test)
     assert removed == 2
     assert filtered.empty
+
+
+def test_repeated_lodo_summary_reports_seed_confidence_interval():
+    metrics = pd.DataFrame(
+        {
+            "dataset": ["Toy"] * 3,
+            "model": ["rf"] * 3,
+            "random_state": [42, 43, 44],
+            "roc_auc": [0.6, 0.7, 0.8],
+            "pr_auc": [0.5, 0.6, 0.7],
+            "f1": [0.4, 0.5, 0.6],
+            "precision": [0.4, 0.5, 0.6],
+            "recall": [0.4, 0.5, 0.6],
+            "coverage": [0.4, 0.5, 0.6],
+        }
+    )
+    summary = summarize_repeated_lodo(metrics)
+    assert summary.loc[0, "n_seeds"] == 3
+    assert np.isclose(summary.loc[0, "roc_auc_mean"], 0.7)
+    assert summary.loc[0, "roc_auc_ci95_low"] <= 0.7
+    assert summary.loc[0, "roc_auc_ci95_high"] >= 0.7

@@ -258,10 +258,26 @@ def compute_context_features(source: str) -> Dict[str, float]:
         for index, line in enumerate(lines)
         if re.search(r"\b(?:balances|owner|admin|allowance|state|status)\b[^;\n]*=", line.lower())
     ]
-    calls_before_writes = sum(
-        any(write_line > call_line for write_line in write_lines)
-        for call_line in call_lines
-    )
+    function_starts = [
+        index for index, line in enumerate(lines)
+        if re.search(r"\bfunction\b", line.lower())
+    ]
+    function_regions = [
+        (start, function_starts[pos + 1] if pos + 1 < len(function_starts) else len(lines))
+        for pos, start in enumerate(function_starts)
+    ]
+    calls_before_writes = 0
+    for region_start, region_end in function_regions:
+        region_calls = [
+            line for line in call_lines if region_start <= line < region_end
+        ]
+        region_writes = [
+            line for line in write_lines if region_start <= line < region_end
+        ]
+        calls_before_writes += sum(
+            any(write_line > call_line for write_line in region_writes)
+            for call_line in region_calls
+        )
     return {
         "context_external_call_count": float(external_calls),
         "context_state_write_count": float(state_write_candidates),

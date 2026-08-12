@@ -250,6 +250,8 @@ def _fit(
     train: pd.DataFrame,
     feature_columns: Sequence[str],
     model_name: str,
+    *,
+    random_state: int = 42,
 ) -> FittedModel:
     x_train = _feature_matrix(train, feature_columns)
     y_train = train["y"].to_numpy(dtype=int)
@@ -257,6 +259,8 @@ def _fit(
     x_train = scaler.fit_transform(x_train)
     config = get_all_models()[model_name]
     estimator = config.build()
+    if "random_state" in estimator.get_params():
+        estimator.set_params(random_state=random_state)
     if "scale_pos_weight" in estimator.get_params():
         negatives = max(1, int((y_train == 0).sum()))
         positives = max(1, int((y_train == 1).sum()))
@@ -286,21 +290,26 @@ def _fit_with_train_calibration(
     train: pd.DataFrame,
     feature_columns: Sequence[str],
     model_name: str,
+    *,
+    random_state: int = 42,
 ) -> tuple[FittedModel, float]:
     """Fit on all training data and calibrate a threshold without test labels."""
 
     if train["y"].nunique() < 2 or len(train) < 10:
-        return _fit(train, feature_columns, model_name), 0.5
+        return _fit(
+            train, feature_columns, model_name, random_state=random_state
+        ), 0.5
     calibration_train, calibration_valid = train_test_split(
         train,
         test_size=0.2,
-        random_state=42,
+        random_state=random_state,
         stratify=train["y"],
     )
     calibration_model = _fit(
         calibration_train.reset_index(drop=True),
         feature_columns,
         model_name,
+        random_state=random_state,
     )
     calibration_probabilities = calibration_model.predict_probability(
         calibration_valid
@@ -309,7 +318,9 @@ def _fit_with_train_calibration(
         calibration_valid["y"].to_numpy(dtype=int),
         calibration_probabilities,
     )
-    return _fit(train, feature_columns, model_name), threshold
+    return _fit(
+        train, feature_columns, model_name, random_state=random_state
+    ), threshold
 
 
 def _metrics(
@@ -452,6 +463,7 @@ def run_leave_one_dataset_out(
     model_names: Iterable[str] = ("rf", "et", "hgb", "xgb"),
     calibrate_threshold: bool = False,
     exclude_duplicate_sources: bool = True,
+    random_state: int = 42,
 ) -> tuple[list[dict], pd.DataFrame]:
     """Train on every dataset except one and test on the held-out dataset."""
 
@@ -472,10 +484,21 @@ def run_leave_one_dataset_out(
         for model_name in model_names:
             if calibrate_threshold:
                 fitted, threshold = _fit_with_train_calibration(
-                    train, feature_columns, model_name
+                    train,
+                    feature_columns,
+                    model_name,
+                    random_state=random_state,
                 )
             else:
-                fitted, threshold = _fit(train, feature_columns, model_name), 0.5
+                fitted, threshold = (
+                    _fit(
+                        train,
+                        feature_columns,
+                        model_name,
+                        random_state=random_state,
+                    ),
+                    0.5,
+                )
             probabilities = fitted.predict_probability(test)
             result = _metrics(
                 test["y"].to_numpy(dtype=int),
@@ -490,6 +513,7 @@ def run_leave_one_dataset_out(
             )
             result["n_train"] = int(len(train))
             result["n_duplicate_train_excluded"] = duplicate_count
+            result["random_state"] = random_state
             rows.append(result)
             prediction_parts.append(
                 pd.DataFrame(
@@ -504,6 +528,7 @@ def run_leave_one_dataset_out(
                         "y_true": test["y"].to_numpy(dtype=int),
                         "y_prob": probabilities,
                         "y_pred": (probabilities >= threshold).astype(int),
+                        "random_state": random_state,
                     }
                 )
             )
@@ -513,6 +538,75 @@ def run_leave_one_dataset_out(
         else pd.DataFrame()
     )
     return rows, predictions
+
+
+def run_repeated_leave_one_dataset_out(
+    frame: pd.DataFrame,
+    specs: Sequence[DatasetSpec],
+    feature_columns: Sequence[str],
+    *,
+    seeds: Sequence[int] = (42, 43, 44, 45, 46),
+    model_names: Iterable[str] = ("rf", "et", "hgb", "xgb"),
+    calibrate_threshold: bool = True,
+    exclude_duplicate_sources: bool = True,
+) -> tuple[list[dict], pd.DataFrame]:
+    """Repeat duplicate-safe LODO across independent model seeds."""
+
+    all_rows: list[dict] = []
+    all_predictions: list[pd.DataFrame] = []
+    for seed in seeds:
+        rows, predictions = run_leave_one_dataset_out(
+            frame,
+            specs,
+            feature_columns,
+            model_names=model_names,
+            calibrate_threshold=calibrate_threshold,
+            exclude_duplicate_sources=exclude_duplicate_sources,
+            random_state=int(seed),
+        )
+        all_rows.extend(rows)
+        if not predictions.empty:
+            all_predictions.append(predictions)
+    return all_rows, (
+        pd.concat(all_predictions, ignore_index=True)
+        if all_predictions
+        else pd.DataFrame()
+    )
+
+
+def summarize_repeated_lodo(metrics: pd.DataFrame) -> pd.DataFrame:
+    """Compute seed means and percentile confidence intervals."""
+
+    if metrics.empty:
+        return pd.DataFrame()
+    metric_names = ("roc_auc", "pr_auc", "f1", "precision", "recall", "coverage")
+    rows: list[dict] = []
+    for (dataset, model), group in metrics.groupby(["dataset", "model"]):
+        result: dict[str, object] = {
+            "dataset": dataset,
+            "model": model,
+            "n_seeds": int(group["random_state"].nunique()),
+        }
+        for metric in metric_names:
+            values = pd.to_numeric(group[metric], errors="coerce").dropna().to_numpy()
+            if len(values) == 0:
+                result[f"{metric}_mean"] = float("nan")
+                result[f"{metric}_std"] = float("nan")
+                result[f"{metric}_ci95_low"] = float("nan")
+                result[f"{metric}_ci95_high"] = float("nan")
+                continue
+            rng = np.random.default_rng(42)
+            samples = rng.choice(
+                values,
+                size=(2000, len(values)),
+                replace=True,
+            ).mean(axis=1)
+            result[f"{metric}_mean"] = float(values.mean())
+            result[f"{metric}_std"] = float(values.std(ddof=0))
+            result[f"{metric}_ci95_low"] = float(np.percentile(samples, 2.5))
+            result[f"{metric}_ci95_high"] = float(np.percentile(samples, 97.5))
+        rows.append(result)
+    return pd.DataFrame(rows)
 
 
 def vulnerability_error_analysis(predictions: pd.DataFrame) -> pd.DataFrame:
@@ -576,6 +670,7 @@ def run_leave_one_dataset_out_ovr(
     model_names: Iterable[str] = ("rf", "et", "hgb", "xgb"),
     calibrate_threshold: bool = False,
     exclude_duplicate_sources: bool = True,
+    random_state: int = 42,
 ) -> tuple[list[dict], pd.DataFrame]:
     """Run held-out-dataset one-vs-rest models for each taxonomy type."""
 
@@ -610,10 +705,21 @@ def run_leave_one_dataset_out_ovr(
             for model_name in model_names:
                 if calibrate_threshold:
                     fitted, threshold = _fit_with_train_calibration(
-                        train, feature_columns, model_name
+                        train,
+                        feature_columns,
+                        model_name,
+                        random_state=random_state,
                     )
                 else:
-                    fitted, threshold = _fit(train, feature_columns, model_name), 0.5
+                    fitted, threshold = (
+                        _fit(
+                            train,
+                            feature_columns,
+                            model_name,
+                            random_state=random_state,
+                        ),
+                        0.5,
+                    )
                 probabilities = fitted.predict_probability(test)
                 result = _metrics(
                     test["y"].to_numpy(dtype=int),
@@ -629,6 +735,7 @@ def run_leave_one_dataset_out_ovr(
                 )
                 result["n_train"] = int(len(train))
                 result["n_duplicate_train_excluded"] = duplicate_count
+                result["random_state"] = random_state
                 rows.append(result)
                 prediction_parts.append(
                     pd.DataFrame(
