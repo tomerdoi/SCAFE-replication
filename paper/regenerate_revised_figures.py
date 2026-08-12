@@ -58,12 +58,19 @@ def plot_model_comparison() -> None:
             label=label,
             color=color,
         )
-    ax.set_xticks(x, df["dataset"], rotation=15, ha="right")
+    ax.set_xticks(x, ["DAppSCAN", "DIVE", "Empirical-\nAnalysis"], rotation=0, ha="center")
     ax.set_ylim(0, 1)
     ax.set_ylabel("Score (mean ± seed SD)")
-    ax.set_title("Strict repeated LODO performance")
-    ax.legend(ncol=3, frameon=False)
+    ax.set_title("Strict repeated LODO performance", pad=24)
+    ax.legend(
+        ncol=3,
+        frameon=False,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        borderaxespad=0,
+    )
     ax.grid(axis="y", alpha=0.25)
+    fig.tight_layout(rect=[0, 0, 1, 0.82])
     save(fig, "fig_model_comparison.pdf")
 
 
@@ -114,7 +121,7 @@ def plot_feature_ablation() -> None:
         ["roc_auc", "pr_auc", "f1"]
     ].max()
     variants = ["structural_all", "structural_without_components", "structural_components_only", "ast_call_graph_only"]
-    labels = ["All 257", "No components", "9 components", "14 AST/call"]
+    labels = ["All", "No comp.", "Components", "AST/call"]
     fig, axes = plt.subplots(1, 3, figsize=(10, 3.5), sharex=True)
     for ax, metric, title in zip(axes, ["roc_auc", "pr_auc", "f1"], ["ROC-AUC", "PR-AUC", "F1"]):
         matrix = (
@@ -128,7 +135,7 @@ def plot_feature_ablation() -> None:
                 if pd.notna(value):
                     ax.text(j, i, f"{value:.2f}", ha="center", va="center", fontsize=7)
         ax.set_title(title)
-        ax.set_xticks(range(len(labels)), labels, rotation=35, ha="right", fontsize=7)
+        ax.set_xticks(range(len(labels)), labels, rotation=25, ha="right", fontsize=8)
         ax.set_yticks(range(4), ["DAppSCAN", "DIVE", "Empirical", "FORGE"], fontsize=7)
     fig.suptitle("Current feature-group ablation under duplicate-safe LODO")
     fig.tight_layout()
@@ -145,11 +152,19 @@ def plot_label_sensitivity() -> None:
     pivot.plot.bar(ax=ax, color=["#5e35b1", "#00897b"], width=0.75)
     ax.set_ylabel("F1 at training-only threshold")
     ax.set_xlabel("")
-    ax.set_title("Label-policy sensitivity (current audit)")
-    ax.tick_params(axis="x", rotation=20)
+    ax.set_title("Label-policy sensitivity (current audit)", pad=24)
+    ax.set_xticklabels(["DAppSCAN", "DIVE", "Empirical-\nAnalysis", "FORGE"], rotation=0)
     ax.grid(axis="y", alpha=0.25)
-    ax.legend(title="", frameon=False, fontsize=7)
-    fig.tight_layout()
+    ax.legend(
+        title="Label policy",
+        frameon=False,
+        fontsize=7,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=2,
+        borderaxespad=0,
+    )
+    fig.tight_layout(rect=[0, 0, 1, 0.82])
     save(fig, "fig_ensemble_comparison.pdf")
 
 
@@ -157,7 +172,8 @@ def plot_feature_inventory() -> None:
     counts = {"Structural core": 248, "Components": 9, "Identifiers": 73, "Context": 14}
     fig, ax = plt.subplots(figsize=(6.2, 3.2))
     bars = ax.bar(counts.keys(), counts.values(), color=["#1565c0", "#ef6c00", "#6a1b9a", "#00897b"])
-    ax.bar_label(bars, padding=2)
+    ax.bar_label(bars, padding=4)
+    ax.set_ylim(0, max(counts.values()) * 1.16)
     ax.set_ylabel("Number of features")
     ax.set_title("Current source-only feature inventory")
     ax.tick_params(axis="x", rotation=15)
@@ -183,13 +199,21 @@ def plot_semantic_diagnostic() -> None:
         values = frame.set_index("dataset").reindex(datasets)["roc_auc"]
         ax.bar(x + offset, values, width=0.36, label=label, color=color)
     ax.axhline(0.5, color="#777", linestyle="--", linewidth=0.8, label="Chance")
-    ax.set_xticks(x, datasets, rotation=15, ha="right")
+    display_datasets = ["DAppSCAN", "DIVE", "Empirical-\nAnalysis", "FORGE"]
+    ax.set_xticks(x, display_datasets, rotation=0, ha="center")
     ax.set_ylim(0, 1)
     ax.set_ylabel("Best ROC-AUC")
-    ax.set_title("Structural versus semantic/context diagnostic")
-    ax.legend(frameon=False, fontsize=7)
+    ax.set_title("Structural versus semantic/context diagnostic", pad=24)
+    ax.legend(
+        frameon=False,
+        fontsize=7,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=3,
+        borderaxespad=0,
+    )
     ax.grid(axis="y", alpha=0.25)
-    fig.tight_layout()
+    fig.tight_layout(rect=[0, 0, 1, 0.82])
     save(fig, "fig_dl_comparison.pdf")
 
 
