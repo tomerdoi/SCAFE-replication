@@ -15,8 +15,8 @@ Quick run:
 
 Notes:
 - We score UNIQUE addresses (deduped) for correctness/perf; the scored Excel preserves ALL original rows.
-- Contracts without an on-chain address (address=="") remain in the output but will have blank risk columns.
-- Missing cached Etherscan payloads are allowed: those addresses get `has_payload=0` and `risk_raw=0`.
+- Local Solidity files take precedence over address-based cache rows.
+- Missing cached Etherscan payloads are allowed for rows without local source.
 """
 
 from __future__ import annotations
@@ -135,18 +135,20 @@ class UnifiedContractEvalRiskScoreEvaluation:
         all_addrs = [a for a in df["_address_norm"].tolist() if _is_addr(a)]
         uniq_addrs = _stable_dedupe(all_addrs)
 
-        # Rows without on-chain address but with local .sol source (e.g. DAppSCAN)
+        # Local source is authoritative whenever available.  Some source-bearing
+        # datasets also carry an address, but routing those rows through the
+        # cache-only on-chain path can silently produce zero-valued source
+        # features when no Etherscan payload is present.
         has_local_source = (
             df["local_source_path"].fillna("").astype(str).str.strip().str.len() > 0
             if "local_source_path" in df.columns
             else pd.Series([False] * len(df), index=df.index)
         )
-        no_addr_mask = ~df["_address_norm"].map(_is_addr)
-        local_only_mask = no_addr_mask & has_local_source
-        n_local_only = int(local_only_mask.sum())
+        local_source_mask = has_local_source
+        n_local_source = int(local_source_mask.sum())
         self.logger.info(
             f"Dataset: {len(df)} rows, {len(uniq_addrs)} unique addresses, "
-            f"{n_local_only} local-source-only rows (no on-chain address)"
+            f"{n_local_source} rows routed through local source extraction"
         )
 
         reg = pd.DataFrame([{"address": a, "sources": "unified_contract_eval"} for a in uniq_addrs])
@@ -306,14 +308,14 @@ class UnifiedContractEvalRiskScoreEvaluation:
             parts.append(existing_df)
             risk_df = pd.concat(parts, ignore_index=True)
 
-        # ---- Phase 2: Score local-source-only rows (no on-chain address) ----
-        # These rows have a local .sol file but no Etherscan address.
+        # ---- Phase 2: Score all rows that have local source ----
+        # Local source takes precedence over cached on-chain payloads.
         # We use ContractRiskUtil.extract_features_from_local_file for each row.
         local_risk_rows: list = []
-        if n_local_only > 0:
-            self.logger.info(f"Scoring {n_local_only} local-source-only rows via extract_features_from_local_file…")
+        if n_local_source > 0:
+            self.logger.info(f"Scoring {n_local_source} local-source rows via extract_features_from_local_file…")
             risk_util = ContractRiskUtil()
-            local_df = df[local_only_mask].copy()
+            local_df = df[local_source_mask].copy()
             for idx, (_, row) in enumerate(local_df.iterrows(), start=1):
                 sol_path = str(row.get("local_source_path", "") or "").strip()
                 contract_id = str(row.get("contract_id", "") or "").strip()
@@ -336,12 +338,12 @@ class UnifiedContractEvalRiskScoreEvaluation:
                     "risk_raw": float(raw),
                     "risk_uncertainty": float(max(0.0, risk_uncertainty)),
                 })
-                if idx == 1 or idx % 2000 == 0 or idx == n_local_only:
-                    self.logger.info(f"[local scoring] {idx}/{n_local_only}")
+                if idx == 1 or idx % 2000 == 0 or idx == n_local_source:
+                    self.logger.info(f"[local scoring] {idx}/{n_local_source}")
 
         local_risk_df = pd.DataFrame(local_risk_rows) if local_risk_rows else pd.DataFrame()
         if not local_risk_df.empty:
-            self.logger.info(f"Scored {len(local_risk_df)} local-source-only contracts")
+            self.logger.info(f"Scored {len(local_risk_df)} local-source contracts")
 
         # ---- Combine address-based and local-source risk DataFrames ----
         all_parts = []
@@ -367,17 +369,17 @@ class UnifiedContractEvalRiskScoreEvaluation:
         # For local-source-only rows: join on contract_id
         join_df = combined_risk_df.copy()
 
-        # Address-based merge
+        # Address-based merge for rows without local source.
         addr_join = join_df[join_df["address"].map(_is_addr)].copy()
         addr_join["_address_norm"] = addr_join["address"].map(_norm_addr)
-        scored_addr = df[~local_only_mask].merge(addr_join, how="left", on="_address_norm", suffixes=("", "_risk"))
+        scored_addr = df[~local_source_mask].merge(addr_join, how="left", on="_address_norm", suffixes=("", "_risk"))
         if "address_risk" in scored_addr.columns:
             scored_addr.drop(columns=["address_risk"], inplace=True)
 
         # Local-source merge (join on contract_id)
         local_join = join_df[~join_df["address"].map(_is_addr)].copy()
         local_join = local_join.rename(columns={"address": "_local_join_key"})
-        scored_local = df[local_only_mask].copy()
+        scored_local = df[local_source_mask].copy()
         scored_local["_local_join_key"] = scored_local["contract_id"].fillna("").astype(str)
         scored_local = scored_local.merge(local_join, how="left", on="_local_join_key", suffixes=("", "_risk"))
         scored_local.drop(columns=["_local_join_key"], inplace=True, errors="ignore")

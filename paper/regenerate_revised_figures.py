@@ -30,13 +30,14 @@ def best_roc(summary: pd.DataFrame) -> pd.DataFrame:
 
 
 def lodo_results() -> pd.DataFrame:
-    path = RESULTS / "strict_three_dataset_repeated" / "scafe_repeated_lodo_summary.csv"
+    path = RESULTS / "fixed_threshold_repaired" / "scafe_repeated_lodo_summary.csv"
     return pd.read_csv(path)
 
 
 def plot_model_comparison() -> None:
     df = best_roc(lodo_results())
     order = ["DAppSCAN", "DIVE", "Empirical-Analysis"]
+    df = df[df["dataset"].isin(order)].copy()
     df["dataset"] = pd.Categorical(df["dataset"], order, ordered=True)
     df = df.sort_values("dataset")
     x = np.arange(len(df))
@@ -61,7 +62,7 @@ def plot_model_comparison() -> None:
     ax.set_xticks(x, ["DAppSCAN", "DIVE", "Empirical-\nAnalysis"], rotation=0, ha="center")
     ax.set_ylim(0, 1)
     ax.set_ylabel("Score (mean ± seed SD)")
-    ax.set_title("Strict repeated LODO performance", pad=24)
+    ax.set_title("Fixed-threshold repeated LODO performance", pad=24)
     ax.legend(
         ncol=3,
         frameon=False,
@@ -92,9 +93,26 @@ def plot_cross_dataset_heatmap() -> None:
 
 
 def plot_confusion_matrices() -> None:
-    path = RESULTS / "strict_three_dataset_lodo" / "scafe_leave_one_dataset_out.csv"
+    path = RESULTS / "fixed_threshold_repaired" / "scafe_repeated_lodo_predictions.csv"
     df = pd.read_csv(path)
-    rows = best_roc(df)
+    rows = best_roc(lodo_results())
+    df = df[df["random_state"] == 42].merge(
+        rows[["dataset", "model"]], on=["dataset", "model"], how="inner"
+    )
+    rows = (
+        df.groupby("dataset")
+        .apply(
+            lambda group: pd.Series(
+                {
+                    "TN": int(((group["y_true"] == 0) & (group["y_pred"] == 0)).sum()),
+                    "FP": int(((group["y_true"] == 0) & (group["y_pred"] == 1)).sum()),
+                    "FN": int(((group["y_true"] == 1) & (group["y_pred"] == 0)).sum()),
+                    "TP": int(((group["y_true"] == 1) & (group["y_pred"] == 1)).sum()),
+                }
+            )
+        )
+        .reset_index()
+    )
     order = ["DAppSCAN", "DIVE", "Empirical-Analysis"]
     fig, axes = plt.subplots(1, 3, figsize=(8.5, 2.8))
     for ax, dataset in zip(axes, order):
@@ -150,7 +168,7 @@ def plot_label_sensitivity() -> None:
     )
     fig, ax = plt.subplots(figsize=(6.5, 3.5))
     pivot.plot.bar(ax=ax, color=["#5e35b1", "#00897b"], width=0.75)
-    ax.set_ylabel("F1 at training-only threshold")
+    ax.set_ylabel("F1 at fixed $0.5$ threshold")
     ax.set_xlabel("")
     ax.set_title("Label-policy sensitivity (current audit)", pad=24)
     ax.set_xticklabels(["DAppSCAN", "DIVE", "Empirical-\nAnalysis", "FORGE"], rotation=0)
@@ -183,13 +201,16 @@ def plot_feature_inventory() -> None:
 
 
 def plot_semantic_diagnostic() -> None:
-    structural = pd.read_csv(
-        RESULTS / "strict_three_dataset_lodo" / "scafe_leave_one_dataset_out.csv"
+    structural = best_roc(lodo_results())[["dataset", "roc_auc_mean"]].rename(
+        columns={"roc_auc_mean": "roc_auc"}
     )
-    semantic = pd.read_csv(RESULTS / "semantic_revised" / "scafe_semantic_leave_one_dataset_out.csv")
-    structural = structural.groupby("dataset", as_index=False)["roc_auc"].max()
-    semantic = semantic.groupby("dataset", as_index=False)["roc_auc"].max()
-    datasets = ["DAppSCAN", "DIVE", "Empirical-Analysis", "FORGE"]
+    semantic = pd.read_csv(
+        RESULTS / "semantic_repeated_repaired" / "summary.csv"
+    )
+    semantic = best_roc(semantic)[["dataset", "roc_auc_mean"]].rename(
+        columns={"roc_auc_mean": "roc_auc"}
+    )
+    datasets = ["DAppSCAN", "DIVE", "Empirical-Analysis"]
     x = np.arange(len(datasets))
     fig, ax = plt.subplots(figsize=(7, 3.4))
     for offset, frame, label, color in [
@@ -199,7 +220,7 @@ def plot_semantic_diagnostic() -> None:
         values = frame.set_index("dataset").reindex(datasets)["roc_auc"]
         ax.bar(x + offset, values, width=0.36, label=label, color=color)
     ax.axhline(0.5, color="#777", linestyle="--", linewidth=0.8, label="Chance")
-    display_datasets = ["DAppSCAN", "DIVE", "Empirical-\nAnalysis", "FORGE"]
+    display_datasets = ["DAppSCAN", "DIVE", "Empirical-\nAnalysis"]
     ax.set_xticks(x, display_datasets, rotation=0, ha="center")
     ax.set_ylim(0, 1)
     ax.set_ylabel("Best ROC-AUC")
