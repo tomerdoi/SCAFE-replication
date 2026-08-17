@@ -6,6 +6,9 @@ import pandas as pd
 
 from src.ml.fair_baseline_eval import (
     _checkpoint_path,
+    _incremental_prediction_artifact_path,
+    _append_prediction,
+    _load_incremental_predictions,
     _load_checkpoint,
     _prediction_artifact_path,
     _write_checkpoint,
@@ -91,6 +94,24 @@ def test_checkpoint_save_and_load_round_trip(tmp_path):
         path, seed=42, held_out="A", model="textcnn",
         expected_contract_ids=["c"],
     ) == rows
+
+
+def test_incremental_prediction_artifact_survives_truncated_last_line(tmp_path):
+    path = _incremental_prediction_artifact_path(tmp_path, 42, "B", "textcnn")
+    row = {
+        "dataset": "B", "model": "textcnn", "held_out_dataset": "B",
+        "random_state": 42, "contract_id": "b",
+        "source_identity_hash": "hash", "n_chunks": 1,
+        "y_true": 1, "y_prob": 0.9, "y_pred": 1,
+    }
+    _append_prediction(path, row)
+    with path.open("ab") as handle:
+        handle.write(b'{"contract_id":"incomplete"')
+    loaded = _load_incremental_predictions(
+        path, seed=42, held_out="B", model="textcnn",
+        expected_contract_ids=["b", "incomplete"],
+    )
+    assert loaded == {"b": row}
 
 
 def test_resume_skips_valid_completed_unit(tmp_path, monkeypatch):

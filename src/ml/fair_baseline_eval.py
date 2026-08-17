@@ -331,6 +331,71 @@ def _prediction_artifact_path(
     return checkpoint_dir / f"{_checkpoint_path(checkpoint_dir, seed, held_out, model).stem}.predictions.json"
 
 
+def _incremental_prediction_artifact_path(
+    checkpoint_dir: Path, seed: int, held_out: str, model: str
+) -> Path:
+    """Return the append-only contract prediction path for an active unit."""
+    return checkpoint_dir / (
+        f"{_checkpoint_path(checkpoint_dir, seed, held_out, model).stem}.predictions.jsonl"
+    )
+
+
+_PREDICTION_FIELDS = {
+    "dataset", "model", "held_out_dataset", "random_state", "contract_id",
+    "source_identity_hash", "n_chunks", "y_true", "y_prob", "y_pred",
+}
+
+
+def _load_incremental_predictions(
+    path: Path,
+    *,
+    seed: int,
+    held_out: str,
+    model: str,
+    expected_contract_ids: Sequence[str],
+) -> dict[str, dict[str, Any]]:
+    """Load valid completed contract rows, tolerating a truncated final line."""
+    rows: dict[str, dict[str, Any]] = {}
+    if not path.is_file():
+        return rows
+    expected_ids = {str(value) for value in expected_contract_ids}
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    # A process killed during a write can leave only this line
+                    # incomplete; previously flushed records remain usable.
+                    continue
+                contract_id = str(row.get("contract_id", ""))
+                if (
+                    not _PREDICTION_FIELDS.issubset(row)
+                    or contract_id not in expected_ids
+                    or row.get("dataset") != held_out
+                    or row.get("held_out_dataset") != held_out
+                    or row.get("model") != model
+                    or row.get("random_state") != int(seed)
+                ):
+                    continue
+                rows[contract_id] = dict(row)
+    except OSError:
+        return {}
+    return rows
+
+
+def _append_prediction(path: Path, row: Mapping[str, Any]) -> None:
+    """Durably append one contract result, flushing it before returning."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    encoded = (json.dumps(dict(row), separators=(",", ":")) + "\n").encode("utf-8")
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    try:
+        os.write(descriptor, encoded)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
 def _write_prediction_artifact(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
     """Persist contract-level predictions atomically for independent re-analysis."""
     _write_checkpoint(path, {
@@ -345,11 +410,7 @@ def load_contract_predictions(path: Path | str) -> pd.DataFrame:
     rows = payload["predictions"] if isinstance(payload, dict) else payload
     if not isinstance(rows, list):
         raise ValueError("prediction artifact must contain a list of predictions")
-    required = {
-        "dataset", "model", "held_out_dataset", "random_state", "contract_id",
-        "source_identity_hash", "n_chunks", "y_true", "y_prob", "y_pred",
-    }
-    if any(not required.issubset(row) for row in rows):
+    if any(not _PREDICTION_FIELDS.issubset(row) for row in rows):
         raise ValueError("prediction artifact is missing required contract fields")
     return pd.DataFrame(rows)
 
@@ -460,6 +521,24 @@ def run_fair_lodo(
                     _prediction_artifact_path(checkpoint_root, seed, held_out, model)
                     if checkpoint_root is not None else None
                 )
+                incremental_artifact = (
+                    _incremental_prediction_artifact_path(
+                        checkpoint_root, seed, held_out, model
+                    )
+                    if checkpoint_root is not None else None
+                )
+                expected_contract_ids = test["contract_id"].astype(str).tolist()
+                partial_rows = (
+                    _load_incremental_predictions(
+                        incremental_artifact,
+                        seed=seed,
+                        held_out=held_out,
+                        model=model,
+                        expected_contract_ids=expected_contract_ids,
+                    )
+                    if incremental_artifact is not None and resume
+                    else {}
+                )
                 progress_base = {
                     "seed": int(seed), "held_out_dataset": str(held_out),
                     "model": str(model), "epochs": int(epochs),
@@ -535,16 +614,22 @@ def run_fair_lodo(
                     for (_, contract), n_chunks in zip(test.iterrows(), counts):
                         contract_prob = float(np.mean(probs[cursor:cursor + n_chunks]))
                         cursor += n_chunks
-                        unit_rows.append({"dataset": held_out, "model": model,
-                                          "contract_id": contract["contract_id"],
-                                          "source_identity_hash": source_hash_for_path(
-                                              contract["local_source_path"]
-                                          ),
-                                          "n_chunks": n_chunks, "y_true": int(contract["y"]),
-                                          "y_prob": contract_prob,
-                                          "y_pred": int(contract_prob >= FIXED_THRESHOLD),
-                                          "random_state": seed,
-                                          "held_out_dataset": held_out})
+                        contract_id = str(contract["contract_id"])
+                        row = partial_rows.get(contract_id)
+                        if row is None:
+                            row = {"dataset": held_out, "model": model,
+                                   "contract_id": contract_id,
+                                   "source_identity_hash": source_hash_for_path(
+                                       contract["local_source_path"]
+                                   ),
+                                   "n_chunks": n_chunks, "y_true": int(contract["y"]),
+                                   "y_prob": contract_prob,
+                                   "y_pred": int(contract_prob >= FIXED_THRESHOLD),
+                                   "random_state": seed,
+                                   "held_out_dataset": held_out}
+                            if incremental_artifact is not None:
+                                _append_prediction(incremental_artifact, row)
+                        unit_rows.append(row)
                     if checkpoint is not None:
                         _write_checkpoint(checkpoint, {
                             "version": CHECKPOINT_VERSION,
