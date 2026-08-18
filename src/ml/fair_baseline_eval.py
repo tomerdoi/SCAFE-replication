@@ -220,13 +220,27 @@ def _fit_predict(
         def encode(sources: Iterable[str]) -> tuple[np.ndarray, np.ndarray]:
             rows: list[tuple[np.ndarray, np.ndarray]] = []
             for source in sources:
-                ids = tokenizer(source, add_special_tokens=False)["input_ids"]
+                ids = tokenizer(
+                    source, add_special_tokens=False, verbose=False
+                )["input_ids"]
                 for window in chunk_tokenizer_ids(ids):
-                    enc = tokenizer.prepare_for_model(
-                        window, max_length=BERT_WINDOW, truncation=True,
-                        padding="max_length", return_attention_mask=True)
-                    rows.append((np.asarray(enc["input_ids"], dtype=np.int64),
-                                 np.asarray(enc["attention_mask"], dtype=np.int64)))
+                    cls_id = tokenizer.cls_token_id
+                    sep_id = tokenizer.sep_token_id
+                    special_tokens = (
+                        [cls_id] if cls_id is not None else []
+                    ) + list(window) + (
+                        [sep_id] if sep_id is not None else []
+                    )
+                    input_ids = special_tokens[:BERT_WINDOW]
+                    attention = [1] * len(input_ids)
+                    pad_id = tokenizer.pad_token_id
+                    if pad_id is None:
+                        pad_id = 0
+                    padding = BERT_WINDOW - len(input_ids)
+                    input_ids.extend([pad_id] * max(0, padding))
+                    attention.extend([0] * max(0, padding))
+                    rows.append((np.asarray(input_ids, dtype=np.int64),
+                                 np.asarray(attention, dtype=np.int64)))
             return np.stack([r[0] for r in rows]), np.stack([r[1] for r in rows])
         X_train, M_train = encode(train_sources)
         X_test, M_test = encode(test_sources)
