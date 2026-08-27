@@ -239,11 +239,14 @@ def _optimal_f1_threshold(y_true: np.ndarray,
 
 
 def train_epoch(model, loader, optimizer, criterion, device,
-                is_bert: bool = False, progress_callback=None):
+                is_bert: bool = False, progress_callback=None,
+                start_batch: int = 0):
     model.train()
     total_loss = 0.0
     total_batches = len(loader)
     for batch_index, batch in enumerate(loader, start=1):
+        if batch_index <= start_batch:
+            continue
         if is_bert:
             ids, mask, labels = [b.to(device) for b in batch]
             logits = model(ids, mask)

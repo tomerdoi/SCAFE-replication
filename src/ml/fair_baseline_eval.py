@@ -33,6 +33,7 @@ DEFAULT_MODELS = ("textcnn", "bilstm", "codebert", "unixcoder")
 CHECKPOINT_VERSION = 1
 PREDICTION_ARTIFACT_VERSION = 1
 PROGRESS_FILENAME = "progress.json"
+TRAIN_CHECKPOINT_INTERVAL = 25
 
 
 def chunk_tokens(tokens: Sequence[Any], window_size: int = TOKEN_WINDOW) -> list[list[Any]]:
@@ -201,6 +202,7 @@ def _fit_predict(
     patience: int,
     progress_callback: Any | None = None,
     batch_progress_callback: Any | None = None,
+    training_checkpoint_path: Path | None = None,
 ) -> np.ndarray:
     """Fit one model using only train/internal-validation data."""
     import torch
@@ -281,18 +283,55 @@ def _fit_predict(
         return np.array([i in contract_indices for i, count in enumerate(counts)
                          for _ in range(count)])
     tr_mask, va_mask = chunk_membership(train_contracts), chunk_membership(val_contracts)
-    tr_loader = DataLoader(Subset(train_ds, np.flatnonzero(tr_mask)), batch_size=batch_size, shuffle=True)
+    # A deterministic order is required for exact batch-level resumption.
+    tr_loader = DataLoader(Subset(train_ds, np.flatnonzero(tr_mask)), batch_size=batch_size, shuffle=False)
     va_loader = DataLoader(Subset(train_ds, np.flatnonzero(va_mask)), batch_size=batch_size)
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5 if is_bert else 1e-3)
     criterion = torch.nn.BCEWithLogitsLoss()
     best_state, best_loss, stale = copy.deepcopy(model.state_dict()), float("inf"), 0
-    for epoch in range(1, epochs + 1):
+    start_epoch, start_batch = 1, 0
+    if training_checkpoint_path is not None:
+        state = _load_training_checkpoint(training_checkpoint_path)
+        if state and state.get("model_name") == model_name and state.get("seed") == int(seed):
+            model.load_state_dict(state["model_state"])
+            optimizer.load_state_dict(state["optimizer_state"])
+            best_state = state.get("best_state", best_state)
+            best_loss = float(state.get("best_loss", best_loss))
+            stale = int(state.get("stale", stale))
+            start_epoch = int(state.get("epoch", 1))
+            start_batch = int(state.get("batch", 0))
+            if state.get("torch_rng_state") is not None:
+                torch.set_rng_state(state["torch_rng_state"])
+            if state.get("numpy_rng_state") is not None:
+                np.random.set_state(state["numpy_rng_state"])
+            if state.get("python_rng_state") is not None:
+                random.setstate(state["python_rng_state"])
+    for epoch in range(start_epoch, epochs + 1):
+        epoch_start_batch = start_batch if epoch == start_epoch else 0
+        last_batch = epoch_start_batch
+        def save_batch(batch: int, total: int) -> None:
+            nonlocal last_batch
+            last_batch = batch
+            if (training_checkpoint_path is not None
+                    and (batch % TRAIN_CHECKPOINT_INTERVAL == 0 or batch == total)):
+                _write_training_checkpoint(training_checkpoint_path, {
+                    "version": 1, "model_name": model_name, "seed": int(seed),
+                    "epoch": int(epoch), "batch": int(batch),
+                    "model_state": model.state_dict(),
+                    "optimizer_state": optimizer.state_dict(),
+                    "best_state": best_state, "best_loss": best_loss, "stale": stale,
+                    "torch_rng_state": torch.get_rng_state(),
+                    "numpy_rng_state": np.random.get_state(),
+                    "python_rng_state": random.getstate(),
+                })
+        def report_train_batch(batch: int, total: int) -> None:
+            save_batch(batch, total)
+            if batch_progress_callback is not None:
+                batch_progress_callback(epoch, batch, total)
         train_epoch(
             model, tr_loader, optimizer, criterion, "cpu", is_bert=is_bert,
-            progress_callback=(
-                (lambda step, total: batch_progress_callback(epoch, step, total))
-                if batch_progress_callback is not None else None
-            ),
+            progress_callback=report_train_batch,
+            start_batch=epoch_start_batch,
         )
         val_prob = predict(model, va_loader, "cpu", is_bert=is_bert)
         val_y = y_train[va_mask]
@@ -303,11 +342,34 @@ def _fit_predict(
         else:
             stale += 1
             if stale >= patience:
+                if training_checkpoint_path is not None:
+                    _write_training_checkpoint(training_checkpoint_path, {
+                        "version": 1, "model_name": model_name, "seed": int(seed),
+                        "epoch": int(epoch + 1), "batch": 0,
+                        "model_state": model.state_dict(),
+                        "optimizer_state": optimizer.state_dict(),
+                        "best_state": best_state, "best_loss": best_loss, "stale": stale,
+                        "torch_rng_state": torch.get_rng_state(),
+                        "numpy_rng_state": np.random.get_state(),
+                        "python_rng_state": random.getstate(),
+                    })
                 if progress_callback is not None:
                     progress_callback(epoch)
                 break
         if progress_callback is not None:
             progress_callback(epoch)
+        if training_checkpoint_path is not None:
+            _write_training_checkpoint(training_checkpoint_path, {
+                "version": 1, "model_name": model_name, "seed": int(seed),
+                "epoch": int(epoch + 1), "batch": 0,
+                "model_state": model.state_dict(),
+                "optimizer_state": optimizer.state_dict(),
+                "best_state": best_state, "best_loss": best_loss, "stale": stale,
+                "torch_rng_state": torch.get_rng_state(),
+                "numpy_rng_state": np.random.get_state(),
+                "python_rng_state": random.getstate(),
+            })
+        start_batch = 0
     model.load_state_dict(best_state)
     return predict(model, DataLoader(test_ds, batch_size=batch_size), "cpu", is_bert=is_bert)
 
@@ -337,6 +399,42 @@ def _write_checkpoint(path: Path, payload: Mapping[str, Any]) -> None:
         except OSError:
             pass
         raise
+
+
+def _training_checkpoint_path(
+    checkpoint_dir: Path, seed: int, held_out: str, model: str
+) -> Path:
+    return checkpoint_dir / (
+        f"{_checkpoint_path(checkpoint_dir, seed, held_out, model).stem}.training.pt"
+    )
+
+
+def _write_training_checkpoint(path: Path, payload: Mapping[str, Any]) -> None:
+    """Atomically persist tensor-bearing training state."""
+    import torch
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        torch.save(dict(payload), temporary)
+        os.replace(temporary, path)
+    except BaseException:
+        try:
+            temporary.unlink()
+        except OSError:
+            pass
+        raise
+
+
+def _load_training_checkpoint(path: Path) -> dict[str, Any] | None:
+    import torch
+
+    if not path.is_file():
+        return None
+    try:
+        return torch.load(path, map_location="cpu", weights_only=False)
+    except (OSError, EOFError, RuntimeError, ValueError, TypeError):
+        return None
 
 
 def _prediction_artifact_path(
@@ -541,6 +639,10 @@ def run_fair_lodo(
                     )
                     if checkpoint_root is not None else None
                 )
+                training_artifact = (
+                    _training_checkpoint_path(checkpoint_root, seed, held_out, model)
+                    if checkpoint_root is not None else None
+                )
                 expected_contract_ids = test["contract_id"].astype(str).tolist()
                 partial_rows = (
                     _load_incremental_predictions(
@@ -612,7 +714,8 @@ def run_fair_lodo(
                     probs = _fit_predict(model, train, test, seed, epochs=epochs,
                                          batch_size=batch_size, patience=patience,
                                          progress_callback=report_epoch,
-                                         batch_progress_callback=report_batch)
+                                         batch_progress_callback=report_batch,
+                                         training_checkpoint_path=training_artifact)
                     counts = [len(chunk_tokenizer_ids([]))] * len(test)
                     # Reconstruct counts without retaining model-specific intermediate arrays.
                     if model in {"codebert", "unixcoder"}:
@@ -654,6 +757,8 @@ def run_fair_lodo(
                         })
                     if artifact is not None:
                         _write_prediction_artifact(artifact, unit_rows)
+                    if training_artifact is not None and training_artifact.is_file():
+                        training_artifact.unlink()
                 elif artifact is not None and not artifact.is_file():
                     _write_prediction_artifact(artifact, unit_rows)
                 rows.extend(unit_rows)
