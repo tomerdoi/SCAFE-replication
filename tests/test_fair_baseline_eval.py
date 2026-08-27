@@ -10,6 +10,7 @@ from src.ml.fair_baseline_eval import (
     _append_prediction,
     _load_incremental_predictions,
     _load_checkpoint,
+    _deduplicate_within_dataset,
     _prediction_artifact_path,
     _write_checkpoint,
     aggregate_chunk_probabilities,
@@ -82,6 +83,34 @@ def test_duplicate_filter_is_contract_row_operation(tmp_path):
     assert filtered.empty
 
 
+def test_within_dataset_source_duplicates_are_canonicalized(tmp_path):
+    source = tmp_path / "same.sol"
+    source.write_text("contract C {}", encoding="utf-8")
+    frame = pd.DataFrame({
+        "source_dataset": ["A", "A", "A"],
+        "label_status": ["clean", "clean", "vulnerable"],
+        "contract_id": ["one", "two", "conflict"],
+        "local_source_path": [str(source), str(source), str(source)],
+    })
+    result = _deduplicate_within_dataset(frame)
+    assert result.empty
+
+
+def test_within_dataset_distinct_sources_with_same_id_are_retained(tmp_path):
+    first = tmp_path / "first.sol"
+    second = tmp_path / "second.sol"
+    first.write_text("contract A {}", encoding="utf-8")
+    second.write_text("contract B {}", encoding="utf-8")
+    frame = pd.DataFrame({
+        "source_dataset": ["A", "A"],
+        "label_status": ["clean", "vulnerable"],
+        "contract_id": ["same", "same"],
+        "local_source_path": [str(first), str(second)],
+    })
+    result = _deduplicate_within_dataset(frame)
+    assert len(result) == 2
+
+
 def test_checkpoint_save_and_load_round_trip(tmp_path):
     path = _checkpoint_path(tmp_path, 42, "A", "textcnn")
     rows = [{"dataset": "A", "model": "textcnn", "contract_id": "c",
@@ -109,9 +138,9 @@ def test_incremental_prediction_artifact_survives_truncated_last_line(tmp_path):
         handle.write(b'{"contract_id":"incomplete"')
     loaded = _load_incremental_predictions(
         path, seed=42, held_out="B", model="textcnn",
-        expected_contract_ids=["b", "incomplete"],
+        expected_contract_ids=["hash", "incomplete"],
     )
-    assert loaded == {"b": row}
+    assert loaded == {"hash": row}
 
 
 def test_resume_skips_valid_completed_unit(tmp_path, monkeypatch):

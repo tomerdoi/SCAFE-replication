@@ -125,7 +125,35 @@ def _validate_contract_frame(frame: pd.DataFrame) -> pd.DataFrame:
     result = result[result["label_status"].isin(["clean", "vulnerable"]) |
                     (result["source_dataset"] == "FORGE")]
     result["y"] = (result["label_status"] == "vulnerable").astype(int)
+    result = _deduplicate_within_dataset(result)
     return result.reset_index(drop=True)
+
+
+def _deduplicate_within_dataset(frame: pd.DataFrame) -> pd.DataFrame:
+    """Keep one row per source identity within a dataset.
+
+    Exact source duplicates with conflicting labels are excluded because no
+    deterministic label choice is scientifically justified. Unreadable
+    sources use contract_id as a conservative fallback identity.
+    """
+    if frame.empty:
+        return frame.copy()
+    result = frame.copy()
+    result["_source_identity"] = result["local_source_path"].map(source_hash_for_path)
+    result["_source_identity"] = result["_source_identity"].where(
+        result["_source_identity"].ne(""), "id:" + result["contract_id"]
+    )
+    key = ["source_dataset", "_source_identity"]
+    conflicting = (
+        result.groupby(key, sort=False)["label_status"].nunique()
+        .loc[lambda values: values > 1]
+        .index
+    )
+    if len(conflicting):
+        result = result.set_index(key)
+        result = result.loc[~result.index.isin(conflicting)].reset_index()
+    result = result.drop_duplicates(key, keep="first")
+    return result.drop(columns="_source_identity")
 
 
 def split_lodo_contracts(
@@ -458,6 +486,11 @@ _PREDICTION_FIELDS = {
 }
 
 
+def _prediction_identity(row: Mapping[str, Any]) -> str:
+    source_hash = str(row.get("source_identity_hash", ""))
+    return source_hash if source_hash else str(row.get("contract_id", ""))
+
+
 def _load_incremental_predictions(
     path: Path,
     *,
@@ -483,14 +516,14 @@ def _load_incremental_predictions(
                 contract_id = str(row.get("contract_id", ""))
                 if (
                     not _PREDICTION_FIELDS.issubset(row)
-                    or contract_id not in expected_ids
+                    or _prediction_identity(row) not in expected_ids
                     or row.get("dataset") != held_out
                     or row.get("held_out_dataset") != held_out
                     or row.get("model") != model
                     or row.get("random_state") != int(seed)
                 ):
                     continue
-                rows[contract_id] = dict(row)
+                rows[_prediction_identity(row)] = dict(row)
     except OSError:
         return {}
     return rows
@@ -580,7 +613,7 @@ def _load_checkpoint(
         if not isinstance(rows, list):
             return None
         expected = [str(value) for value in expected_contract_ids]
-        actual = [str(row["contract_id"]) for row in rows]
+        actual = [_prediction_identity(row) for row in rows]
         if actual != expected or any(
             row.get("dataset") != held_out
             or row.get("model") != model
@@ -643,7 +676,15 @@ def run_fair_lodo(
                     _training_checkpoint_path(checkpoint_root, seed, held_out, model)
                     if checkpoint_root is not None else None
                 )
-                expected_contract_ids = test["contract_id"].astype(str).tolist()
+                expected_contract_ids = [
+                    _prediction_identity({
+                        "contract_id": contract["contract_id"],
+                        "source_identity_hash": source_hash_for_path(
+                            contract["local_source_path"]
+                        ),
+                    })
+                    for _, contract in test.iterrows()
+                ]
                 partial_rows = (
                     _load_incremental_predictions(
                         incremental_artifact,
@@ -732,13 +773,18 @@ def run_fair_lodo(
                         contract_prob = float(np.mean(probs[cursor:cursor + n_chunks]))
                         cursor += n_chunks
                         contract_id = str(contract["contract_id"])
-                        row = partial_rows.get(contract_id)
+                        source_identity_hash = source_hash_for_path(
+                            contract["local_source_path"]
+                        )
+                        row_identity = _prediction_identity({
+                            "contract_id": contract_id,
+                            "source_identity_hash": source_identity_hash,
+                        })
+                        row = partial_rows.get(row_identity)
                         if row is None:
                             row = {"dataset": held_out, "model": model,
                                    "contract_id": contract_id,
-                                   "source_identity_hash": source_hash_for_path(
-                                       contract["local_source_path"]
-                                   ),
+                                   "source_identity_hash": source_identity_hash,
                                    "n_chunks": n_chunks, "y_true": int(contract["y"]),
                                    "y_prob": contract_prob,
                                    "y_pred": int(contract_prob >= FIXED_THRESHOLD),
@@ -782,8 +828,12 @@ def run_fair_lodo(
         for unit in completed_units
     }.values())
     if not predictions.empty:
-        unit_columns = ["random_state", "dataset", "model", "contract_id"]
+        predictions["_prediction_identity"] = predictions.apply(
+            _prediction_identity, axis=1
+        )
+        unit_columns = ["random_state", "dataset", "model", "_prediction_identity"]
         predictions = predictions.drop_duplicates(unit_columns, keep="first").reset_index(drop=True)
+        predictions = predictions.drop(columns="_prediction_identity")
     metadata = {"protocol": "duplicate_safe_contract_lodo_v1",
                 "chunking": {"regex_tokens": TOKEN_WINDOW, "tokenizer_tokens": BERT_WINDOW,
                              "overlap": 0, "aggregation": "mean"},
