@@ -600,6 +600,7 @@ def _load_checkpoint(
     held_out: str,
     model: str,
     expected_contract_ids: Sequence[str],
+    legacy_contract_ids: Sequence[str] | None = None,
 ) -> list[dict[str, Any]] | None:
     """Return rows only for a complete, matching checkpoint."""
     try:
@@ -614,7 +615,13 @@ def _load_checkpoint(
             return None
         expected = [str(value) for value in expected_contract_ids]
         actual = [_prediction_identity(row) for row in rows]
-        if actual != expected or any(
+        legacy_actual = [str(row["contract_id"]) for row in rows]
+        identities_match = actual == expected
+        legacy_match = (
+            legacy_contract_ids is not None
+            and legacy_actual == [str(value) for value in legacy_contract_ids]
+        )
+        if not (identities_match or legacy_match) or any(
             row.get("dataset") != held_out
             or row.get("model") != model
             or row.get("random_state") != int(seed)
@@ -715,7 +722,8 @@ def run_fair_lodo(
                 unit_rows = (
                     _load_checkpoint(
                         checkpoint, seed=seed, held_out=held_out, model=model,
-                        expected_contract_ids=test["contract_id"].tolist(),
+                        expected_contract_ids=expected_contract_ids,
+                        legacy_contract_ids=test["contract_id"].astype(str).tolist(),
                     )
                     if checkpoint is not None and resume and checkpoint.is_file()
                     else None
