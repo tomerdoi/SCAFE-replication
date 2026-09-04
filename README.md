@@ -20,6 +20,11 @@ Important: ensure the `unified_contract_eval_risk_score_eval.py` run is configur
 - **Is**: a reproducible, interpretable **technical risk** score for smart contracts (upgrade/admin surface, dangerous patterns, complexity proxies, etc.).
 - **Is not**: a credit risk / default probability model (those require protocol-specific user/position labels).
 
+### Experimental relational reentrancy PoC
+The isolated relational-feature experiment is documented in
+[`README_REENTRANCY_RELATIONAL_POC.md`](README_REENTRANCY_RELATIONAL_POC.md).
+It does not alter the primary SCAFE feature inventory or manuscript results.
+
 ### Quickstart (using your cached sources)
 If you already have cached Etherscan payloads under `data/etherscan_sources/` (this repo does), you can run:
 
