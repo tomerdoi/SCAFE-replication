@@ -29,10 +29,10 @@ completed.
   Superseded: the Slither audit now exists and the manuscript reports its
   scope, failure rate, construct strata, and correlation limits.
 
-- [ ] **Validate every current manuscript value against its source artifact.**
-  Replace or update the obsolete paper-number validator. Check all feature
-  counts, dataset/label policies, source-only claims, tables, and figures after
-  regeneration.
+- [x] **Validate every current manuscript value against its source artifact.**
+  Added `scripts/validate_current_paper_artifacts.py`; it verifies the corrected
+  255-feature manifest, five-seed fixed/calibrated artifacts, source-only
+  exclusions, corrected headline values, PDF, and primary figures.
 
 ## Priority 1 — Required for a final fair DL baseline comparison
 
@@ -50,10 +50,11 @@ completed.
   Add a full-fine-tuning sensitivity for CodeBERT and UniXcoder, or explain and
   qualify the current eight-layer freezing configuration.
 
-- [ ] **Keep legacy DL results out of headline conclusions.**
+- [x] **Keep legacy DL results out of headline conclusions.**
   Only the leakage-safe `fair_baseline_eval.py` artifacts may support the new
   comparison. Do not use legacy test-threshold-tuned or truncated-input outputs
-  as primary evidence.
+  as primary evidence. The manuscript confines them to the alternate-protocol
+  appendix and labels the seed-42 controlled run separately.
 
 ## Priority 2 — Strongly recommended scientific evidence
 
@@ -75,10 +76,11 @@ completed.
 
 ## Priority 3 — Positioning and manuscript hardening
 
-- [ ] **Decide the LLM comparison scope.**
+- [x] **Decide the LLM comparison scope.**
   Either run a reproducible, source-deduplicated matched LLM evaluation with
   saved predictions and coverage/truncation data, or retain contextual-only LLM
-  discussion and make no matched empirical claim.
+  discussion and make no matched empirical claim. The current manuscript uses
+  the latter scope explicitly; no matched LLM superiority claim is made.
 
 - [ ] **Correct and verify the bibliography.**
   Correct TRACE and PropertyGPT venue/year metadata and independently verify all
