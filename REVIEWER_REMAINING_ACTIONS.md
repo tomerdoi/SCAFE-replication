@@ -7,21 +7,27 @@ completed.
 
 ## Priority 0 — Required before treating SCAFE headline results as submission evidence
 
-- [ ] **Remove non-source metadata from the primary SCAFE feature matrix.**
+- [x] **Remove non-source metadata from the primary SCAFE feature matrix.**
   `has_verified_source` and `is_solc_pre_08` can use availability/compiler
   metadata. Exclude them or derive them solely from Solidity source; add
   regression tests; rerun affected structural experiments; regenerate dependent
-  figures and tables.
+  figures and tables. Completed with 255 source-only features, corrected
+  five-seed fixed-threshold and train-only-calibrated LODO artifacts, and
+  regenerated primary tables.
 
-- [ ] **Run and report parser/extractor reliability evaluation against Slither.**
+- [x] **Run and report parser/extractor reliability evaluation against Slither.**
   Use a representative compiler-compatible subset. Report parser/extractor
   success and failure rates, results by Solidity-version strata, behavior on
   proxies/`delegatecall`, interfaces, and inline assembly, and agreement or
-  coverage for features with meaningful Slither counterparts.
+  coverage for features with meaningful Slither counterparts. Completed
+  artifacts: `data/derived/slither_results/slither_summary.json`,
+  `data/derived/slither_reliability/`, and
+  `data/derived/slither_correlation/correlation_results.csv`; the manuscript
+  now reports the audit in Table~\ref{tab:parser_reliability}.
 
-- [ ] **Remove the unsupported parser-reliability claim until the evaluation exists.**
-  The manuscript must not say that an empirical parser-reliability audit has
-  been completed before the preceding artifact and results are available.
+- [x] **Remove the unsupported parser-reliability claim until the evaluation exists.**
+  Superseded: the Slither audit now exists and the manuscript reports its
+  scope, failure rate, construct strata, and correlation limits.
 
 - [ ] **Validate every current manuscript value against its source artifact.**
   Replace or update the obsolete paper-number validator. Check all feature

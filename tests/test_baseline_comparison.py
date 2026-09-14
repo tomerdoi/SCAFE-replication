@@ -22,6 +22,8 @@ def _frame():
             "source_subdataset": ["p1", "p1", "p2", "p2"],
             "structural_signal": [0.0, 1.0, 0.1, 0.9],
             "tx_count_30d": [1, 2, 3, 4],
+            "has_verified_source": [1, 1, 0, 1],
+            "is_solc_pre_08": [0, 1, 0, 1],
             "vuln_present": [0, 1, 0, 1],
         }
     )
@@ -30,6 +32,8 @@ def _frame():
 def test_source_features_exclude_activity_and_labels():
     columns = source_feature_columns(_frame())
     assert columns == ["structural_signal"]
+    assert "has_verified_source" not in columns
+    assert "is_solc_pre_08" not in columns
 
 
 def test_select_dataset_does_not_turn_unknown_into_clean():
