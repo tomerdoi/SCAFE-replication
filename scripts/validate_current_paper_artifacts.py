@@ -52,12 +52,18 @@ require(len(calibrated_summary) == 12, "corrected calibrated summary does not co
 require(not {"has_verified_source", "is_solc_pre_08"}.intersection(source_columns),
         "metadata feature entered source feature columns")
 require("255 evaluated features" in TEX, "manuscript does not state 255 evaluated features")
+require("Structural core & 246" in TEX, "feature inventory does not state 246 structural core features")
+require("Structural core & 248" not in TEX, "stale 248 structural-core count remains")
 require("best five-seed means of 0.825" in TEX, "manuscript lacks corrected DAppSCAN result")
 require("0.627 on DIVE" in TEX, "manuscript lacks corrected DIVE result")
 require("0.572 on Empirical-Analysis" in TEX, "manuscript lacks corrected Empirical-Analysis result")
 require((PAPER / "sc_vulnerability_detection.pdf").exists(), "compiled manuscript PDF is missing")
-for figure in ("fig_model_comparison.pdf", "fig_confusion_matrices.pdf"):
+for figure in ("fig_model_comparison.pdf", "fig_confusion_matrices.pdf", "fig_shap_cases.pdf"):
     require((PAPER / "figures" / figure).exists(), f"corrected figure missing: {figure}")
+require(
+    (REPO / "data/derived/shap_results/fold_consistent_primary/metadata.json").exists(),
+    "fold-consistent SHAP metadata is missing",
+)
 
 if ERRORS:
     for error in ERRORS:
