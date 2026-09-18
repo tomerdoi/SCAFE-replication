@@ -1,0 +1,32 @@
+paper/restaking_review.pdf
+paper/figures/prisma.pdf
+.gitignore
+*.pdf
+data/*.csv
+data/*.json
+data/*.parquet
+secrets.json
+*.json
+*.csv
+*.png
+data/*
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+*.log
+*.toc
+*.lof
+*.lot
+*.nav
+*.snm
+*.vrb
+*.code-workspace
+
+# Local IDE project metadata
+.idea/
