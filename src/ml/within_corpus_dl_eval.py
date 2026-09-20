@@ -29,7 +29,8 @@ from src.ml.fair_baseline_eval import (
 
 DEFAULT_MODELS = ("textcnn", "bilstm", "codebert", "unixcoder")
 CHECKPOINT_VERSION = 1
-TRAIN_CHECKPOINT_INTERVAL = 25
+TRAIN_CHECKPOINT_INTERVAL = 200
+PREPROCESSING_VERSION = 2
 
 
 def _atomic_json(path: Path, payload: Mapping[str, Any]) -> None:
@@ -190,10 +191,72 @@ def _metrics(y: np.ndarray, p: np.ndarray) -> dict[str, float]:
     }
 
 
+def transformer_payload_windows(
+    token_ids: Sequence[int], special_token_count: int
+) -> list[list[int]]:
+    """Chunk payload IDs without dropping tokens reserved for special IDs."""
+    payload_window = BERT_WINDOW - int(special_token_count)
+    if payload_window <= 0:
+        raise ValueError("Transformer special tokens exhaust the input window")
+    return chunk_tokenizer_ids(token_ids, window_size=payload_window)
+
+
+class SourcePreprocessor:
+    """Run-scoped source/window cache; vocabulary fitting remains fold-local."""
+
+    def __init__(self, frame: pd.DataFrame) -> None:
+        sources = _read_sources(frame)
+        identities = frame["_source_identity"].astype(str).tolist()
+        self._source = dict(zip(identities, sources, strict=True))
+        self._bytes = {
+            identity: len(source.encode("utf-8"))
+            for identity, source in self._source.items()
+        }
+        self._text_windows: dict[str, list[list[str]]] = {}
+        self._tokenizer_windows: dict[tuple[str, int], dict[str, list[list[int]]]] = {}
+
+    def source_bytes(self, frame: pd.DataFrame) -> list[int]:
+        return [self._bytes[identity] for identity in frame["_source_identity"].astype(str)]
+
+    def text_parts(self, frame: pd.DataFrame) -> tuple[list[list[str]], list[int]]:
+        from src.ml.dl_baselines import tokenize_solidity
+        parts: list[list[str]] = []
+        counts: list[int] = []
+        for identity in frame["_source_identity"].astype(str):
+            windows = self._text_windows.get(identity)
+            if windows is None:
+                windows = chunk_tokens(tokenize_solidity(self._source[identity]))
+                self._text_windows[identity] = windows
+            parts.extend(windows)
+            counts.append(len(windows))
+        return parts, counts
+
+    def tokenizer_parts(
+        self, frame: pd.DataFrame, tokenizer: Any, tokenizer_name: str
+    ) -> tuple[list[list[int]], list[int]]:
+        special_count = int(tokenizer.num_special_tokens_to_add(pair=False))
+        key = (tokenizer_name, special_count)
+        cache = self._tokenizer_windows.setdefault(key, {})
+        parts: list[list[int]] = []
+        counts: list[int] = []
+        for identity in frame["_source_identity"].astype(str):
+            windows = cache.get(identity)
+            if windows is None:
+                token_ids = tokenizer(
+                    self._source[identity], add_special_tokens=False
+                )["input_ids"]
+                windows = transformer_payload_windows(token_ids, special_count)
+                cache[identity] = windows
+            parts.extend(windows)
+            counts.append(len(windows))
+        return parts, counts
+
+
 def _encode_and_fit(
     model_name: str, train: pd.DataFrame, test: pd.DataFrame, inner_train: np.ndarray,
-    inner_val: np.ndarray, seed: int, config: Mapping[str, Any], split_hash: str, checkpoint: Path | None,
-) -> tuple[np.ndarray, list[int], list[int]]:
+    inner_val: np.ndarray, seed: int, config: Mapping[str, Any], split_hash: str,
+    checkpoint: Path | None, preprocessor: SourcePreprocessor,
+) -> tuple[np.ndarray, list[int]]:
     """Train CPU model and return test chunk probabilities and source coverage."""
     import torch
     from torch.utils.data import DataLoader, Subset
@@ -201,25 +264,19 @@ def _encode_and_fit(
 
     _seed(seed)
     is_bert = model_name in {"codebert", "unixcoder"}
-    train_sources, test_sources = _read_sources(train), _read_sources(test)
-    train_bytes = [len(value.encode("utf-8")) for value in train_sources]
-    test_bytes = [len(value.encode("utf-8")) for value in test_sources]
     if is_bert:
         from transformers import AutoTokenizer
         hf_name = "microsoft/unixcoder-base" if model_name == "unixcoder" else "microsoft/codebert-base"
         tokenizer = AutoTokenizer.from_pretrained(hf_name)
-        def chunks(sources: Sequence[str]) -> list[list[int]]:
-            return [chunk for source in sources for chunk in chunk_tokenizer_ids(
-                tokenizer(source, add_special_tokens=False)["input_ids"]
-            )]
-        train_parts, test_parts = chunks(train_sources), chunks(test_sources)
-        train_counts = [len(chunk_tokenizer_ids(tokenizer(s, add_special_tokens=False)["input_ids"])) for s in train_sources]
-        test_counts = [len(chunk_tokenizer_ids(tokenizer(s, add_special_tokens=False)["input_ids"])) for s in test_sources]
+        train_parts, train_counts = preprocessor.tokenizer_parts(train, tokenizer, hf_name)
+        test_parts, test_counts = preprocessor.tokenizer_parts(test, tokenizer, hf_name)
         def padded(parts: list[list[int]]) -> tuple[np.ndarray, np.ndarray]:
             ids, masks = [], []
             for part in parts:
                 row = ([tokenizer.cls_token_id] if tokenizer.cls_token_id is not None else []) + part + ([tokenizer.sep_token_id] if tokenizer.sep_token_id is not None else [])
-                row, mask = row[:BERT_WINDOW], [1] * min(len(row), BERT_WINDOW)
+                if len(row) > BERT_WINDOW:
+                    raise AssertionError("Transformer window exceeded configured input length")
+                mask = [1] * len(row)
                 row += [tokenizer.pad_token_id or 0] * (BERT_WINDOW - len(row))
                 mask += [0] * (BERT_WINDOW - len(mask))
                 ids.append(row); masks.append(mask)
@@ -232,10 +289,8 @@ def _encode_and_fit(
         test_ds = SolidityBERTDataset(x_test, m_test, np.zeros(len(x_test), dtype=np.int64))
         model = CodeBERTClassifier(model_name=hf_name, freeze_layers=8).to("cpu")
     else:
-        train_parts = [part for source in train_sources for part in chunk_tokens(tokenize_solidity(source))]
-        test_parts = [part for source in test_sources for part in chunk_tokens(tokenize_solidity(source))]
-        train_counts = [len(chunk_tokens(tokenize_solidity(s))) for s in train_sources]
-        test_counts = [len(chunk_tokens(tokenize_solidity(s))) for s in test_sources]
+        train_parts, train_counts = preprocessor.text_parts(train)
+        test_parts, test_counts = preprocessor.text_parts(test)
         vocab = build_vocab(train_parts, min_freq=1)
         def padded(parts: list[list[str]]) -> np.ndarray:
             return np.asarray([[vocab.get(token, 1) for token in p[:TOKEN_WINDOW]] + [0] * (TOKEN_WINDOW - len(p[:TOKEN_WINDOW])) for p in parts], dtype=np.int64)
@@ -273,7 +328,10 @@ def _encode_and_fit(
                 break
         start_batch = 0
     model.load_state_dict(best_state)
-    return predict(model, DataLoader(test_ds, batch_size=int(config["batch_size"])), "cpu", is_bert=is_bert), train_bytes + test_bytes, train_counts + test_counts
+    return (
+        predict(model, DataLoader(test_ds, batch_size=int(config["batch_size"])), "cpu", is_bert=is_bert),
+        train_counts + test_counts,
+    )
 
 
 def run_within_corpus(
@@ -288,6 +346,7 @@ def run_within_corpus(
     coverage: dict[str, Any] = {}; split_memberships: dict[str, str] = {}
     for dataset in datasets:
         selected = canonical[canonical["source_dataset"] == dataset].reset_index(drop=True)
+        preprocessor = SourcePreprocessor(selected)
         groups = groups_for(selected, dataset)
         n_folds = min(folds, len(np.unique(groups)))
         if n_folds < 2 or selected["y"].nunique() < 2:
@@ -304,16 +363,20 @@ def run_within_corpus(
                 split_memberships[f"{dataset}/{seed}/{fold}"] = split_hash
                 outer_positions = {int(value): position for position, value in enumerate(outer_train)}
                 for model in models:
-                    config = {"protocol": "within_corpus_dl_v1", "dataset": dataset, "seed": int(seed), "model": model, "fold": fold, "epochs": int(epochs), "patience": int(patience), "batch_size": int(batch_size), "validation_fraction": float(validation_fraction), "threshold": FIXED_THRESHOLD, "device": "cpu", "token_windows": {"text": TOKEN_WINDOW, "transformer": BERT_WINDOW}}
+                    if model == "textcnn":
+                        # Preserve compatibility with the active v1 TextCNN campaign.
+                        config = {"protocol": "within_corpus_dl_v1", "dataset": dataset, "seed": int(seed), "model": model, "fold": fold, "epochs": int(epochs), "patience": int(patience), "batch_size": int(batch_size), "validation_fraction": float(validation_fraction), "threshold": FIXED_THRESHOLD, "device": "cpu", "token_windows": {"text": TOKEN_WINDOW, "transformer": BERT_WINDOW}}
+                    else:
+                        config = {"protocol": "within_corpus_dl_v2", "preprocessing_version": PREPROCESSING_VERSION, "dataset": dataset, "seed": int(seed), "model": model, "fold": fold, "epochs": int(epochs), "patience": int(patience), "batch_size": int(batch_size), "validation_fraction": float(validation_fraction), "threshold": FIXED_THRESHOLD, "device": "cpu", "token_windows": {"text": TOKEN_WINDOW, "transformer_input": BERT_WINDOW, "transformer_payload": BERT_WINDOW - 2}, "optimizer": {"name": "AdamW", "learning_rate": 2e-5 if model in {"codebert", "unixcoder"} else 1e-3}, "transformer_frozen_layers": 8}
                     paths = _paths(root, dataset, int(seed), model, fold) if root else {}
                     rows = _load_completion(paths["complete"], config, split_hash) if root and resume else None
                     if rows is None:
-                        probs, bytes_, chunks_ = _encode_and_fit(model, selected.iloc[outer_train], selected.iloc[outer_test], np.asarray([outer_positions[int(index)] for index in inner_train]), np.asarray([outer_positions[int(index)] for index in inner_val]), int(seed), config, split_hash, paths.get("training"))
+                        probs, chunks_ = _encode_and_fit(model, selected.iloc[outer_train], selected.iloc[outer_test], np.asarray([outer_positions[int(index)] for index in inner_train]), np.asarray([outer_positions[int(index)] for index in inner_val]), int(seed), config, split_hash, paths.get("training"), preprocessor)
                         counts = chunks_[-len(outer_test):]; cursor = 0; rows = []
                         for index, count in zip(outer_test, counts):
                             probability = float(np.mean(probs[cursor:cursor + count])); cursor += count
                             contract = selected.iloc[index]
-                            rows.append({"dataset": dataset, "model": model, "random_state": int(seed), "fold": fold, "contract_id": contract["contract_id"], "source_identity_hash": contract["_source_identity"], "group": str(groups[index]), "n_chunks": int(count), "source_bytes": int(len(_read_sources(selected.iloc[[index]])[0].encode("utf-8"))), "y_true": int(contract["y"]), "y_prob": probability, "y_pred": int(probability >= FIXED_THRESHOLD)})
+                            rows.append({"dataset": dataset, "model": model, "random_state": int(seed), "fold": fold, "contract_id": contract["contract_id"], "source_identity_hash": contract["_source_identity"], "group": str(groups[index]), "n_chunks": int(count), "source_bytes": int(preprocessor.source_bytes(selected.iloc[[index]])[0]), "y_true": int(contract["y"]), "y_prob": probability, "y_pred": int(probability >= FIXED_THRESHOLD)})
                         if root:
                             _append_jsonl(paths["predictions"], rows)
                             _atomic_json(paths["complete"], {"version": CHECKPOINT_VERSION, "config": config, "split_membership_hash": split_hash, "predictions": rows})
@@ -324,12 +387,12 @@ def run_within_corpus(
         dataset_predictions = [row for row in prediction_rows if row["dataset"] == dataset]
         coverage[dataset] = {
             "contracts": int(len(selected)),
-            "source_bytes": int(sum(len(s.encode("utf-8")) for s in _read_sources(selected))),
+            "source_bytes": int(sum(preprocessor.source_bytes(selected))),
             "test_chunk_windows_by_model": {
                 model: int(sum(row["n_chunks"] for row in dataset_predictions if row["model"] == model))
                 for model in models
             },
         }
     predictions, metrics = pd.DataFrame(prediction_rows), pd.DataFrame(metric_rows)
-    metadata = {"protocol": {"name": "within_corpus_full_source_dl_v1", "scope": "within-corpus only", "outer_split": "GroupKFold", "inner_validation": "group-disjoint outer-training-only", "threshold": FIXED_THRESHOLD, "no_test_selection_assertion": True, "source_execution": False}, "duplicate_audit": audit, "chunking": {"textcnn_bilstm_tokens": TOKEN_WINDOW, "codebert_unixcoder_tokenizer_tokens": BERT_WINDOW, "overlap": 0, "aggregation": "contract mean"}, "data_coverage": coverage, "split_membership_hashes": split_memberships, "models": list(models), "seeds": list(seeds)}
+    metadata = {"protocol": {"name": "within_corpus_full_source_dl_v2", "scope": "within-corpus only", "outer_split": "GroupKFold", "inner_validation": "group-disjoint outer-training-only", "threshold": FIXED_THRESHOLD, "no_test_selection_assertion": True, "source_execution": False}, "duplicate_audit": audit, "chunking": {"textcnn_bilstm_tokens": TOKEN_WINDOW, "codebert_unixcoder_input_tokens": BERT_WINDOW, "codebert_unixcoder_payload_tokens": BERT_WINDOW - 2, "overlap": 0, "aggregation": "contract mean"}, "preprocessing": {"version": PREPROCESSING_VERSION, "scope": "in-memory per dataset", "vocabulary_fit": "outer-training-only"}, "data_coverage": coverage, "split_membership_hashes": split_memberships, "models": list(models), "seeds": list(seeds)}
     return predictions, metrics, metadata

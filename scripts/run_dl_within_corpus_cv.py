@@ -21,6 +21,19 @@ DATASETS = ("DAppSCAN", "DIVE", "Empirical-Analysis")
 SEEDS = (42, 43, 44, 45, 46)
 
 
+def _merge_prior(path: Path, current: pd.DataFrame, keys: list[str]) -> pd.DataFrame:
+    """Retain completed models from prior sequential invocations."""
+    if not path.is_file():
+        return current
+    prior = pd.read_csv(path, low_memory=False)
+    if prior.empty or current.empty:
+        return pd.concat([prior, current], ignore_index=True)
+    current_keys = current[keys].drop_duplicates()
+    retained = prior.merge(current_keys, on=keys, how="left", indicator=True)
+    retained = retained.loc[retained["_merge"] == "left_only", prior.columns]
+    return pd.concat([retained, current], ignore_index=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
@@ -45,8 +58,20 @@ def main() -> None:
         checkpoint_dir=args.output / "dl_within_corpus_checkpoints", resume=args.resume,
     )
     args.output.mkdir(parents=True, exist_ok=True)
-    predictions.to_csv(args.output / "dl_within_corpus_oof_predictions.csv", index=False)
-    fold_metrics.to_csv(args.output / "dl_within_corpus_per_fold.csv", index=False)
+    predictions_path = args.output / "dl_within_corpus_oof_predictions.csv"
+    metrics_path = args.output / "dl_within_corpus_per_fold.csv"
+    predictions = _merge_prior(
+        predictions_path,
+        predictions,
+        ["dataset", "model", "random_state", "fold", "contract_id"],
+    )
+    fold_metrics = _merge_prior(
+        metrics_path,
+        fold_metrics,
+        ["dataset", "model", "random_state", "fold"],
+    )
+    predictions.to_csv(predictions_path, index=False)
+    fold_metrics.to_csv(metrics_path, index=False)
     seed_metrics = (fold_metrics.groupby(["dataset", "model", "random_state"], as_index=False)
                     .mean(numeric_only=True))
     seed_metrics.to_csv(args.output / "dl_within_corpus_per_seed.csv", index=False)

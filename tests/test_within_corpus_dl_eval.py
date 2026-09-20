@@ -10,6 +10,7 @@ from src.ml.within_corpus_dl_eval import (
     canonicalize,
     group_disjoint_inner_split,
     groups_for,
+    transformer_payload_windows,
 )
 
 
@@ -61,6 +62,13 @@ def test_full_source_chunk_aggregation_is_contract_mean():
         {"contract_id": "a", "y_prob": 0.5, "n_chunks": 2},
         {"contract_id": "b", "y_prob": 0.9, "n_chunks": 1},
     ]
+
+
+def test_transformer_payload_windows_preserve_every_source_token():
+    token_ids = list(range(1_025))
+    windows = transformer_payload_windows(token_ids, special_token_count=2)
+    assert [len(window) for window in windows] == [510, 510, 5]
+    assert [token for window in windows for token in window] == token_ids
 
 
 def test_completion_rejects_changed_immutable_configuration(tmp_path):
