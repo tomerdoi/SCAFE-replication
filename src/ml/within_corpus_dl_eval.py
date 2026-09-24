@@ -262,6 +262,7 @@ def _encode_and_fit(
     from torch.utils.data import DataLoader, Subset
     from src.ml.dl_baselines import BiLSTMClassifier, CodeBERTClassifier, SolidityBERTDataset, SolidityTokenDataset, TextCNN, build_vocab, predict, tokenize_solidity, train_epoch
 
+    device = str(config.get("device", "cpu"))
     _seed(seed)
     is_bert = model_name in {"codebert", "unixcoder"}
     if is_bert:
@@ -287,7 +288,7 @@ def _encode_and_fit(
         # Prediction has no label dependency: held-out labels are deliberately
         # not placed in the inference dataset.
         test_ds = SolidityBERTDataset(x_test, m_test, np.zeros(len(x_test), dtype=np.int64))
-        model = CodeBERTClassifier(model_name=hf_name, freeze_layers=8).to("cpu")
+        model = CodeBERTClassifier(model_name=hf_name, freeze_layers=8).to(device)
     else:
         train_parts, train_counts = preprocessor.text_parts(train)
         test_parts, test_counts = preprocessor.text_parts(test)
@@ -299,7 +300,7 @@ def _encode_and_fit(
         test_ds = SolidityTokenDataset(
             padded(test_parts), np.zeros(len(test_parts), dtype=np.int64)
         )
-        model = (TextCNN if model_name == "textcnn" else BiLSTMClassifier)(vocab_size=len(vocab)).to("cpu")
+        model = (TextCNN if model_name == "textcnn" else BiLSTMClassifier)(vocab_size=len(vocab)).to(device)
     membership = np.repeat(np.arange(len(train)), train_counts)
     tr_loader = DataLoader(Subset(train_ds, np.flatnonzero(np.isin(membership, inner_train))), batch_size=int(config["batch_size"]), shuffle=False)
     va_mask = np.isin(membership, inner_val)
@@ -317,8 +318,8 @@ def _encode_and_fit(
         def save_batch(batch: int, total: int) -> None:
             if checkpoint and (batch % TRAIN_CHECKPOINT_INTERVAL == 0 or batch == total):
                 _save_training(checkpoint, {"config": dict(config), "split_membership_hash": split_hash, "model_state": model.state_dict(), "optimizer_state": optimizer.state_dict(), "best_state": best_state, "best_loss": best_loss, "stale": stale, "epoch": epoch, "batch": batch, "torch_rng": torch.get_rng_state(), "numpy_rng": np.random.get_state(), "python_rng": random.getstate()})
-        train_epoch(model, tr_loader, optimizer, criterion, "cpu", is_bert=is_bert, progress_callback=save_batch, start_batch=start_batch if epoch == start_epoch else 0)
-        val_prob = predict(model, va_loader, "cpu", is_bert=is_bert)
+        train_epoch(model, tr_loader, optimizer, criterion, device, is_bert=is_bert, progress_callback=save_batch, start_batch=start_batch if epoch == start_epoch else 0)
+        val_prob = predict(model, va_loader, device, is_bert=is_bert)
         val_loss = float(torch.nn.functional.binary_cross_entropy(torch.from_numpy(val_prob).float(), torch.from_numpy(labels[va_mask]).float()))
         if val_loss < best_loss:
             best_state, best_loss, stale = copy.deepcopy(model.state_dict()), val_loss, 0
@@ -329,7 +330,7 @@ def _encode_and_fit(
         start_batch = 0
     model.load_state_dict(best_state)
     return (
-        predict(model, DataLoader(test_ds, batch_size=int(config["batch_size"])), "cpu", is_bert=is_bert),
+        predict(model, DataLoader(test_ds, batch_size=int(config["batch_size"])), device, is_bert=is_bert),
         train_counts + test_counts,
     )
 
@@ -339,6 +340,7 @@ def run_within_corpus(
     seeds: Sequence[int] = (42, 43, 44, 45, 46), *, folds: int = 5, epochs: int = 10,
     patience: int = 3, batch_size: int = 16, validation_fraction: float = 0.2,
     checkpoint_dir: Path | str | None = None, resume: bool = True,
+    device: str = "cpu",
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
     canonical, audit = canonicalize(frame)
     root = Path(checkpoint_dir) if checkpoint_dir else None
@@ -367,7 +369,7 @@ def run_within_corpus(
                         # Preserve compatibility with the active v1 TextCNN campaign.
                         config = {"protocol": "within_corpus_dl_v1", "dataset": dataset, "seed": int(seed), "model": model, "fold": fold, "epochs": int(epochs), "patience": int(patience), "batch_size": int(batch_size), "validation_fraction": float(validation_fraction), "threshold": FIXED_THRESHOLD, "device": "cpu", "token_windows": {"text": TOKEN_WINDOW, "transformer": BERT_WINDOW}}
                     else:
-                        config = {"protocol": "within_corpus_dl_v2", "preprocessing_version": PREPROCESSING_VERSION, "dataset": dataset, "seed": int(seed), "model": model, "fold": fold, "epochs": int(epochs), "patience": int(patience), "batch_size": int(batch_size), "validation_fraction": float(validation_fraction), "threshold": FIXED_THRESHOLD, "device": "cpu", "token_windows": {"text": TOKEN_WINDOW, "transformer_input": BERT_WINDOW, "transformer_payload": BERT_WINDOW - 2}, "optimizer": {"name": "AdamW", "learning_rate": 2e-5 if model in {"codebert", "unixcoder"} else 1e-3}, "transformer_frozen_layers": 8}
+                        config = {"protocol": "within_corpus_dl_v2", "preprocessing_version": PREPROCESSING_VERSION, "dataset": dataset, "seed": int(seed), "model": model, "fold": fold, "epochs": int(epochs), "patience": int(patience), "batch_size": int(batch_size), "validation_fraction": float(validation_fraction), "threshold": FIXED_THRESHOLD, "device": str(device), "token_windows": {"text": TOKEN_WINDOW, "transformer_input": BERT_WINDOW, "transformer_payload": BERT_WINDOW - 2}, "optimizer": {"name": "AdamW", "learning_rate": 2e-5 if model in {"codebert", "unixcoder"} else 1e-3}, "transformer_frozen_layers": 8}
                     paths = _paths(root, dataset, int(seed), model, fold) if root else {}
                     rows = _load_completion(paths["complete"], config, split_hash) if root and resume else None
                     if rows is None:
@@ -394,5 +396,5 @@ def run_within_corpus(
             },
         }
     predictions, metrics = pd.DataFrame(prediction_rows), pd.DataFrame(metric_rows)
-    metadata = {"protocol": {"name": "within_corpus_full_source_dl_v2", "scope": "within-corpus only", "outer_split": "GroupKFold", "inner_validation": "group-disjoint outer-training-only", "threshold": FIXED_THRESHOLD, "no_test_selection_assertion": True, "source_execution": False}, "duplicate_audit": audit, "chunking": {"textcnn_bilstm_tokens": TOKEN_WINDOW, "codebert_unixcoder_input_tokens": BERT_WINDOW, "codebert_unixcoder_payload_tokens": BERT_WINDOW - 2, "overlap": 0, "aggregation": "contract mean"}, "preprocessing": {"version": PREPROCESSING_VERSION, "scope": "in-memory per dataset", "vocabulary_fit": "outer-training-only"}, "data_coverage": coverage, "split_membership_hashes": split_memberships, "models": list(models), "seeds": list(seeds)}
+    metadata = {"protocol": {"name": "within_corpus_full_source_dl_v2", "scope": "within-corpus only", "outer_split": "GroupKFold", "inner_validation": "group-disjoint outer-training-only", "threshold": FIXED_THRESHOLD, "no_test_selection_assertion": True, "source_execution": False, "device": str(device)}, "duplicate_audit": audit, "chunking": {"textcnn_bilstm_tokens": TOKEN_WINDOW, "codebert_unixcoder_input_tokens": BERT_WINDOW, "codebert_unixcoder_payload_tokens": BERT_WINDOW - 2, "overlap": 0, "aggregation": "contract mean"}, "preprocessing": {"version": PREPROCESSING_VERSION, "scope": "in-memory per dataset", "vocabulary_fit": "outer-training-only"}, "data_coverage": coverage, "split_membership_hashes": split_memberships, "models": list(models), "seeds": list(seeds)}
     return predictions, metrics, metadata

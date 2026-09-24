@@ -46,6 +46,7 @@ def main() -> None:
     parser.add_argument("--patience", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--validation-fraction", type=float, default=0.2)
+    parser.add_argument("--device", choices=("cpu", "mps"), default="cpu")
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     args = parser.parse_args()
     if not 0 < args.validation_fraction < 1:
@@ -56,6 +57,7 @@ def main() -> None:
         epochs=args.epochs, patience=args.patience, batch_size=args.batch_size,
         validation_fraction=args.validation_fraction,
         checkpoint_dir=args.output / "dl_within_corpus_checkpoints", resume=args.resume,
+        device=args.device,
     )
     args.output.mkdir(parents=True, exist_ok=True)
     predictions_path = args.output / "dl_within_corpus_oof_predictions.csv"
