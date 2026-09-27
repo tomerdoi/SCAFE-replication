@@ -54,7 +54,11 @@ require(not {"has_verified_source", "is_solc_pre_08"}.intersection(source_column
 require("255 evaluated features" in TEX, "manuscript does not state 255 evaluated features")
 require("Structural core & 246" in TEX, "feature inventory does not state 246 structural core features")
 require("Structural core & 248" not in TEX, "stale 248 structural-core count remains")
-require("best five-seed means of 0.825" in TEX, "manuscript lacks corrected DAppSCAN result")
+require(
+    "five-seed mean ROC-AUC is 0.825 on DAppSCAN" in TEX
+    or "best five-seed means of 0.825" in TEX,
+    "manuscript lacks corrected DAppSCAN result",
+)
 require("0.627 on DIVE" in TEX, "manuscript lacks corrected DIVE result")
 require("0.572 on Empirical-Analysis" in TEX, "manuscript lacks corrected Empirical-Analysis result")
 require((PAPER / "sc_vulnerability_detection.pdf").exists(), "compiled manuscript PDF is missing")
