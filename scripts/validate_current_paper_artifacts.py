@@ -52,8 +52,11 @@ require(len(calibrated_summary) == 12, "corrected calibrated summary does not co
 require(not {"has_verified_source", "is_solc_pre_08"}.intersection(source_columns),
         "metadata feature entered source feature columns")
 require("255 evaluated features" in TEX, "manuscript does not state 255 evaluated features")
-require("Structural core & 246" in TEX, "feature inventory does not state 246 structural core features")
-require("Structural core & 248" not in TEX, "stale 248 structural-core count remains")
+require(
+    "structural core & 246" in TEX.lower(),
+    "feature inventory does not state 246 structural core features",
+)
+require("structural core & 248" not in TEX.lower(), "stale 248 structural-core count remains")
 require("0.825 on DAppSCAN" in TEX, "manuscript lacks corrected DAppSCAN result")
 require("0.627 on DIVE" in TEX, "manuscript lacks corrected DIVE result")
 require("0.572 on Empirical-Analysis" in TEX, "manuscript lacks corrected Empirical-Analysis result")
