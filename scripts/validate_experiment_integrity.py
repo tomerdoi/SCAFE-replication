@@ -21,59 +21,46 @@ def _load(name: str) -> object:
 
 
 def main() -> None:
-    manifest = _load("scafe_experiment_manifest.json")
-    feature_manifest = manifest["feature_manifest"]
-    assert feature_manifest["evaluated_feature_count"] == 257
-    assert not any(
-        item["name"] in feature_manifest["source_only_policy"]["excluded_columns"]
-        for item in feature_manifest["evaluated_features"]
+    primary = OUTPUT / "source_only_raw_canonical"
+    protocol_record = json.loads(
+        (primary / "scafe_repeated_lodo.json").read_text()
     )
-
-    lodo = _load("scafe_leave_one_dataset_out.json")
-    protocol = lodo["protocol"]
+    protocol = protocol_record["protocol"]
+    assert protocol_record["feature_count"] == 244
+    assert protocol["canonicalize_within_dataset"] is True
+    assert protocol["exclude_within_dataset_label_conflicts"] is True
     assert protocol["held_out_dataset"] is True
     assert protocol["exclude_cross_dataset_source_duplicates"] is True
     assert protocol["test_threshold_tuning"] is False
+    assert protocol["primary_model"] == "rf_selected_by_dappscan_project_group_cv"
+    assert protocol["external_targets"] == ["DIVE", "Empirical-Analysis"]
 
-    metrics = pd.read_csv(OUTPUT / "scafe_leave_one_dataset_out.csv")
+    metrics = pd.read_csv(primary / "scafe_repeated_lodo.csv")
     assert not metrics.empty
     assert (metrics["n_duplicate_train_excluded"] >= 0).all()
-    assert metrics["dataset"].nunique() == 4
-    assert metrics["model"].nunique() >= 2
-
-    audit = pd.read_csv(OUTPUT / "dataset_duplicate_audit.csv")
-    conflicts = audit[audit["cross_dataset"] & audit["label_conflict"]]
-    assert len(conflicts) == 263
-
-    repeated = pd.read_csv(OUTPUT / "scafe_repeated_lodo_five_seed.csv")
-    assert repeated["random_state"].nunique() == 5
-    assert repeated["dataset"].nunique() == 4
-    summary = pd.read_csv(OUTPUT / "scafe_repeated_lodo_five_seed_summary.csv")
+    assert metrics["dataset"].nunique() == 3
+    assert metrics["model"].nunique() == 4
+    assert metrics["random_state"].nunique() == 5
+    summary = pd.read_csv(primary / "scafe_repeated_lodo_summary.csv")
     assert (summary["n_seeds"] == 5).all()
 
-    ablations = pd.read_csv(OUTPUT / "scafe_feature_ablations.csv")
-    assert {"structural_all", "structural_components_only"}.issubset(
+    ablations = pd.read_csv(
+        OUTPUT / "source_only_raw_canonical_ablations/scafe_feature_ablations.csv"
+    )
+    assert {
+        "raw_structural_244",
+        "ast_call_dataflow_only",
+        "without_ast_call_dataflow",
+    }.issubset(
         set(ablations["feature_variant"])
     )
 
-    gate = _load("gnn_gate_decision.json")
-    assert gate["status"] == "deferred"
-    assert gate["decision"] == "do_not_add_to_primary_paper"
-
-    strict_dir = OUTPUT / "strict_three_dataset_repeated"
-    strict_metrics = pd.read_csv(strict_dir / "scafe_repeated_lodo.csv")
-    strict_summary = pd.read_csv(strict_dir / "scafe_repeated_lodo_summary.csv")
-    assert strict_metrics["random_state"].nunique() == 5
-    assert strict_metrics["dataset"].nunique() == 3
-    assert (strict_summary["n_seeds"] == 5).all()
-
     print(
         "Integrity checks passed: "
-        f"{len(metrics)} LODO rows, "
-        f"{len(conflicts)} cross-dataset conflict groups, "
-        f"{feature_manifest['evaluated_feature_count']} source features, "
-        f"{repeated['random_state'].nunique()} repeated seeds, "
-        f"{strict_metrics['dataset'].nunique()} strict primary datasets."
+        f"{len(metrics)} transfer rows, "
+        f"{protocol_record['feature_count']} raw source features, "
+        f"{metrics['random_state'].nunique()} repeated seeds, "
+        f"{len(protocol['external_targets'])} external targets."
     )
 
 

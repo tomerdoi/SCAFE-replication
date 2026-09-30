@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generate fixed-budget audit-queue metrics from repeated LODO predictions.
+"""Generate fixed-budget audit-queue metrics from canonical transfer predictions.
 
 This diagnostic does not tune a decision threshold.  It measures how much the
-documented ROC-selected SCAFE head enriches fixed top-k review queues relative
+fixed Random Forest SCAFE head enriches top-k review queues relative
 to each held-out dataset's vulnerable-label prevalence.
 """
 
@@ -18,14 +18,14 @@ REPO = Path(__file__).resolve().parents[1]
 PAPER = REPO.parent / "sc_risk_score_overleaf"
 PREDICTIONS = (
     REPO / "data/derived/ml_results/baseline_comparison/"
-    "source_only_metadata_excluded/scafe_repeated_lodo_predictions.csv"
+    "source_only_raw_canonical/scafe_repeated_lodo_predictions.csv"
 )
-OUTPUT = REPO / "data/derived/ml_results/baseline_comparison/source_only_metadata_excluded"
+OUTPUT = REPO / "data/derived/ml_results/baseline_comparison/source_only_raw_canonical"
 PAPER_TABLE = PAPER / "figures/tab_operational_triage.tex"
-ROC_SELECTED_HEAD = {
+FIXED_HEAD = {
     "DAppSCAN": "rf",
-    "DIVE": "hgb",
-    "Empirical-Analysis": "hgb",
+    "DIVE": "rf",
+    "Empirical-Analysis": "rf",
 }
 BUDGETS = (0.01, 0.05, 0.10)
 
@@ -33,7 +33,7 @@ BUDGETS = (0.01, 0.05, 0.10)
 def main() -> None:
     predictions = pd.read_csv(PREDICTIONS)
     rows: list[dict[str, object]] = []
-    for dataset, model in ROC_SELECTED_HEAD.items():
+    for dataset, model in FIXED_HEAD.items():
         selected = predictions[
             (predictions["dataset"] == dataset) & (predictions["model"] == model)
         ]
@@ -74,7 +74,7 @@ def main() -> None:
     summary.to_csv(OUTPUT / "scafe_operational_triage_summary.csv", index=False)
     payload = {
         "protocol": "fixed top-k retrieval; no threshold tuning",
-        "heads": ROC_SELECTED_HEAD,
+        "heads": FIXED_HEAD,
         "budgets": list(BUDGETS),
         "rows": summary.to_dict(orient="records"),
     }
@@ -82,23 +82,27 @@ def main() -> None:
         json.dumps(payload, indent=2) + "\n", encoding="utf-8"
     )
 
-    display = {"DAppSCAN": "DAppSCAN", "DIVE": "DIVE", "Empirical-Analysis": "Empirical-Analysis"}
+    display = {
+        "DAppSCAN": "DAppSCAN (development)",
+        "DIVE": "DIVE",
+        "Empirical-Analysis": "Empirical-Analysis",
+    }
     lines = [
         r"\begin{table}[t]",
         r"\centering",
-        r"\caption{Fixed-budget audit-queue retrieval for the ROC-selected structural head. "
-        r"Rows are five-seed means. A budget means reviewing that fraction of the held-out "
-        r"dataset ranked by SCAFE score; it is not a test-tuned decision threshold. "
-        r"Precision lift is precision at budget divided by held-out vulnerable-label prevalence.}",
+        r"\caption{Fixed-budget audit-queue retrieval for the fixed Random Forest head "
+        r"(five-seed means). A budget is the fraction reviewed after score ranking; "
+        r"precision lift is precision divided by positive-label prevalence. "
+        r"DAppSCAN is a development diagnostic.}",
         r"\label{tab:operational_triage}",
         r"\scriptsize",
         r"\begin{tabular}{lrrrr}",
         r"\toprule",
-        r"\textbf{Held-out dataset} & \textbf{Review budget} & \textbf{Precision} & "
+        r"\textbf{Dataset} & \textbf{Review budget} & \textbf{Precision} & "
         r"\textbf{Recall} & \textbf{Precision lift} \\",
         r"\midrule",
     ]
-    for dataset in ROC_SELECTED_HEAD:
+    for dataset in FIXED_HEAD:
         for _, row in summary[summary["dataset"] == dataset].iterrows():
             lines.append(
                 f"{display[dataset]} & {row['budget_fraction']:.0%}".replace("%", r"\%")

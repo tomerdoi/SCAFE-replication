@@ -1,21 +1,26 @@
-# Core data processing
-pandas>=1.5.0
-numpy>=1.23.0
-openpyxl
+# Publication environment used for the current manuscript artifacts.
+# Python 3.13.6; intentionally pinned to prevent estimator/tokenizer drift.
+numpy==2.3.5
+pandas==2.3.3
+scipy==1.17.0
+scikit-learn==1.8.0
+xgboost==3.2.0
+shap==0.51.0
+solidity-parser==0.1.1
 
-# Visualization (for paper figures)
-matplotlib>=3.6.0
-seaborn>=0.12.0
+# Full-source neural baselines.
+torch==2.10.0
+transformers==5.2.0
+tokenizers==0.22.2
+pytest==9.0.2
 
-# HTTP requests and API calls
-requests>=2.28.0
-urllib3>=1.26.0
+# Data ingestion and export.
+openpyxl==3.1.5
+requests==2.32.5
+urllib3==2.6.2
+pyarrow==22.0.0
 
-# Data export (Parquet format)
-pyarrow>=10.0.0
-
-# Optional: For future ML model training (not currently used)
-# scikit-learn>=1.1.0
-
-# Note: scipy is a dependency of seaborn, installed automatically
+# Publication figures.
+matplotlib==3.10.7
+seaborn==0.13.2
 

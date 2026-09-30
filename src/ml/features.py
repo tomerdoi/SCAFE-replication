@@ -42,7 +42,7 @@ _RISK_SCORE_COLS = {
 # source-derived program content.  They are excluded from every ML matrix to
 # prevent provenance/metadata leakage into source-only claims.
 _PROVENANCE_METADATA_COLS = {
-    "has_verified_source", "is_solc_pre_08",
+    "has_payload", "has_verified_source", "is_proxy", "is_solc_pre_08",
 }
 _AUX_COLS = {
     "aux_is_upgradeable", "aux_admin_power",

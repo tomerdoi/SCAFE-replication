@@ -24,49 +24,63 @@ def require(condition: bool, message: str) -> None:
         ERRORS.append(message)
 
 
-manifest = json.loads(
-    (REPO / "data/derived/ml_results/baseline_comparison/"
-     "scafe_experiment_manifest_source_only.json").read_text()
-)
 corrected = json.loads(
     (REPO / "data/derived/ml_results/baseline_comparison/"
-     "source_only_metadata_excluded/scafe_repeated_lodo.json").read_text()
+     "source_only_raw_canonical/scafe_repeated_lodo.json").read_text()
 )
 fixed_summary = pd.read_csv(
     REPO / "data/derived/ml_results/baseline_comparison/"
-    "source_only_metadata_excluded/scafe_repeated_lodo_summary.csv"
+    "source_only_raw_canonical/scafe_repeated_lodo_summary.csv"
 )
-calibrated_summary = pd.read_csv(
+predictions = pd.read_csv(
     REPO / "data/derived/ml_results/baseline_comparison/"
-    "source_only_metadata_excluded_calibrated/scafe_repeated_lodo_summary.csv"
+    "source_only_raw_canonical/scafe_repeated_lodo_predictions.csv"
 )
-scored = pd.read_csv(REPO / "data/derived/unified_contract_eval_scored.csv", nrows=1)
+scored = pd.read_csv(REPO / "data/derived/unified_contract_eval_scored.csv", low_memory=False)
 source_columns = source_feature_columns(scored)
+shap_metadata = json.loads(
+    (REPO / "data/derived/shap_results/fold_consistent_primary/metadata.json").read_text()
+)
+parser_audit = json.loads(
+    (REPO / "data/derived/parser_compatibility_audit/"
+     "parser_compatibility_summary.json").read_text()
+)
 
-require(manifest["feature_manifest"]["evaluated_feature_count"] == 255, "manifest feature count is not 255")
-require(corrected["feature_count"] == 255, "corrected LODO feature count is not 255")
+require(corrected["feature_count"] == 244, "corrected transfer feature count is not 244")
 require(corrected["seeds"] == [42, 43, 44, 45, 46], "corrected LODO seed list is incomplete")
 require(corrected["protocol"]["threshold"] == "fixed_0.5", "corrected LODO is not fixed-threshold")
+require(corrected["protocol"]["development_dataset"] == "DAppSCAN", "development dataset is not recorded")
+require(corrected["protocol"]["external_targets"] == ["DIVE", "Empirical-Analysis"],
+        "external targets are not recorded")
 require(len(fixed_summary) == 12, "corrected fixed summary does not contain 12 model/dataset rows")
-require(len(calibrated_summary) == 12, "corrected calibrated summary does not contain 12 model/dataset rows")
 require(not {"has_verified_source", "is_solc_pre_08"}.intersection(source_columns),
         "metadata feature entered source feature columns")
-require("255 evaluated features" in TEX, "manuscript does not state 255 evaluated features")
-require(
-    "structural core & 246" in TEX.lower(),
-    "feature inventory does not state 246 structural core features",
+require(len(source_columns) == 244, "source feature selector does not return 244 raw features")
+require(not any(column.startswith("comp_") for column in source_columns),
+        "label-informed component entered source feature columns")
+require(not {"has_payload", "is_proxy"}.intersection(source_columns),
+        "provenance metadata entered source feature columns")
+require("244 evaluated raw features" in TEX, "manuscript does not state 244 evaluated raw features")
+require("0.594 on DIVE" in TEX, "manuscript lacks corrected DIVE result")
+require("0.589 on Empirical-Analysis" in TEX, "manuscript lacks corrected Empirical result")
+counts = (
+    predictions[predictions["model"] == "rf"]
+    .groupby(["dataset", "random_state"]).size()
+    .groupby("dataset").first().to_dict()
 )
-require("structural core & 248" not in TEX.lower(), "stale 248 structural-core count remains")
-require("0.825 on DAppSCAN" in TEX, "manuscript lacks corrected DAppSCAN result")
-require("0.627 on DIVE" in TEX, "manuscript lacks corrected DIVE result")
-require("0.572 on Empirical-Analysis" in TEX, "manuscript lacks corrected Empirical-Analysis result")
+require(counts == {"DAppSCAN": 14791, "DIVE": 21939, "Empirical-Analysis": 2172},
+        f"canonical prediction counts differ: {counts}")
+require(shap_metadata["model"] == "rf", "SHAP cases do not explain the fixed RF head")
+require(shap_metadata["feature_count"] == 244, "SHAP feature count is not 244")
+rates = {row["dataset"]: row["parse_success_rate"] for row in parser_audit["summary"]}
+require(rates == {"DAppSCAN": 0.954, "DIVE": 0.652, "Empirical-Analysis": 0.926},
+        f"parser audit rates differ: {rates}")
 require((PAPER / "sc_vulnerability_detection.pdf").exists(), "compiled manuscript PDF is missing")
-for figure in ("fig_model_comparison.pdf", "fig_confusion_matrices.pdf", "fig_shap_cases.pdf"):
+for figure in (
+    "fig_model_comparison.pdf", "fig_confusion_matrices.pdf",
+    "fig_feature_ablation.pdf", "fig_shap_cases.pdf"
+):
     require((PAPER / "figures" / figure).exists(), f"corrected figure missing: {figure}")
-require(
-    (REPO / "data/derived/shap_results/fold_consistent_primary/metadata.json").exists(),
-    "fold-consistent SHAP metadata is missing",
-)
 
 if ERRORS:
     for error in ERRORS:

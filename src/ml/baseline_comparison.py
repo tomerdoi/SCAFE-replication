@@ -37,7 +37,7 @@ from sklearn.model_selection import GroupKFold
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-from src.ml.features import _EXCLUDE, _ONCHAIN_FEATURES
+from src.ml.features import _COMPONENT_COLS, _EXCLUDE, _ONCHAIN_FEATURES
 from src.ml.models import get_all_models
 
 
@@ -142,9 +142,14 @@ class FittedModel:
 
 
 def source_feature_columns(frame: pd.DataFrame) -> list[str]:
-    """Return numeric, source-derived columns without known leakage channels."""
+    """Return raw numeric source features without known leakage channels.
 
-    excluded = _EXCLUDE | _ONCHAIN_FEATURES
+    Hand-weighted component scores are excluded because their weights were
+    developed using DAppSCAN labels and some components can consume non-source
+    inputs.  They are therefore unsuitable for held-out source-only evaluation.
+    """
+
+    excluded = _EXCLUDE | _ONCHAIN_FEATURES | _COMPONENT_COLS
     return sorted(
         column
         for column in frame.columns
@@ -176,7 +181,12 @@ def load_scored_frame(path: str) -> pd.DataFrame:
 
 
 def select_dataset(frame: pd.DataFrame, spec: DatasetSpec) -> pd.DataFrame:
-    """Select binary-labelled rows and reject unknown labels explicitly."""
+    """Select and canonicalize binary-labelled records within one dataset.
+
+    One row is retained per exact normalized-source identity.  If the same
+    source has conflicting binary labels within a dataset, every row for that
+    identity is excluded rather than choosing a label post hoc.
+    """
 
     selected = frame[
         (frame["source_dataset"] == spec.name)
@@ -184,8 +194,31 @@ def select_dataset(frame: pd.DataFrame, spec: DatasetSpec) -> pd.DataFrame:
     ].copy()
     if selected.empty:
         raise ValueError(f"No usable labelled rows found for {spec.name!r}")
+    if "local_source_path" in selected:
+        selected["_source_identity"] = (
+            selected["local_source_path"]
+            .fillna("")
+            .astype(str)
+            .map(source_identity_hash)
+        )
+        selected["_source_identity"] = selected["_source_identity"].where(
+            selected["_source_identity"].ne(""),
+            "id:" + selected["contract_id"].astype(str),
+        )
+        conflict_ids = (
+            selected.groupby("_source_identity", sort=False)["label_status"]
+            .nunique()
+            .loc[lambda counts: counts > 1]
+            .index
+        )
+        if len(conflict_ids):
+            selected = selected.loc[
+                ~selected["_source_identity"].isin(conflict_ids)
+            ].copy()
+        selected = selected.drop_duplicates("_source_identity", keep="first")
+        selected = selected.drop(columns="_source_identity")
     selected["y"] = (selected["label_status"] == spec.positive_label).astype(int)
-    return selected
+    return selected.reset_index(drop=True)
 
 
 @lru_cache(maxsize=100_000)
@@ -199,15 +232,17 @@ def source_identity_hash(path_value: str) -> str:
         return ""
     try:
         if path.is_file():
-            source = path.read_text(encoding="utf-8", errors="ignore")
+            source = path.read_text(encoding="utf-8", errors="replace")
         elif path.is_dir():
             source = "\n".join(
-                item.read_text(encoding="utf-8", errors="ignore")
+                item.read_text(encoding="utf-8", errors="replace")
                 for item in sorted(path.rglob("*.sol"))
             )
         else:
             return ""
     except OSError:
+        return ""
+    if not source:
         return ""
     source = re.sub(r"/\*.*?\*/", " ", source, flags=re.DOTALL)
     source = re.sub(r"//.*?$", " ", source, flags=re.MULTILINE)

@@ -47,9 +47,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--models", nargs="+", default=["rf", "et", "hgb", "xgb"])
     parser.add_argument(
-        "--no-calibration",
+        "--train-threshold-sensitivity",
         action="store_true",
-        help="Keep the historical fixed 0.5 threshold.",
+        help="Optimize an F1 threshold on a training-only split (secondary sensitivity only).",
     )
     return parser.parse_args()
 
@@ -64,7 +64,7 @@ def main() -> None:
         specs,
         features,
         model_names=args.models,
-        calibrate_threshold=not args.no_calibration,
+        calibrate_threshold=args.train_threshold_sensitivity,
     )
     errors = vulnerability_error_analysis(predictions)
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -87,7 +87,9 @@ def main() -> None:
                     "held_out_dataset": True,
                     "exclude_cross_dataset_source_duplicates": True,
                     "threshold": (
-                        "fixed_0.5" if args.no_calibration else "train_only_f1"
+                        "train_only_f1"
+                        if args.train_threshold_sensitivity
+                        else "fixed_0.5"
                     ),
                     "test_threshold_tuning": False,
                 },

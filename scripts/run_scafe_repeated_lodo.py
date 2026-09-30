@@ -43,9 +43,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--datasets",
         nargs="+",
-        default=["DAppSCAN", "DIVE", "Empirical-Analysis", "FORGE"],
+        default=["DAppSCAN", "DIVE", "Empirical-Analysis"],
     )
-    parser.add_argument("--no-calibration", action="store_true")
+    parser.add_argument(
+        "--train-threshold-sensitivity",
+        action="store_true",
+        help="Optimize an F1 threshold on a training-only split (secondary sensitivity only).",
+    )
     return parser.parse_args()
 
 
@@ -62,7 +66,7 @@ def main() -> None:
         features,
         seeds=args.seeds,
         model_names=args.models,
-        calibrate_threshold=not args.no_calibration,
+        calibrate_threshold=args.train_threshold_sensitivity,
     )
     metrics_frame = pd.DataFrame(metrics)
     summary = summarize_repeated_lodo(metrics_frame)
@@ -81,15 +85,26 @@ def main() -> None:
                 "models": args.models,
                 "seeds": args.seeds,
                 "feature_count": len(features),
+                "canonical_counts": {
+                    str(dataset): int(group["n_samples"].iloc[0])
+                    for dataset, group in metrics_frame.groupby("dataset", sort=False)
+                },
                 "protocol": {
                     "source_only": True,
+                    "canonicalize_within_dataset": True,
+                    "exclude_within_dataset_label_conflicts": True,
                     "held_out_dataset": True,
                     "exclude_cross_dataset_source_duplicates": True,
                     "threshold": (
-                        "fixed_0.5" if args.no_calibration else "train_only_f1"
+                        "train_only_f1"
+                        if args.train_threshold_sensitivity
+                        else "fixed_0.5"
                     ),
                     "test_threshold_tuning": False,
-                    "confidence_interval": "seed_bootstrap_percentile_95",
+                    "primary_model": "rf_selected_by_dappscan_project_group_cv",
+                    "development_dataset": "DAppSCAN",
+                    "external_targets": ["DIVE", "Empirical-Analysis"],
+                    "uncertainty": "seed_mean_and_standard_deviation",
                 },
             },
             indent=2,

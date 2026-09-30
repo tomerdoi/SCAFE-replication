@@ -22,8 +22,11 @@ def _frame():
             "source_subdataset": ["p1", "p1", "p2", "p2"],
             "structural_signal": [0.0, 1.0, 0.1, 0.9],
             "tx_count_30d": [1, 2, 3, 4],
+            "has_payload": [1, 1, 1, 1],
             "has_verified_source": [1, 1, 0, 1],
+            "is_proxy": [0, 0, 1, 0],
             "is_solc_pre_08": [0, 1, 0, 1],
+            "comp_complexity": [0.1, 0.9, 0.2, 0.8],
             "vuln_present": [0, 1, 0, 1],
         }
     )
@@ -33,7 +36,10 @@ def test_source_features_exclude_activity_and_labels():
     columns = source_feature_columns(_frame())
     assert columns == ["structural_signal"]
     assert "has_verified_source" not in columns
+    assert "has_payload" not in columns
+    assert "is_proxy" not in columns
     assert "is_solc_pre_08" not in columns
+    assert "comp_complexity" not in columns
 
 
 def test_select_dataset_does_not_turn_unknown_into_clean():
@@ -44,6 +50,25 @@ def test_select_dataset_does_not_turn_unknown_into_clean():
     selected = select_dataset(frame, DatasetSpec("Toy"))
     assert len(selected) == 3
     assert selected["y"].tolist() == [0, 1, 1]
+
+
+def test_select_dataset_deduplicates_sources_and_drops_conflicts(tmp_path):
+    duplicate = tmp_path / "duplicate.sol"
+    duplicate.write_text("contract Duplicate {}")
+    conflict = tmp_path / "conflict.sol"
+    conflict.write_text("contract Conflict {}")
+    frame = pd.DataFrame(
+        {
+            "source_dataset": ["Toy"] * 4,
+            "label_status": ["clean", "clean", "clean", "vulnerable"],
+            "contract_id": ["a", "b", "c", "d"],
+            "local_source_path": [
+                str(duplicate), str(duplicate), str(conflict), str(conflict)
+            ],
+        }
+    )
+    selected = select_dataset(frame, DatasetSpec("Toy"))
+    assert selected["contract_id"].tolist() == ["a"]
 
 
 def test_positive_only_metrics_are_recall_only():

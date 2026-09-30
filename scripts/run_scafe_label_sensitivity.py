@@ -30,7 +30,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, default=OUTPUT)
     parser.add_argument("--models", nargs="+", default=["rf"])
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--no-calibration", action="store_true")
     return parser.parse_args()
 
 
@@ -39,7 +38,7 @@ def main() -> None:
     frame = load_scored_frame(str(args.input))
     features = source_feature_columns(frame)
     common = [
-        DatasetSpec("DAppSCAN", group_by_project=True),
+        DatasetSpec("DAppSCAN"),
         DatasetSpec("DIVE"),
         DatasetSpec("Empirical-Analysis"),
     ]
@@ -60,7 +59,7 @@ def main() -> None:
                 specs,
                 features,
                 model_names=args.models,
-                calibrate_threshold=not args.no_calibration,
+                calibrate_threshold=False,
                 exclude_duplicate_sources=duplicate_policy,
                 random_state=args.seed,
             )

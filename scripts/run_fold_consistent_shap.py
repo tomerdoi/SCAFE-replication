@@ -32,7 +32,8 @@ from src.ml.baseline_comparison import DatasetSpec  # noqa: E402
 INPUT = REPO / "data/derived/unified_contract_eval_scored.csv"
 OUTPUT = REPO / "data/derived/shap_results/fold_consistent_primary"
 PAPER_FIGURES = REPO.parent / "sc_risk_score_overleaf/figures"
-DATASETS = ("DAppSCAN", "DIVE", "Empirical-Analysis")
+ALL_DATASETS = ("DAppSCAN", "DIVE", "Empirical-Analysis")
+TARGETS = ("DIVE", "Empirical-Analysis")
 
 
 def _canonicalize(frame: pd.DataFrame) -> pd.DataFrame:
@@ -83,16 +84,16 @@ def main() -> None:
         ).source_feature_columns(frame)
     )
     cases: list[dict[str, object]] = []
-    for held_out in DATASETS:
+    for held_out in TARGETS:
         spec = DatasetSpec(name=held_out, group_by_project=True)
         test = select_dataset(frame, spec)
         train = pd.concat(
             [select_dataset(frame, DatasetSpec(name=name, group_by_project=True))
-             for name in DATASETS if name != held_out],
+             for name in ALL_DATASETS if name != held_out],
             ignore_index=True,
         )
         train, removed = exclude_test_source_duplicates(train, test)
-        fitted = _fit(train, feature_columns, "xgb", random_state=42)
+        fitted = _fit(train, feature_columns, "rf", random_state=42)
         x_test = fitted.scaler.transform(_feature_matrix(test, feature_columns))
         probabilities = fitted.estimator.predict_proba(x_test)[:, 1]
         y_true = test["y"].to_numpy(dtype=int)
@@ -119,7 +120,7 @@ def main() -> None:
                             str(row.get("local_source_path", ""))
                         ),
                         "fold_protocol": "LODO",
-                        "model": "xgb",
+                        "model": "rf",
                         "seed": 42,
                         "y_true": int(row["y"]),
                         "y_probability": float(probabilities[position]),
@@ -134,9 +135,9 @@ def main() -> None:
     cases_frame = pd.DataFrame(cases)
     cases_frame.to_csv(OUTPUT / "local_shap_cases.csv", index=False)
     metadata = {
-        "protocol": "duplicate-safe source-only LODO",
-        "datasets": list(DATASETS),
-        "model": "xgb",
+        "protocol": "canonicalized source-only external-target transfer",
+        "datasets": list(TARGETS),
+        "model": "rf",
         "seed": 42,
         "threshold": 0.5,
         "case_categories": ["TP", "FP", "FN"],
