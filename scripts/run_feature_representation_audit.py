@@ -8,6 +8,8 @@ not change the production extractor or the primary evaluation protocol.
 from __future__ import annotations
 
 import argparse
+from contextlib import redirect_stderr, redirect_stdout
+import io
 import json
 import sys
 import time
@@ -82,17 +84,19 @@ def _correlation_audit(frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]
     return pairs, pd.DataFrame(group_rows)
 
 
-def _timing_audit(frame: pd.DataFrame, sample_size: int) -> pd.DataFrame:
+def _timing_audit(frame: pd.DataFrame, sample_size: int, seed: int) -> pd.DataFrame:
     rows = frame[frame["local_source_path"].fillna("").astype(str).ne("")]
     rows = rows.drop_duplicates("local_source_path")
     datasets = sorted(rows["source_dataset"].dropna().astype(str).unique())
     per_dataset = max(1, sample_size // max(len(datasets), 1))
-    rows = (
-        rows.assign(_dataset=rows["source_dataset"].fillna("").astype(str))
-        .groupby("_dataset", sort=True, group_keys=False)
-        .head(per_dataset)
-        .head(sample_size)
-    )
+    rows = rows.assign(_dataset=rows["source_dataset"].fillna("").astype(str))
+    sampled = []
+    for offset, dataset in enumerate(datasets):
+        group = rows[rows["_dataset"] == dataset]
+        sampled.append(
+            group.sample(n=min(per_dataset, len(group)), random_state=seed + offset)
+        )
+    rows = pd.concat(sampled, ignore_index=False).head(sample_size)
     extractor = ContractRiskUtil()
     timings = []
     for index, row in rows.iterrows():
@@ -100,9 +104,10 @@ def _timing_audit(frame: pd.DataFrame, sample_size: int) -> pd.DataFrame:
         if not source:
             continue
         start = time.perf_counter()
-        extractor.extract_features_from_source_text(
-            str(row.get("contract_id", index)), source, n_files=n_files
-        )
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            extractor.extract_features_from_source_text(
+                str(row.get("contract_id", index)), source, n_files=n_files
+            )
         structural_seconds = time.perf_counter() - start
         start = time.perf_counter()
         compute_identifier_features(source)
@@ -110,10 +115,16 @@ def _timing_audit(frame: pd.DataFrame, sample_size: int) -> pd.DataFrame:
         start = time.perf_counter()
         compute_context_features(source)
         context_seconds = time.perf_counter() - start
+        source_path = Path(str(row["local_source_path"]))
+        try:
+            reported_path = str(source_path.resolve().relative_to(REPO))
+        except ValueError:
+            reported_path = source_path.name
         timings.append(
             {
                 "source_dataset": str(row.get("source_dataset", "")),
-                "source_path": str(row["local_source_path"]),
+                "contract_id": str(row.get("contract_id", index)),
+                "source_path": reported_path,
                 "source_bytes": len(source.encode("utf-8")),
                 "structural_seconds": structural_seconds,
                 "semantic_identifier_seconds": identifier_seconds,
@@ -128,12 +139,17 @@ def main() -> None:
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--sample-size", type=int, default=300)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--hardware-description", default="not recorded")
     parser.add_argument("--correlation-threshold", type=float, default=0.95)
     args = parser.parse_args()
 
-    frame = load_scored_csv(args.input)
+    registry = load_scored_csv(args.input)
+    frame = registry[
+        registry["local_source_path"].fillna("").astype(str).str.strip().ne("")
+    ].copy()
     pairs, group_summary = _correlation_audit(frame)
-    timings = _timing_audit(frame, max(args.sample_size, 1))
+    timings = _timing_audit(frame, max(args.sample_size, 1), args.seed)
     args.output.mkdir(parents=True, exist_ok=True)
     pairs[pairs["absolute_spearman"] >= args.correlation_threshold].to_csv(
         args.output / "high_correlation_pairs.csv", index=False
@@ -141,14 +157,23 @@ def main() -> None:
     group_summary.to_csv(args.output / "correlation_by_feature_group.csv", index=False)
     timings.to_csv(args.output / "extraction_timings.csv", index=False)
     summary = {
-        "input_rows": int(len(frame)),
+        "registry_rows": int(len(registry)),
+        "source_available_rows": int(len(frame)),
+        "source_missing_rows_excluded": int(len(registry) - len(frame)),
         "evaluated_feature_count": int(len(build_feature_manifest(frame)["evaluated_features"])),
         "timed_unique_sources": int(len(timings)),
+        "timing_sample_seed": int(args.seed),
+        "timing_sampling": "seeded random sample stratified by source_dataset",
+        "timing_hardware": args.hardware_description,
         "correlation_method": "absolute Spearman",
         "high_correlation_threshold": args.correlation_threshold,
         "high_correlation_pair_count": int(
             (pairs["absolute_spearman"] >= args.correlation_threshold).sum()
         ),
+        "pairwise_absolute_spearman": {
+            "median": float(pairs["absolute_spearman"].median()),
+            "p95": float(pairs["absolute_spearman"].quantile(0.95)),
+        },
         "timing_summary_seconds": {
             column: {
                 "median": float(timings[column].median()) if len(timings) else 0.0,

@@ -45,9 +45,9 @@ def chunk_tokens(tokens: Sequence[Any], window_size: int = TOKEN_WINDOW) -> list
 
 
 def chunk_tokenizer_ids(
-    token_ids: Sequence[int], window_size: int = BERT_WINDOW
+    token_ids: Sequence[int], window_size: int = BERT_WINDOW - 2
 ) -> list[list[int]]:
-    """Chunk tokenizer IDs without overlap; special tokens are not inferred."""
+    """Chunk payload IDs without overlap, reserving room for two special tokens."""
     return chunk_tokens(token_ids, window_size)
 
 
@@ -843,8 +843,13 @@ def run_fair_lodo(
         predictions = predictions.drop_duplicates(unit_columns, keep="first").reset_index(drop=True)
         predictions = predictions.drop(columns="_prediction_identity")
     metadata = {"protocol": "duplicate_safe_contract_lodo_v1",
-                "chunking": {"regex_tokens": TOKEN_WINDOW, "tokenizer_tokens": BERT_WINDOW,
-                             "overlap": 0, "aggregation": "mean"},
+                "chunking": {
+                    "regex_tokens": TOKEN_WINDOW,
+                    "tokenizer_input_tokens": BERT_WINDOW,
+                    "tokenizer_payload_tokens": BERT_WINDOW - 2,
+                    "overlap": 0,
+                    "aggregation": "mean",
+                },
                 "threshold": FIXED_THRESHOLD, "held_out_threshold_tuning": False,
                 "internal_validation_for_early_stopping": True,
                 "datasets": list(datasets), "models": list(models), "seeds": list(seeds),

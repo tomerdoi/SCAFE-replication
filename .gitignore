@@ -27,6 +27,7 @@ data/*
 *.snm
 *.vrb
 *.code-workspace
+build/
 
 # Local IDE project metadata
 .idea/

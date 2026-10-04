@@ -83,17 +83,17 @@ def main() -> None:
     )
 
     display = {
-        "DAppSCAN": "DAppSCAN (development)",
+        "DAppSCAN": "DAppSCAN (reverse)",
         "DIVE": "DIVE",
         "Empirical-Analysis": "Empirical-Analysis",
     }
     lines = [
         r"\begin{table}[t]",
         r"\centering",
-        r"\caption{Fixed-budget audit-queue retrieval for the fixed Random Forest head "
+        r"\caption{Fixed-budget ranking diagnostic for the fixed Random Forest head "
         r"(five-seed means). A budget is the fraction reviewed after score ranking; "
         r"precision lift is precision divided by positive-label prevalence. "
-        r"DAppSCAN is a development diagnostic.}",
+        r"DAppSCAN is a reverse-transfer diagnostic.}",
         r"\label{tab:operational_triage}",
         r"\scriptsize",
         r"\begin{tabular}{lrrrr}",

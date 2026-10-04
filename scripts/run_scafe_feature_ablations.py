@@ -33,17 +33,55 @@ DATASET_SPECS = [
 
 
 def _variants(all_features: list[str]) -> dict[str, list[str]]:
-    relational = [
-        feature for feature in all_features
-        if feature.startswith(("ast_", "cg_", "df_"))
-    ]
-    return {
+    groups: dict[str, list[str]] = {
+        "relational": [],
+        "complexity_distribution": [],
+        "lexical_statistics": [],
+        "security_patterns": [],
+        "syntax_organization": [],
+    }
+    complexity_tokens = (
+        "cyclomatic", "halstead", "_loc", "loc_", "nesting", "concentration",
+        "gini", "skew", "iqr", "_p75", "_p90", "params", "fanout",
+        "inheritance",
+    )
+    lexical_tokens = ("token", "bigram", "comment", "duplication", "duplicated")
+    security_tokens = (
+        "dangerous", "safety", "risky", "unprotected", "guard", "owner",
+        "delegatecall", "external_call", "unchecked", "reentrancy", "oracle",
+        "proxy", "interaction_surface", "accesscontrol", "safe_", "timelock",
+        "selfdestruct", "tx_origin",
+    )
+    for feature in all_features:
+        if feature.startswith(("ast_", "cg_", "df_")):
+            group = "relational"
+        elif any(token in feature for token in complexity_tokens):
+            group = "complexity_distribution"
+        elif any(token in feature for token in lexical_tokens):
+            group = "lexical_statistics"
+        elif (
+            feature.startswith(("has_", "uses_", "vt_", "sp_"))
+            or any(token in feature for token in security_tokens)
+        ):
+            group = "security_patterns"
+        else:
+            group = "syntax_organization"
+        groups[group].append(feature)
+
+    variants = {
         f"raw_structural_{len(all_features)}": all_features,
-        "ast_call_dataflow_only": sorted(relational),
+        "ast_call_dataflow_only": sorted(groups["relational"]),
         "without_ast_call_dataflow": [
-            feature for feature in all_features if feature not in relational
+            feature for feature in all_features if feature not in groups["relational"]
         ],
     }
+    for group, features in groups.items():
+        if group == "relational":
+            continue
+        variants[f"without_{group}"] = [
+            feature for feature in all_features if feature not in features
+        ]
+    return variants
 
 
 def parse_args() -> argparse.Namespace:
@@ -96,6 +134,8 @@ def main() -> None:
                     "source_only": True,
                     "held_out_dataset": True,
                     "exclude_cross_dataset_source_duplicates": True,
+                    "exclude_cross_training_label_conflicts": True,
+                    "collapse_cross_training_same_label_duplicates": True,
                     "threshold": "fixed_0.5",
                     "model_selection": "fixed_rf_selected_on_dappscan_development",
                 },

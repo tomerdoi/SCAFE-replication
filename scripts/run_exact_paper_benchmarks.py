@@ -75,11 +75,18 @@ def main() -> None:
                 source,
                 DatasetSpec(benchmark, accepted_labels=labels),
                 features,
+                model_names=("rf",),
             )
         )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    exact.to_csv(OUTPUT_DIR / "exact_paper_benchmark_scored.csv", index=False)
+    released_exact = exact.copy()
+    released_exact["local_source_path"] = released_exact["local_source_path"].map(
+        lambda value: str(Path(value).resolve().relative_to(REPO_ROOT))
+    )
+    released_exact.to_csv(
+        OUTPUT_DIR / "exact_paper_benchmark_scored.csv", index=False
+    )
     (OUTPUT_DIR / "exact_paper_benchmark_metrics.json").write_text(
         json.dumps(
             {
@@ -87,6 +94,8 @@ def main() -> None:
                 "feature_count": len(features),
                 "protocol": {
                     "train_on": "DAppSCAN",
+                    "model": "rf_selected_by_dappscan_project_group_cv",
+                    "feature_count": len(features),
                     "source_only": True,
                     "third_party_tools_run": False,
                     "threshold": 0.5,

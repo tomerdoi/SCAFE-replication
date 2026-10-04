@@ -13,7 +13,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "data" / "derived" / "ml_results" / "baseline_comparison"
-OUT = Path("/Users/tomer.doitshman/PycharmProjects/sc_risk_score_overleaf/figures")
+OUT = ROOT.parent / "sc_risk_score_overleaf" / "figures"
 
 plt.rcParams.update({"font.family": "serif", "font.size": 9, "figure.dpi": 180})
 

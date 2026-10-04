@@ -272,6 +272,36 @@ def exclude_test_source_duplicates(
     return train.loc[~duplicate_mask].copy(), int(duplicate_mask.sum())
 
 
+def canonicalize_training_sources(
+    train: pd.DataFrame,
+) -> tuple[pd.DataFrame, int, int]:
+    """Exclude cross-dataset label conflicts and collapse same-label sources."""
+
+    if "local_source_path" not in train:
+        return train, 0, 0
+    identities = train["local_source_path"].fillna("").astype(str).map(
+        source_identity_hash
+    )
+    available = identities.ne("")
+    labelled = train.loc[available].assign(
+        _source_identity=identities.loc[available]
+    )
+    conflict_ids = (
+        labelled.groupby("_source_identity", sort=False)["y"]
+        .nunique()
+        .loc[lambda counts: counts > 1]
+        .index
+    )
+    conflict_mask = available & identities.isin(conflict_ids)
+    without_conflicts = train.loc[~conflict_mask].copy()
+    remaining_identities = identities.loc[without_conflicts.index]
+    duplicate_mask = remaining_identities.ne("") & remaining_identities.duplicated(
+        keep="first"
+    )
+    canonical = without_conflicts.loc[~duplicate_mask].copy()
+    return canonical, int(duplicate_mask.sum()), int(conflict_mask.sum())
+
+
 def _groups(frame: pd.DataFrame, spec: DatasetSpec) -> np.ndarray:
     if spec.group_by_project and "source_subdataset" in frame:
         keys = frame["source_subdataset"].replace("", pd.NA).fillna(frame["contract_id"])
@@ -512,8 +542,15 @@ def run_leave_one_dataset_out(
         ]
         train = pd.concat(train_parts, ignore_index=True)
         duplicate_count = 0
+        training_duplicate_count = 0
+        training_conflict_count = 0
         if exclude_duplicate_sources:
             train, duplicate_count = exclude_test_source_duplicates(train, test)
+            (
+                train,
+                training_duplicate_count,
+                training_conflict_count,
+            ) = canonicalize_training_sources(train)
         if train["y"].nunique() < 2:
             continue
         for model_name in model_names:
@@ -548,6 +585,8 @@ def run_leave_one_dataset_out(
             )
             result["n_train"] = int(len(train))
             result["n_duplicate_train_excluded"] = duplicate_count
+            result["n_cross_training_duplicates_collapsed"] = training_duplicate_count
+            result["n_cross_training_conflict_rows_excluded"] = training_conflict_count
             result["random_state"] = random_state
             rows.append(result)
             prediction_parts.append(

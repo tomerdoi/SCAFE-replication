@@ -62,9 +62,7 @@ def main() -> None:
         "success_rate": float(frame["slither_success"].mean()),
         "coverage_of_input": float(frame["slither_success"].mean()),
         "construct_definitions": list(CONSTRUCTS),
-        "correlation_artifact": str(
-            REPO / "data/derived/slither_correlation/correlation_results.csv"
-        ),
+        "correlation_artifact": "data/derived/slither_correlation/correlation_results.csv",
     }
     (OUT / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=2))

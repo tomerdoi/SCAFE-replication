@@ -40,14 +40,23 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     frame = load_scored_frame(str(args.input))
+    try:
+        input_path = str(args.input.resolve().relative_to(REPO_ROOT))
+    except ValueError:
+        input_path = args.input.name
     manifest = {
-        "input": str(args.input),
+        "input": input_path,
         "dataset_manifest": build_dataset_manifest(frame),
         "feature_manifest": build_feature_manifest(frame),
         "protocol": {
             "primary_generalization": "leave_one_dataset_out",
             "source_duplicate_exclusion": True,
-            "threshold_calibration": "training_only",
+            "cross_training_label_conflict_exclusion": True,
+            "cross_training_same_label_duplicate_collapse": True,
+            "threshold": "fixed_0.5",
+            "test_threshold_tuning": False,
+            "development_dataset": "DAppSCAN",
+            "external_targets": ["DIVE", "Empirical-Analysis"],
             "unknown_labels_excluded_from_primary_binary_task": True,
         },
     }

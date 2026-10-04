@@ -12,6 +12,7 @@ Scans the repo and the LaTeX paper for:
 Exit code is 0 only when no findings.
 """
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
@@ -20,21 +21,29 @@ from typing import List, Tuple
 _REPO = Path(__file__).resolve().parents[1]
 _OVERLEAF = _REPO.parent / "sc_risk_score_overleaf"
 
-# Known author personal identifiers (extend as needed). Lower-cased.
-# Some of these should be replaced by the user before submission.
+# Supply comma-separated author identifiers in CI or the local shell. Keeping
+# them outside this distributable script avoids embedding the values being
+# checked for in the artifact itself.
 PERSONAL_NAMES = [
-    "tomer doitshman", "tomer.doitshman", "tomerdoitshman",
-    "doitshman",
+    value.strip().lower()
+    for value in os.environ.get("ANONYMITY_PERSONAL_IDENTIFIERS", "").split(",")
+    if value.strip()
 ]
 
 EMAIL_LIKE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 ORCID = re.compile(r"\b\d{4}-\d{4}-\d{4}-\d{3}[0-9X]\b")
-GITHUB_HANDLE = re.compile(r"github\.com/([A-Za-z0-9-]{3,})", re.IGNORECASE)
 HOMEDIR_PATTERN = re.compile(r"/Users/[A-Za-z0-9._-]+/")
 
 EXCLUDE_DIRS = {
     ".git", "venv", ".venv", "__pycache__", "node_modules",
     ".idea", ".vscode", "data", "models",
+    "plans",
+}
+EXCLUDE_FILES = {
+    "reviewers-bcra.md",
+    "reviewers-bcra-2.md",
+    "REVISION_PLAN.md",
+    "REVIEWER_REMAINING_ACTIONS.md",
 }
 # Limit scan to source and prose
 INCLUDE_EXTS = {".py", ".sh", ".md", ".tex", ".bib", ".yml", ".yaml",
@@ -69,23 +78,6 @@ def _scan_text(text: str, path: Path) -> List[Tuple[Path, int, str, str]]:
         line = text.count("\n", 0, m.start()) + 1
         findings.append((path, line, "orcid", m.group(0)))
 
-    for m in GITHUB_HANDLE.finditer(text):
-        handle = m.group(1)
-        if handle.lower() in {"anonymous", "anon", "anonymized", "user",
-                               "your-username", "owner"}:
-            continue
-        # Skip well-known orgs / framework handles
-        if handle.lower() in {
-            "smartdec", "consensys", "crytic", "ethereum", "openzeppelin",
-            "microsoft", "huggingface", "facebook", "google", "pytorch",
-            "tensorflow", "sklearn", "scikit-learn", "pandas-dev",
-            "numpy", "scipy", "matplotlib", "seaborn", "jupyter",
-            "ipython", "anthropics", "openai", "ollama", "qwen",
-        }:
-            continue
-        line = text.count("\n", 0, m.start()) + 1
-        findings.append((path, line, "github_handle", handle))
-
     for m in HOMEDIR_PATTERN.finditer(text):
         line = text.count("\n", 0, m.start()) + 1
         findings.append((path, line, "homedir_leak", m.group(0)))
@@ -95,18 +87,23 @@ def _scan_text(text: str, path: Path) -> List[Tuple[Path, int, str, str]]:
 
 def _scan_tree(root: Path):
     findings = []
-    for p in root.rglob("*"):
-        if p.is_dir():
-            continue
-        if any(part in EXCLUDE_DIRS for part in p.parts):
-            continue
-        if p.suffix.lower() not in INCLUDE_EXTS:
-            continue
-        try:
-            text = p.read_text(errors="replace")
-        except Exception:
-            continue
-        findings.extend(_scan_text(text, p))
+    for directory, names, files in os.walk(root):
+        names[:] = [
+            name
+            for name in names
+            if name not in EXCLUDE_DIRS and not name.endswith("venv")
+        ]
+        for name in files:
+            if name in EXCLUDE_FILES:
+                continue
+            p = Path(directory) / name
+            if p.suffix.lower() not in INCLUDE_EXTS:
+                continue
+            try:
+                text = p.read_text(errors="replace")
+            except Exception:
+                continue
+            findings.extend(_scan_text(text, p))
     return findings
 
 

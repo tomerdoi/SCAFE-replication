@@ -21,6 +21,7 @@ from src.ml.baseline_comparison import (
     source_feature_columns,
     summarize_repeated_lodo,
 )
+from src.ml.semantic_features import add_semantic_features_to_frame
 
 DEFAULT_INPUT = REPO_ROOT / "data" / "derived" / "unified_contract_eval_scored.csv"
 DEFAULT_OUTPUT = (
@@ -50,12 +51,19 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Optimize an F1 threshold on a training-only split (secondary sensitivity only).",
     )
+    parser.add_argument(
+        "--include-semantic",
+        action="store_true",
+        help="Add the 87 source-only identifier/context features.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     frame = load_scored_frame(str(args.input))
+    if args.include_semantic:
+        frame = add_semantic_features_to_frame(frame)
     features = source_feature_columns(frame)
     specs = [spec for spec in DATASET_SPECS if spec.name in args.datasets]
     if len(specs) < 2:
@@ -85,16 +93,20 @@ def main() -> None:
                 "models": args.models,
                 "seeds": args.seeds,
                 "feature_count": len(features),
+                "feature_names": features,
                 "canonical_counts": {
                     str(dataset): int(group["n_samples"].iloc[0])
                     for dataset, group in metrics_frame.groupby("dataset", sort=False)
                 },
                 "protocol": {
                     "source_only": True,
+                    "identifier_context_extension": args.include_semantic,
                     "canonicalize_within_dataset": True,
                     "exclude_within_dataset_label_conflicts": True,
                     "held_out_dataset": True,
                     "exclude_cross_dataset_source_duplicates": True,
+                    "exclude_cross_training_label_conflicts": True,
+                    "collapse_cross_training_same_label_duplicates": True,
                     "threshold": (
                         "train_only_f1"
                         if args.train_threshold_sensitivity

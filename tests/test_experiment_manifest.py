@@ -63,6 +63,6 @@ def test_feature_groups_are_disjoint_and_cover_evaluated_features():
     assert len(flattened) == len(set(flattened))
     assert set(flattened) == {
         "structural_feature",
-        "comp_safety",
         "ast_n_functions",
     }
+    assert "comp_safety" not in flattened

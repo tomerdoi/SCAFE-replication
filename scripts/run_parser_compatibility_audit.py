@@ -129,6 +129,9 @@ def main() -> None:
     metadata = {
         "sampling": "uniform without replacement within canonicalized dataset",
         "seed": args.seed,
+        "dataset_seeds": {
+            dataset: args.seed + offset for offset, dataset in enumerate(DATASETS)
+        },
         "per_dataset": args.per_dataset,
         "parser": "solidity-parser 0.1.1",
         "parse_mode": "parse(source, loc=True)",

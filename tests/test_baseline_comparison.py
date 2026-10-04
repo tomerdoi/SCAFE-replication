@@ -4,6 +4,7 @@ import pandas as pd
 from src.ml.baseline_comparison import (
     DatasetSpec,
     _metrics,
+    canonicalize_training_sources,
     canonicalize_vulnerability_type,
     canonicalize_vulnerability_types,
     exclude_test_source_duplicates,
@@ -107,6 +108,27 @@ def test_duplicate_sources_are_removed_from_training(tmp_path):
     filtered, removed = exclude_test_source_duplicates(train, test)
     assert removed == 2
     assert filtered.empty
+
+
+def test_cross_dataset_training_sources_are_jointly_canonicalized(tmp_path):
+    duplicate = tmp_path / "duplicate.sol"
+    duplicate.write_text("contract Duplicate {}")
+    conflict = tmp_path / "conflict.sol"
+    conflict.write_text("contract Conflict {}")
+    unique = tmp_path / "unique.sol"
+    unique.write_text("contract Unique {}")
+    train = pd.DataFrame(
+        {
+            "local_source_path": [
+                str(duplicate), str(duplicate), str(conflict), str(conflict), str(unique)
+            ],
+            "y": [1, 1, 0, 1, 0],
+        }
+    )
+    canonical, duplicates, conflicts = canonicalize_training_sources(train)
+    assert canonical["local_source_path"].tolist() == [str(duplicate), str(unique)]
+    assert duplicates == 1
+    assert conflicts == 2
 
 
 def test_repeated_lodo_summary_reports_seed_confidence_interval():

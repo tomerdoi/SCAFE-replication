@@ -60,7 +60,7 @@ def model_comparison() -> None:
             capsize=2,
             label=label,
         )
-    ax.set_xticks(x, ["DAppSCAN\n(development)", "DIVE", "Empirical-\nAnalysis"])
+    ax.set_xticks(x, ["DAppSCAN\n(reverse transfer)", "DIVE", "Empirical-\nAnalysis"])
     ax.set_ylim(0, 1)
     ax.set_ylabel("Score (mean ± seed SD)")
     ax.grid(axis="y", alpha=0.3)
@@ -74,7 +74,11 @@ def confusion_matrices() -> None:
     best = {"DAppSCAN": "rf", "DIVE": "rf", "Empirical-Analysis": "rf"}
     fig, axes = plt.subplots(1, 3, figsize=(10.5, 3.5))
     for ax, (dataset, model) in zip(axes, best.items()):
-        frame = predictions[(predictions.dataset == dataset) & (predictions.model == model)]
+        frame = predictions[
+            (predictions.dataset == dataset)
+            & (predictions.model == model)
+            & (predictions.random_state == 42)
+        ]
         y = frame.y_true.astype(int)
         pred = frame.y_pred.astype(int)
         cm = pd.crosstab(y, pred).reindex(index=[0, 1], columns=[0, 1], fill_value=0).to_numpy()
@@ -88,7 +92,7 @@ def confusion_matrices() -> None:
         ax.set_yticks([0, 1], ["Negative", "Positive"])
         ax.set_xlabel("Predicted")
         ax.set_ylabel("Actual")
-        ax.set_title(f"{dataset}\n{model}")
+        ax.set_title(f"{dataset}\nseed 42")
     fig.suptitle("Fixed-Random-Forest transfer confusion matrices", y=1.04)
     fig.tight_layout()
     save(fig, "fig_confusion_matrices")
@@ -108,7 +112,7 @@ def heatmap() -> None:
         for j in range(values.shape[1]):
             ax.text(j, i, f"{values[i, j]:.3f}", ha="center", va="center", color="white")
     ax.set_xticks(range(3), ["ROC-AUC", "PR-AUC", "F1"])
-    ax.set_yticks(range(3), ["DAppSCAN (dev.)", "DIVE", "Empirical-Analysis"])
+    ax.set_yticks(range(3), ["DAppSCAN (reverse)", "DIVE", "Empirical-Analysis"])
     fig.colorbar(image, ax=ax, fraction=0.045, pad=0.04)
     fig.tight_layout()
     save(fig, "fig_cross_dataset_heatmap")
@@ -117,20 +121,36 @@ def heatmap() -> None:
 def feature_ablation() -> None:
     frame = pd.read_csv(ABLATIONS)
     frame = frame[frame["dataset"].isin(["DAppSCAN", "DIVE", "Empirical-Analysis"])]
-    variants = ["raw_structural_244", "without_ast_call_dataflow", "ast_call_dataflow_only"]
-    labels = ["All 244", "Without relational", "Relational only"]
+    variants = [
+        "raw_structural_244",
+        "without_ast_call_dataflow",
+        "without_complexity_distribution",
+        "without_lexical_statistics",
+        "without_security_patterns",
+        "without_syntax_organization",
+        "ast_call_dataflow_only",
+    ]
+    labels = [
+        "All 244",
+        "− relational",
+        "− complexity",
+        "− lexical stats",
+        "− security patterns",
+        "− syntax/org.",
+        "Relational only",
+    ]
     datasets = ["DAppSCAN", "DIVE", "Empirical-Analysis"]
     matrix = (
         frame.pivot(index="dataset", columns="feature_variant", values="roc_auc")
         .reindex(index=datasets, columns=variants)
     )
-    fig, ax = plt.subplots(figsize=(6.2, 3.5))
+    fig, ax = plt.subplots(figsize=(8.0, 3.5))
     image = ax.imshow(matrix, cmap="magma", vmin=0.45, vmax=0.85, aspect="auto")
     for i in range(matrix.shape[0]):
         for j in range(matrix.shape[1]):
             ax.text(j, i, f"{matrix.iloc[i, j]:.3f}", ha="center", va="center", color="white")
-    ax.set_xticks(range(3), labels, rotation=18, ha="right")
-    ax.set_yticks(range(3), ["DAppSCAN (dev.)", "DIVE", "Empirical-Analysis"])
+    ax.set_xticks(range(len(labels)), labels, rotation=24, ha="right")
+    ax.set_yticks(range(3), ["DAppSCAN (reverse)", "DIVE", "Empirical-Analysis"])
     ax.set_title("Fixed-head feature-group ROC-AUC")
     fig.colorbar(image, ax=ax, fraction=0.045, pad=0.04)
     fig.tight_layout()
@@ -138,8 +158,8 @@ def feature_ablation() -> None:
 
 
 def feature_inventory() -> None:
-    labels = ["Raw structural\n(primary)", "Composite scores\n(excluded)", "Identifier/context\n(secondary)"]
-    values = [244, 11, 87]
+    labels = ["Raw structural\n(primary)", "All numeric columns\nexcluded", "Identifier/context\n(secondary)"]
+    values = [244, 57, 87]
     fig, ax = plt.subplots(figsize=(6.0, 3.2))
     bars = ax.bar(labels, values, color=["#1565c0", "#b71c1c", "#6a1b9a"])
     ax.bar_label(bars, padding=3)

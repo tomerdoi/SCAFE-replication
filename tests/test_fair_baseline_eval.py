@@ -37,6 +37,13 @@ def test_tokenizer_chunking_has_deterministic_512_windows():
     assert chunks[1][0] == 512
 
 
+def test_default_tokenizer_chunking_reserves_special_tokens_without_loss():
+    tokens = list(range(1025))
+    chunks = chunk_tokenizer_ids(tokens)
+    assert [len(chunk) for chunk in chunks] == [510, 510, 5]
+    assert [item for chunk in chunks for item in chunk] == tokens
+
+
 def test_chunk_probabilities_aggregate_to_contract_predictions():
     result = aggregate_chunk_probabilities(
         ["a", "a", "b"], [0.2, 0.8, 0.9]

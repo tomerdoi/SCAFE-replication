@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Waits for all 3 LLM models to finish, runs model-1 retry, updates tables, recompiles PDF.
 set -e
-REPO=/Users/tomer.doitshman/PycharmProjects/sc_review
-PAPER=/Users/tomer.doitshman/PycharmProjects/sc_risk_score_overleaf
-VENV=$REPO/venv/bin/python3
-LOG=$REPO/logs/finish_and_update.log
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PAPER="${PAPER_DIR:-$REPO/../sc_risk_score_overleaf}"
+VENV="$REPO/venv/bin/python3"
+LOG="$REPO/logs/finish_and_update.log"
 
 echo "=== finish_and_update.sh started: $(date) ===" | tee -a $LOG
 

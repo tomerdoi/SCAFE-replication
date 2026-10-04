@@ -31,6 +31,8 @@ def main() -> None:
     assert protocol["exclude_within_dataset_label_conflicts"] is True
     assert protocol["held_out_dataset"] is True
     assert protocol["exclude_cross_dataset_source_duplicates"] is True
+    assert protocol["exclude_cross_training_label_conflicts"] is True
+    assert protocol["collapse_cross_training_same_label_duplicates"] is True
     assert protocol["test_threshold_tuning"] is False
     assert protocol["primary_model"] == "rf_selected_by_dappscan_project_group_cv"
     assert protocol["external_targets"] == ["DIVE", "Empirical-Analysis"]
@@ -47,13 +49,15 @@ def main() -> None:
     ablations = pd.read_csv(
         OUTPUT / "source_only_raw_canonical_ablations/scafe_feature_ablations.csv"
     )
-    assert {
+    assert set(ablations["feature_variant"]) == {
         "raw_structural_244",
         "ast_call_dataflow_only",
         "without_ast_call_dataflow",
-    }.issubset(
-        set(ablations["feature_variant"])
-    )
+        "without_complexity_distribution",
+        "without_lexical_statistics",
+        "without_security_patterns",
+        "without_syntax_organization",
+    }
 
     print(
         "Integrity checks passed: "
