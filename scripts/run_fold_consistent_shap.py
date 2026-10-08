@@ -21,6 +21,7 @@ sys.path.insert(0, str(REPO))
 from src.ml.baseline_comparison import (  # noqa: E402
     _feature_matrix,
     _fit,
+    canonicalize_training_sources,
     exclude_test_source_duplicates,
     load_scored_frame,
     select_dataset,
@@ -93,6 +94,7 @@ def main() -> None:
             ignore_index=True,
         )
         train, removed = exclude_test_source_duplicates(train, test)
+        train, collapsed, conflicts = canonicalize_training_sources(train)
         fitted = _fit(train, feature_columns, "rf", random_state=42)
         x_test = fitted.scaler.transform(_feature_matrix(test, feature_columns))
         probabilities = fitted.estimator.predict_proba(x_test)[:, 1]
@@ -125,6 +127,8 @@ def main() -> None:
                         "y_true": int(row["y"]),
                         "y_probability": float(probabilities[position]),
                         "train_duplicate_rows_removed": int(removed),
+                        "cross_training_same_label_copies_collapsed": int(collapsed),
+                        "cross_training_conflict_rows_excluded": int(conflicts),
                         "rank": rank,
                         "feature": feature_columns[feature_index],
                         "shap_value": float(values[feature_index]),
