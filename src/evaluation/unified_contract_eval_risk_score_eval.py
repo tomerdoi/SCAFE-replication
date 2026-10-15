@@ -22,11 +22,14 @@ Notes:
 from __future__ import annotations
 
 import logging
+import os
 import sys
 import time
+from concurrent.futures import FIRST_COMPLETED, Future, ProcessPoolExecutor, wait
+from contextlib import redirect_stderr
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, Iterable, Optional
 
 import pandas as pd
 
@@ -40,6 +43,84 @@ from src.paths import DATA_DIR, DERIVED_DIR  # noqa: E402
 from src.clients.etherscan_activity import EtherscanActivityUtil  # noqa: E402
 from src.clients.etherscan_source import EtherscanAVSSourceUtil  # noqa: E402
 from src.risk.contract_risk import ContractRiskUtil  # noqa: E402
+
+
+def _score_local_source(payload: tuple[str, str, str, str]) -> dict[str, Any]:
+    """Extract and score one local source record.
+
+    Kept at module scope so it can be used safely by multiprocessing workers.
+    """
+
+    contract_id, sol_path, address, source_dataset = payload
+    try:
+        risk_util = ContractRiskUtil()
+        # The third-party Solidity grammar reports recoverable parse diagnostics
+        # directly to stderr. Exceptions still propagate with record context.
+        with open(os.devnull, "w", encoding="utf-8") as stderr_sink:
+            with redirect_stderr(stderr_sink):
+                feats = risk_util.extract_features_from_local_file(
+                    contract_id=contract_id,
+                    sol_path=sol_path,
+                    address=address if _is_addr(address) else "",
+                    source_dataset=source_dataset,
+                )
+        # Use contract_id as the identifier in the address column for joining.
+        feats["address"] = contract_id
+        raw, comps = risk_util.score_contract(feats)
+        has_src = float(int(feats.get("has_verified_source", 0)))
+        has_bc = float(int(feats.get("has_bytecode", 0)))
+        risk_uncertainty = (
+            (1.0 - has_src) * (0.7 - 0.4 * has_bc) + (1.0 - has_bc) * 0.3
+        )
+        return {
+            **feats,
+            **comps,
+            "risk_raw": float(raw),
+            "risk_uncertainty": float(max(0.0, risk_uncertainty)),
+        }
+    except Exception as exc:
+        raise RuntimeError(
+            f"local source extraction failed for {contract_id!r} ({sol_path})"
+        ) from exc
+
+
+def _local_source_payloads(frame: pd.DataFrame) -> Iterable[tuple[str, str, str, str]]:
+    for row in frame.itertuples(index=False):
+        sol_path = str(getattr(row, "local_source_path", "") or "").strip()
+        if not sol_path:
+            continue
+        yield (
+            str(getattr(row, "contract_id", "") or "").strip(),
+            sol_path,
+            _norm_addr(getattr(row, "address", "")),
+            str(getattr(row, "source_dataset", "") or ""),
+        )
+
+
+def _parallel_local_scores(
+    payloads: Iterable[tuple[str, str, str, str]],
+    workers: int,
+) -> Iterable[dict[str, Any]]:
+    """Yield completed source scores without ordered-map head-of-line blocking."""
+
+    payload_iterator = iter(payloads)
+    with ProcessPoolExecutor(max_workers=workers) as executor:
+        pending: set[Future[dict[str, Any]]] = set()
+        for _ in range(workers * 2):
+            try:
+                pending.add(executor.submit(_score_local_source, next(payload_iterator)))
+            except StopIteration:
+                break
+        while pending:
+            completed, pending = wait(pending, return_when=FIRST_COMPLETED)
+            for future in completed:
+                yield future.result()
+                try:
+                    pending.add(
+                        executor.submit(_score_local_source, next(payload_iterator))
+                    )
+                except StopIteration:
+                    pass
 
 
 def _is_addr(s: object) -> bool:
@@ -107,6 +188,10 @@ class UnifiedContractEvalRiskScoreEvaluation:
         fetch_chunk_size: int = 0,
         sleep_between_chunks_secs: float = 2.0,
         activity_max_pages: int = 2,
+        local_workers: int = 1,
+        local_checkpoint_csv: Optional[Path] = None,
+        resume_local_checkpoint: bool = False,
+        local_checkpoint_every: int = 500,
     ) -> Path:
         in_xlsx = Path(in_xlsx)
         if not in_xlsx.exists():
@@ -132,9 +217,6 @@ class UnifiedContractEvalRiskScoreEvaluation:
             raise ValueError(f"Unified dataset missing required column 'address'. Columns: {list(df.columns)!r}")
 
         df["_address_norm"] = df["address"].map(_norm_addr)
-        all_addrs = [a for a in df["_address_norm"].tolist() if _is_addr(a)]
-        uniq_addrs = _stable_dedupe(all_addrs)
-
         # Local source is authoritative whenever available.  Some source-bearing
         # datasets also carry an address, but routing those rows through the
         # cache-only on-chain path can silently produce zero-valued source
@@ -145,6 +227,12 @@ class UnifiedContractEvalRiskScoreEvaluation:
             else pd.Series([False] * len(df), index=df.index)
         )
         local_source_mask = has_local_source
+        all_addrs = [
+            address
+            for address in df.loc[~local_source_mask, "_address_norm"].tolist()
+            if _is_addr(address)
+        ]
+        uniq_addrs = _stable_dedupe(all_addrs)
         n_local_source = int(local_source_mask.sum())
         self.logger.info(
             f"Dataset: {len(df)} rows, {len(uniq_addrs)} unique addresses, "
@@ -311,35 +399,78 @@ class UnifiedContractEvalRiskScoreEvaluation:
         # ---- Phase 2: Score all rows that have local source ----
         # Local source takes precedence over cached on-chain payloads.
         # We use ContractRiskUtil.extract_features_from_local_file for each row.
-        local_risk_rows: list = []
+        local_risk_rows: list[dict[str, Any]] = []
         if n_local_source > 0:
-            self.logger.info(f"Scoring {n_local_source} local-source rows via extract_features_from_local_file…")
-            risk_util = ContractRiskUtil()
+            workers = max(1, int(local_workers))
+            self.logger.info(
+                f"Scoring {n_local_source} local-source rows via "
+                f"extract_features_from_local_file (workers={workers})…"
+            )
             local_df = df[local_source_mask].copy()
-            for idx, (_, row) in enumerate(local_df.iterrows(), start=1):
-                sol_path = str(row.get("local_source_path", "") or "").strip()
-                contract_id = str(row.get("contract_id", "") or "").strip()
-                addr = _norm_addr(row.get("address"))
-                if not sol_path:
-                    continue
-                feats = risk_util.extract_features_from_local_file(
-                    contract_id=contract_id,
-                    sol_path=sol_path,
-                    address=addr if _is_addr(addr) else "",
+            checkpoint_path = (
+                Path(local_checkpoint_csv) if local_checkpoint_csv else None
+            )
+            completed_ids: set[str] = set()
+            if (
+                checkpoint_path is not None
+                and resume_local_checkpoint
+                and checkpoint_path.exists()
+            ):
+                checkpoint = pd.read_csv(checkpoint_path, low_memory=False)
+                if "address" not in checkpoint:
+                    raise ValueError(
+                        f"Local checkpoint lacks address identity: {checkpoint_path}"
+                    )
+                checkpoint["address"] = checkpoint["address"].astype(str)
+                if checkpoint["address"].duplicated().any():
+                    raise ValueError(
+                        f"Local checkpoint has duplicate identities: {checkpoint_path}"
+                    )
+                expected_ids = set(local_df["contract_id"].astype(str))
+                unexpected = set(checkpoint["address"]).difference(expected_ids)
+                if unexpected:
+                    raise ValueError(
+                        f"Local checkpoint has {len(unexpected)} unexpected identities"
+                    )
+                local_risk_rows = checkpoint.to_dict(orient="records")
+                completed_ids = set(checkpoint["address"])
+                self.logger.info(
+                    f"Resuming local extraction from {checkpoint_path}: "
+                    f"{len(completed_ids)}/{n_local_source} complete"
                 )
-                # Use contract_id as the identifier in the address column for join
-                feats["address"] = contract_id
-                raw, comps = risk_util.score_contract(feats)
-                has_src = float(int(feats.get("has_verified_source", 0)))
-                has_bc = float(int(feats.get("has_bytecode", 0)))
-                risk_uncertainty = (1.0 - has_src) * (0.7 - 0.4 * has_bc) + (1.0 - has_bc) * 0.3
-                local_risk_rows.append({
-                    **feats, **comps,
-                    "risk_raw": float(raw),
-                    "risk_uncertainty": float(max(0.0, risk_uncertainty)),
-                })
-                if idx == 1 or idx % 2000 == 0 or idx == n_local_source:
-                    self.logger.info(f"[local scoring] {idx}/{n_local_source}")
+            pending_local_df = local_df[
+                ~local_df["contract_id"].astype(str).isin(completed_ids)
+            ]
+            payloads = _local_source_payloads(pending_local_df)
+            if workers == 1:
+                scored_rows = map(_score_local_source, payloads)
+            else:
+                scored_rows = _parallel_local_scores(payloads, workers)
+            for idx, result in enumerate(scored_rows, start=1):
+                local_risk_rows.append(result)
+                completed = len(completed_ids) + idx
+                checkpoint_due = (
+                    checkpoint_path is not None
+                    and (
+                        completed % max(1, int(local_checkpoint_every)) == 0
+                        or completed == n_local_source
+                    )
+                )
+                if checkpoint_due:
+                    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+                    temporary = checkpoint_path.with_suffix(
+                        checkpoint_path.suffix + ".tmp"
+                    )
+                    pd.DataFrame(local_risk_rows).to_csv(temporary, index=False)
+                    temporary.replace(checkpoint_path)
+                if (
+                    completed == 1
+                    or completed % 2000 == 0
+                    or completed == n_local_source
+                ):
+                    self.logger.info(
+                        f"[local scoring] {completed}/{n_local_source}"
+                    )
 
         local_risk_df = pd.DataFrame(local_risk_rows) if local_risk_rows else pd.DataFrame()
         if not local_risk_df.empty:

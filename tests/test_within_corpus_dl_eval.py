@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from src.ml.within_corpus_dl_eval import (
+    CHECKPOINT_VERSION,
     _atomic_json,
     _load_completion,
     aggregate_contract_probabilities,
@@ -75,9 +76,33 @@ def test_completion_rejects_changed_immutable_configuration(tmp_path):
     path = tmp_path / "complete.json"
     config = {"model": "textcnn", "epochs": 10}
     _atomic_json(path, {
-        "version": 1, "config": config, "split_membership_hash": "split",
-        "predictions": [{"contract_id": "a"}],
+        "version": CHECKPOINT_VERSION,
+        "config": config,
+        "split_membership_hash": "split",
+        "predictions": [{
+            "contract_id": "a",
+            "source_identity_hash": "source-a",
+            "y_true": 1,
+        }],
     })
-    assert _load_completion(path, config, "split") == [{"contract_id": "a"}]
+    expected = [{
+        "contract_id": "a",
+        "source_identity_hash": "source-a",
+        "y_true": 1,
+    }]
+    assert _load_completion(
+        path,
+        config,
+        "split",
+        expected_identities=["source-a"],
+        expected_labels=[1],
+    ) == expected
     assert _load_completion(path, {"model": "textcnn", "epochs": 1}, "split") is None
     assert _load_completion(path, config, "different") is None
+    assert _load_completion(
+        path,
+        config,
+        "split",
+        expected_identities=["source-a"],
+        expected_labels=[0],
+    ) is None

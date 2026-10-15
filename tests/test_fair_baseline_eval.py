@@ -5,6 +5,7 @@ import types
 import pandas as pd
 
 from src.ml.fair_baseline_eval import (
+    CHECKPOINT_VERSION,
     _checkpoint_path,
     _incremental_prediction_artifact_path,
     _append_prediction,
@@ -12,6 +13,7 @@ from src.ml.fair_baseline_eval import (
     _load_checkpoint,
     _deduplicate_within_dataset,
     _prediction_artifact_path,
+    _unit_manifest_hash,
     _write_checkpoint,
     aggregate_chunk_probabilities,
     chunk_tokenizer_ids,
@@ -120,16 +122,56 @@ def test_within_dataset_distinct_sources_with_same_id_are_retained(tmp_path):
 
 def test_checkpoint_save_and_load_round_trip(tmp_path):
     path = _checkpoint_path(tmp_path, 42, "A", "textcnn")
+    manifest_hash = "manifest"
     rows = [{"dataset": "A", "model": "textcnn", "contract_id": "c",
-             "random_state": 42}]
+             "random_state": 42, "unit_manifest_hash": manifest_hash}]
     _write_checkpoint(path, {
-        "version": 1, "random_state": 42, "held_out_dataset": "A",
-        "model": "textcnn", "predictions": rows,
+        "version": CHECKPOINT_VERSION,
+        "random_state": 42,
+        "held_out_dataset": "A",
+        "model": "textcnn",
+        "unit_manifest_hash": manifest_hash,
+        "predictions": rows,
     })
     assert _load_checkpoint(
         path, seed=42, held_out="A", model="textcnn",
+        unit_manifest_hash=manifest_hash,
         expected_contract_ids=["c"],
     ) == rows
+
+
+def test_unit_manifest_changes_when_labels_change(tmp_path):
+    source = tmp_path / "source.sol"
+    source.write_text("contract C {}", encoding="utf-8")
+    train = pd.DataFrame({
+        "source_dataset": ["A"],
+        "label_status": ["clean"],
+        "contract_id": ["a"],
+        "local_source_path": [str(source)],
+        "y": [0],
+    })
+    test = train.assign(source_dataset="B", contract_id="b", y=1)
+    first = _unit_manifest_hash(
+        train,
+        test,
+        seed=42,
+        held_out="B",
+        model="textcnn",
+        epochs=10,
+        batch_size=16,
+        patience=3,
+    )
+    changed = _unit_manifest_hash(
+        train.assign(y=1),
+        test,
+        seed=42,
+        held_out="B",
+        model="textcnn",
+        epochs=10,
+        batch_size=16,
+        patience=3,
+    )
+    assert changed != first
 
 
 def test_incremental_prediction_artifact_survives_truncated_last_line(tmp_path):
@@ -137,7 +179,8 @@ def test_incremental_prediction_artifact_survives_truncated_last_line(tmp_path):
     row = {
         "dataset": "B", "model": "textcnn", "held_out_dataset": "B",
         "random_state": 42, "contract_id": "b",
-        "source_identity_hash": "hash", "n_chunks": 1,
+        "source_identity_hash": "hash", "unit_manifest_hash": "manifest",
+        "n_chunks": 1,
         "y_true": 1, "y_prob": 0.9, "y_pred": 1,
     }
     _append_prediction(path, row)
@@ -145,6 +188,7 @@ def test_incremental_prediction_artifact_survives_truncated_last_line(tmp_path):
         handle.write(b'{"contract_id":"incomplete"')
     loaded = _load_incremental_predictions(
         path, seed=42, held_out="B", model="textcnn",
+        unit_manifest_hash="manifest",
         expected_contract_ids=["hash", "incomplete"],
     )
     assert loaded == {"hash": row}

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 
@@ -15,10 +16,17 @@ sys.path.insert(0, str(REPO))
 
 from src.ml.within_corpus_dl_eval import DEFAULT_MODELS, run_within_corpus
 
-DEFAULT_INPUT = REPO / "data/derived/unified_contract_eval_scored.csv"
-DEFAULT_OUTPUT = REPO / "data/derived/ml_results/baseline_comparison/source_only_within_corpus"
+DEFAULT_INPUT = (
+    REPO / "data/derived/sanitized_v1/unified_contract_eval_scored.csv"
+)
+DEFAULT_OUTPUT = (
+    REPO
+    / "data/derived/sanitized_v1/ml_results/source_only_within_corpus"
+    / "dl_v4"
+)
 DATASETS = ("DAppSCAN", "DIVE", "Empirical-Analysis")
 SEEDS = (42, 43, 44, 45, 46)
+METRICS = ("roc_auc", "pr_auc", "f1", "precision", "recall")
 
 
 def _merge_prior(path: Path, current: pd.DataFrame, keys: list[str]) -> pd.DataFrame:
@@ -35,6 +43,10 @@ def _merge_prior(path: Path, current: pd.DataFrame, keys: list[str]) -> pd.DataF
 
 
 def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+    )
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
@@ -42,6 +54,19 @@ def main() -> None:
     parser.add_argument("--models", nargs="+", choices=DEFAULT_MODELS, default=DEFAULT_MODELS)
     parser.add_argument("--seeds", nargs="+", type=int, default=SEEDS)
     parser.add_argument("--folds", type=int, default=5)
+    parser.add_argument(
+        "--fold-indices",
+        nargs="+",
+        type=int,
+        default=None,
+        help="Run only these zero-based outer folds (smoke testing only).",
+    )
+    parser.add_argument(
+        "--max-samples-per-class",
+        type=int,
+        default=None,
+        help="Deterministically cap each class (smoke testing only).",
+    )
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--patience", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=16)
@@ -58,6 +83,8 @@ def main() -> None:
         validation_fraction=args.validation_fraction,
         checkpoint_dir=args.output / "dl_within_corpus_checkpoints", resume=args.resume,
         device=args.device,
+        fold_indices=args.fold_indices,
+        max_samples_per_class=args.max_samples_per_class,
     )
     args.output.mkdir(parents=True, exist_ok=True)
     predictions_path = args.output / "dl_within_corpus_oof_predictions.csv"
@@ -65,7 +92,7 @@ def main() -> None:
     predictions = _merge_prior(
         predictions_path,
         predictions,
-        ["dataset", "model", "random_state", "fold", "contract_id"],
+        ["dataset", "model", "random_state", "fold", "source_identity_hash"],
     )
     fold_metrics = _merge_prior(
         metrics_path,
@@ -74,11 +101,18 @@ def main() -> None:
     )
     predictions.to_csv(predictions_path, index=False)
     fold_metrics.to_csv(metrics_path, index=False)
-    seed_metrics = (fold_metrics.groupby(["dataset", "model", "random_state"], as_index=False)
-                    .mean(numeric_only=True))
+    seed_metrics = (
+        fold_metrics.groupby(["dataset", "model", "random_state"], as_index=False)[
+            list(METRICS)
+        ]
+        .mean()
+    )
     seed_metrics.to_csv(args.output / "dl_within_corpus_per_seed.csv", index=False)
-    summary = (seed_metrics.groupby(["dataset", "model"], as_index=False)
-               .agg(["mean", "std"]).reset_index())
+    summary = (
+        seed_metrics.groupby(["dataset", "model"], as_index=False)[list(METRICS)]
+        .agg(["mean", "std"])
+        .reset_index()
+    )
     summary.columns = [
         "_".join(part for part in column if part).rstrip("_")
         if isinstance(column, tuple) else column for column in summary.columns

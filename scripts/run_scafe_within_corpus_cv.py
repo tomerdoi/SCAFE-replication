@@ -36,9 +36,9 @@ from src.ml.baseline_comparison import (  # noqa: E402
 )
 
 
-DEFAULT_INPUT = REPO / "data/derived/unified_contract_eval_scored.csv"
+DEFAULT_INPUT = REPO / "data/derived/sanitized_v1/unified_contract_eval_scored.csv"
 DEFAULT_OUTPUT = (
-    REPO / "data/derived/ml_results/baseline_comparison/source_only_within_corpus"
+    REPO / "data/derived/sanitized_v1/ml_results/source_only_within_corpus"
 )
 DATASETS = ("DAppSCAN", "DIVE", "Empirical-Analysis")
 MODELS = ("rf", "et", "hgb", "xgb")

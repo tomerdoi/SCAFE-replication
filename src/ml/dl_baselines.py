@@ -41,6 +41,8 @@ from sklearn.metrics import (
 from sklearn.model_selection import GroupKFold
 from torch.utils.data import DataLoader, Dataset
 
+from src.source_sanitization import read_source_record
+
 logger = logging.getLogger(__name__)
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -71,13 +73,19 @@ def tokenize_solidity(source: str) -> List[str]:
     return _SOL_TOKEN_RE.findall(source)
 
 
-def read_source(path: str, max_chars: int = 100_000) -> str:
-    """Read a Solidity source file, with truncation for safety."""
-    try:
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
-            return f.read(max_chars)
-    except Exception:
-        return ""
+def read_source(
+    path: str,
+    max_chars: int = 100_000,
+    source_dataset: object = "",
+) -> str:
+    """Read the dataset-aware model view, sanitizing before truncation."""
+
+    return read_source_record(
+        path,
+        source_dataset,
+        errors="replace",
+        max_chars=max_chars,
+    )
 
 
 # ── Vocabulary builder ──────────────────────────────────────────────────────
@@ -338,8 +346,9 @@ def load_merged_data() -> Tuple[pd.DataFrame, np.ndarray, np.ndarray]:
 def load_sources(df: pd.DataFrame, max_tokens: int = 1024) -> List[List[str]]:
     """Read and tokenize all source files."""
     token_lists = []
-    for path in df["local_source_path"]:
-        src = read_source(str(path))
+    datasets = df.get("source_dataset", pd.Series("", index=df.index))
+    for path, dataset in zip(df["local_source_path"], datasets, strict=True):
+        src = read_source(str(path), source_dataset=dataset)
         toks = tokenize_solidity(src)[:max_tokens]
         token_lists.append(toks)
     return token_lists
@@ -547,7 +556,11 @@ def evaluate_codebert(
     contract_ids = df["contract_id"].fillna("").astype(str).values
     t0 = time.time()
 
-    sources = [read_source(str(p)) for p in df["local_source_path"]]
+    datasets = df.get("source_dataset", pd.Series("", index=df.index))
+    sources = [
+        read_source(str(path), source_dataset=dataset)
+        for path, dataset in zip(df["local_source_path"], datasets, strict=True)
+    ]
 
     prev_oof, completed_folds = _load_partial_oof(label, dataset)
 

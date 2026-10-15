@@ -21,9 +21,13 @@ from src.ml.baseline_comparison import (
     source_feature_columns,
 )
 
-DEFAULT_INPUT = REPO_ROOT / "data" / "derived" / "unified_contract_eval_scored.csv"
+DEFAULT_INPUT = (
+    REPO_ROOT / "data" / "derived" / "sanitized_v1"
+    / "unified_contract_eval_scored.csv"
+)
 DEFAULT_OUTPUT = (
-    REPO_ROOT / "data" / "derived" / "ml_results" / "baseline_comparison"
+    REPO_ROOT / "data" / "derived" / "sanitized_v1"
+    / "ml_results" / "baseline_comparison"
 )
 DATASET_SPECS = [
     DatasetSpec("DAppSCAN"),

@@ -24,14 +24,16 @@ from typing import Any, Iterable, Mapping, Sequence
 import numpy as np
 import pandas as pd
 
+from src.source_sanitization import SOURCE_SANITIZATION_VERSION, read_source_record
+
 logger = logging.getLogger(__name__)
 
 TOKEN_WINDOW = 1024
 BERT_WINDOW = 512
 FIXED_THRESHOLD = 0.5
 DEFAULT_MODELS = ("textcnn", "bilstm", "codebert", "unixcoder")
-CHECKPOINT_VERSION = 1
-PREDICTION_ARTIFACT_VERSION = 1
+CHECKPOINT_VERSION = 2
+PREDICTION_ARTIFACT_VERSION = 2
 PROGRESS_FILENAME = "progress.json"
 TRAIN_CHECKPOINT_INTERVAL = 25
 
@@ -184,26 +186,15 @@ def _seed_everything(seed: int) -> None:
 
 
 def _read_sources(frame: pd.DataFrame) -> list[str]:
-    values = []
-    for path in frame["local_source_path"]:
-        raw_path = str(path or "").strip()
-        if not raw_path:
-            values.append("")
-            continue
-        path_obj = Path(raw_path)
-        try:
-            if path_obj.is_file():
-                values.append(path_obj.read_text(encoding="utf-8", errors="replace"))
-            elif path_obj.is_dir():
-                values.append("\n".join(
-                    item.read_text(encoding="utf-8", errors="replace")
-                    for item in sorted(path_obj.rglob("*.sol"))
-                ))
-            else:
-                values.append("")
-        except OSError:
-            values.append("")
-    return values
+    datasets = (
+        frame["source_dataset"]
+        if "source_dataset" in frame.columns
+        else pd.Series("", index=frame.index)
+    )
+    return [
+        read_source_record(path, dataset, errors="replace")
+        for path, dataset in zip(frame["local_source_path"], datasets, strict=True)
+    ]
 
 
 def _internal_split(frame: pd.DataFrame, seed: int, validation_fraction: float) -> tuple[np.ndarray, np.ndarray]:
@@ -231,6 +222,7 @@ def _fit_predict(
     progress_callback: Any | None = None,
     batch_progress_callback: Any | None = None,
     training_checkpoint_path: Path | None = None,
+    unit_manifest_hash: str = "",
 ) -> np.ndarray:
     """Fit one model using only train/internal-validation data."""
     import torch
@@ -311,16 +303,31 @@ def _fit_predict(
         return np.array([i in contract_indices for i, count in enumerate(counts)
                          for _ in range(count)])
     tr_mask, va_mask = chunk_membership(train_contracts), chunk_membership(val_contracts)
-    # A deterministic order is required for exact batch-level resumption.
-    tr_loader = DataLoader(Subset(train_ds, np.flatnonzero(tr_mask)), batch_size=batch_size, shuffle=False)
+    train_indices = np.flatnonzero(tr_mask)
     va_loader = DataLoader(Subset(train_ds, np.flatnonzero(va_mask)), batch_size=batch_size)
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5 if is_bert else 1e-3)
-    criterion = torch.nn.BCEWithLogitsLoss()
+    train_labels = y_train[train_indices]
+    positive_count = int(np.sum(train_labels == 1))
+    negative_count = int(np.sum(train_labels == 0))
+    if positive_count == 0 or negative_count == 0:
+        raise ValueError("internal training chunks must contain both classes")
+    positive_weight = float(negative_count / positive_count)
+    criterion = torch.nn.BCEWithLogitsLoss(
+        pos_weight=torch.tensor(positive_weight, dtype=torch.float32)
+    )
     best_state, best_loss, stale = copy.deepcopy(model.state_dict()), float("inf"), 0
     start_epoch, start_batch = 1, 0
     if training_checkpoint_path is not None:
         state = _load_training_checkpoint(training_checkpoint_path)
-        if state and state.get("model_name") == model_name and state.get("seed") == int(seed):
+        if (
+            state
+            and state.get("version") == CHECKPOINT_VERSION
+            and state.get("model_name") == model_name
+            and state.get("seed") == int(seed)
+            and state.get("unit_manifest_hash") == unit_manifest_hash
+            and state.get("source_sanitization_version")
+            == SOURCE_SANITIZATION_VERSION
+        ):
             model.load_state_dict(state["model_state"])
             optimizer.load_state_dict(state["optimizer_state"])
             best_state = state.get("best_state", best_state)
@@ -337,13 +344,22 @@ def _fit_predict(
     for epoch in range(start_epoch, epochs + 1):
         epoch_start_batch = start_batch if epoch == start_epoch else 0
         last_batch = epoch_start_batch
+        epoch_rng = np.random.default_rng(int(seed) * 10_000 + int(epoch))
+        shuffled_indices = train_indices[epoch_rng.permutation(len(train_indices))]
+        tr_loader = DataLoader(
+            Subset(train_ds, shuffled_indices.tolist()),
+            batch_size=batch_size,
+            shuffle=False,
+        )
         def save_batch(batch: int, total: int) -> None:
             nonlocal last_batch
             last_batch = batch
             if (training_checkpoint_path is not None
                     and (batch % TRAIN_CHECKPOINT_INTERVAL == 0 or batch == total)):
                 _write_training_checkpoint(training_checkpoint_path, {
-                    "version": 1, "model_name": model_name, "seed": int(seed),
+                    "version": CHECKPOINT_VERSION, "model_name": model_name,
+                    "seed": int(seed), "unit_manifest_hash": unit_manifest_hash,
+                    "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
                     "epoch": int(epoch), "batch": int(batch),
                     "model_state": model.state_dict(),
                     "optimizer_state": optimizer.state_dict(),
@@ -363,8 +379,12 @@ def _fit_predict(
         )
         val_prob = predict(model, va_loader, "cpu", is_bert=is_bert)
         val_y = y_train[va_mask]
+        val_weights = np.where(val_y == 1, positive_weight, 1.0)
         val_loss = float(torch.nn.functional.binary_cross_entropy(
-            torch.from_numpy(val_prob).float(), torch.from_numpy(val_y).float()))
+            torch.from_numpy(val_prob).float(),
+            torch.from_numpy(val_y).float(),
+            weight=torch.from_numpy(val_weights).float(),
+        ))
         if val_loss < best_loss:
             best_state, best_loss, stale = copy.deepcopy(model.state_dict()), val_loss, 0
         else:
@@ -372,7 +392,9 @@ def _fit_predict(
             if stale >= patience:
                 if training_checkpoint_path is not None:
                     _write_training_checkpoint(training_checkpoint_path, {
-                        "version": 1, "model_name": model_name, "seed": int(seed),
+                        "version": CHECKPOINT_VERSION, "model_name": model_name,
+                        "seed": int(seed), "unit_manifest_hash": unit_manifest_hash,
+                        "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
                         "epoch": int(epoch + 1), "batch": 0,
                         "model_state": model.state_dict(),
                         "optimizer_state": optimizer.state_dict(),
@@ -388,7 +410,9 @@ def _fit_predict(
             progress_callback(epoch)
         if training_checkpoint_path is not None:
             _write_training_checkpoint(training_checkpoint_path, {
-                "version": 1, "model_name": model_name, "seed": int(seed),
+                "version": CHECKPOINT_VERSION, "model_name": model_name,
+                "seed": int(seed), "unit_manifest_hash": unit_manifest_hash,
+                "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
                 "epoch": int(epoch + 1), "batch": 0,
                 "model_state": model.state_dict(),
                 "optimizer_state": optimizer.state_dict(),
@@ -406,6 +430,48 @@ def _checkpoint_path(checkpoint_dir: Path, seed: int, held_out: str, model: str)
     unit = json.dumps([int(seed), str(held_out), str(model)], separators=(",", ":"))
     digest = hashlib.sha256(unit.encode("utf-8")).hexdigest()[:24]
     return checkpoint_dir / f"{digest}.json"
+
+
+def _unit_manifest_hash(
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+    *,
+    seed: int,
+    held_out: str,
+    model: str,
+    epochs: int,
+    batch_size: int,
+    patience: int,
+) -> str:
+    """Hash every input that can change a completed LODO unit."""
+
+    def records(frame: pd.DataFrame) -> list[dict[str, object]]:
+        return [
+            {
+                "dataset": str(row["source_dataset"]),
+                "source_identity_hash": source_hash_for_path(
+                    row["local_source_path"]
+                ),
+                "label": int(row["y"]),
+            }
+            for _, row in frame.iterrows()
+        ]
+
+    payload = {
+        "protocol": "fair_lodo_dl_v2",
+        "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
+        "seed": int(seed),
+        "held_out_dataset": str(held_out),
+        "model": str(model),
+        "epochs": int(epochs),
+        "batch_size": int(batch_size),
+        "patience": int(patience),
+        "train": records(train),
+        "test": records(test),
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
 
 
 def _write_checkpoint(path: Path, payload: Mapping[str, Any]) -> None:
@@ -482,7 +548,8 @@ def _incremental_prediction_artifact_path(
 
 _PREDICTION_FIELDS = {
     "dataset", "model", "held_out_dataset", "random_state", "contract_id",
-    "source_identity_hash", "n_chunks", "y_true", "y_prob", "y_pred",
+    "source_identity_hash", "unit_manifest_hash", "n_chunks", "y_true",
+    "y_prob", "y_pred",
 }
 
 
@@ -497,6 +564,7 @@ def _load_incremental_predictions(
     seed: int,
     held_out: str,
     model: str,
+    unit_manifest_hash: str,
     expected_contract_ids: Sequence[str],
 ) -> dict[str, dict[str, Any]]:
     """Load valid completed contract rows, tolerating a truncated final line."""
@@ -521,6 +589,7 @@ def _load_incremental_predictions(
                     or row.get("held_out_dataset") != held_out
                     or row.get("model") != model
                     or row.get("random_state") != int(seed)
+                    or row.get("unit_manifest_hash") != unit_manifest_hash
                 ):
                     continue
                 rows[_prediction_identity(row)] = dict(row)
@@ -599,8 +668,8 @@ def _load_checkpoint(
     seed: int,
     held_out: str,
     model: str,
+    unit_manifest_hash: str,
     expected_contract_ids: Sequence[str],
-    legacy_contract_ids: Sequence[str] | None = None,
 ) -> list[dict[str, Any]] | None:
     """Return rows only for a complete, matching checkpoint."""
     try:
@@ -608,23 +677,19 @@ def _load_checkpoint(
         if (payload.get("version") != CHECKPOINT_VERSION
                 or payload.get("random_state") != int(seed)
                 or payload.get("held_out_dataset") != str(held_out)
-                or payload.get("model") != str(model)):
+                or payload.get("model") != str(model)
+                or payload.get("unit_manifest_hash") != unit_manifest_hash):
             return None
         rows = payload["predictions"]
         if not isinstance(rows, list):
             return None
         expected = [str(value) for value in expected_contract_ids]
         actual = [_prediction_identity(row) for row in rows]
-        legacy_actual = [str(row["contract_id"]) for row in rows]
-        identities_match = actual == expected
-        legacy_match = (
-            legacy_contract_ids is not None
-            and legacy_actual == [str(value) for value in legacy_contract_ids]
-        )
-        if not (identities_match or legacy_match) or any(
+        if actual != expected or any(
             row.get("dataset") != held_out
             or row.get("model") != model
             or row.get("random_state") != int(seed)
+            or row.get("unit_manifest_hash") != unit_manifest_hash
             for row in rows
         ):
             return None
@@ -664,6 +729,16 @@ def run_fair_lodo(
         for held_out in datasets:
             train, test, duplicates = split_lodo_contracts(frame, held_out)
             for model in models:
+                manifest_hash = _unit_manifest_hash(
+                    train,
+                    test,
+                    seed=seed,
+                    held_out=held_out,
+                    model=model,
+                    epochs=epochs,
+                    batch_size=batch_size,
+                    patience=patience,
+                )
                 unit_number = completed_count + 1
                 checkpoint = (
                     _checkpoint_path(checkpoint_root, seed, held_out, model)
@@ -698,6 +773,7 @@ def run_fair_lodo(
                         seed=seed,
                         held_out=held_out,
                         model=model,
+                        unit_manifest_hash=manifest_hash,
                         expected_contract_ids=expected_contract_ids,
                     )
                     if incremental_artifact is not None and resume
@@ -722,8 +798,8 @@ def run_fair_lodo(
                 unit_rows = (
                     _load_checkpoint(
                         checkpoint, seed=seed, held_out=held_out, model=model,
+                        unit_manifest_hash=manifest_hash,
                         expected_contract_ids=expected_contract_ids,
-                        legacy_contract_ids=test["contract_id"].astype(str).tolist(),
                     )
                     if checkpoint is not None and resume and checkpoint.is_file()
                     else None
@@ -764,7 +840,8 @@ def run_fair_lodo(
                                          batch_size=batch_size, patience=patience,
                                          progress_callback=report_epoch,
                                          batch_progress_callback=report_batch,
-                                         training_checkpoint_path=training_artifact)
+                                         training_checkpoint_path=training_artifact,
+                                         unit_manifest_hash=manifest_hash)
                     counts = [len(chunk_tokenizer_ids([]))] * len(test)
                     # Reconstruct counts without retaining model-specific intermediate arrays.
                     if model in {"codebert", "unixcoder"}:
@@ -793,6 +870,7 @@ def run_fair_lodo(
                             row = {"dataset": held_out, "model": model,
                                    "contract_id": contract_id,
                                    "source_identity_hash": source_identity_hash,
+                                   "unit_manifest_hash": manifest_hash,
                                    "n_chunks": n_chunks, "y_true": int(contract["y"]),
                                    "y_prob": contract_prob,
                                    "y_pred": int(contract_prob >= FIXED_THRESHOLD),
@@ -807,6 +885,7 @@ def run_fair_lodo(
                             "random_state": int(seed),
                             "held_out_dataset": str(held_out),
                             "model": str(model),
+                            "unit_manifest_hash": manifest_hash,
                             "predictions": unit_rows,
                         })
                     if artifact is not None:
@@ -842,7 +921,9 @@ def run_fair_lodo(
         unit_columns = ["random_state", "dataset", "model", "_prediction_identity"]
         predictions = predictions.drop_duplicates(unit_columns, keep="first").reset_index(drop=True)
         predictions = predictions.drop(columns="_prediction_identity")
-    metadata = {"protocol": "duplicate_safe_contract_lodo_v1",
+    metadata = {"protocol": "duplicate_safe_contract_lodo_v2",
+                "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
+                "dappscan_swc_annotation_comments_removed": True,
                 "chunking": {
                     "regex_tokens": TOKEN_WINDOW,
                     "tokenizer_input_tokens": BERT_WINDOW,
@@ -852,6 +933,8 @@ def run_fair_lodo(
                 },
                 "threshold": FIXED_THRESHOLD, "held_out_threshold_tuning": False,
                 "internal_validation_for_early_stopping": True,
+                "training_loss": "chunk-balanced BCEWithLogitsLoss",
+                "batch_order": "deterministic epoch shuffle",
                 "datasets": list(datasets), "models": list(models), "seeds": list(seeds),
                 "checkpoint_version": CHECKPOINT_VERSION,
                 "checkpoint_dir": str(checkpoint_root) if checkpoint_root is not None else None,

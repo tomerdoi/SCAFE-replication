@@ -272,6 +272,7 @@ def _rows_from_dappscan() -> List[UnifiedRow]:
         # Extract project name (first dir component after contracts/)
         parts = sol_path.relative_to(contracts_dir).parts
         project = parts[0] if parts else ""
+        record_path = Path(*parts[1:]) if len(parts) > 1 else Path(sol_path.name)
 
         # Try to extract an address from the filename or path
         addr = ""
@@ -310,7 +311,10 @@ def _rows_from_dappscan() -> List[UnifiedRow]:
                 source_subdataset=project,
                 chain="eth",
                 address=addr,
-                contract_id=f"dappscan:{project}:{sol_path.stem}",
+                contract_id=(
+                    f"dappscan:{project}:"
+                    + record_path.with_suffix("").as_posix()
+                ),
                 label_status=label_status,
                 vuln_present=vuln_present,
                 vuln_types=vuln_types,

@@ -11,6 +11,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import logging
 import os
 import random
 import tempfile
@@ -26,11 +27,15 @@ from src.ml.fair_baseline_eval import (
     BERT_WINDOW, FIXED_THRESHOLD, TOKEN_WINDOW, _read_sources, chunk_tokenizer_ids,
     chunk_tokens, source_hash_for_path,
 )
+from src.source_sanitization import SOURCE_SANITIZATION_VERSION
 
 DEFAULT_MODELS = ("textcnn", "bilstm", "codebert", "unixcoder")
-CHECKPOINT_VERSION = 1
+CHECKPOINT_VERSION = 2
 TRAIN_CHECKPOINT_INTERVAL = 200
-PREPROCESSING_VERSION = 2
+PREPROCESSING_VERSION = 3
+COLLAPSED_PREDICTION_STD = 1e-5
+
+logger = logging.getLogger(__name__)
 
 
 def _atomic_json(path: Path, payload: Mapping[str, Any]) -> None:
@@ -125,7 +130,13 @@ def _seed(seed: int) -> None:
 
 
 def _unit_stem(dataset: str, seed: int, model: str, fold: int) -> str:
-    return _stable_hash([dataset, int(seed), model, int(fold)])[:24]
+    return _stable_hash([
+        SOURCE_SANITIZATION_VERSION,
+        dataset,
+        int(seed),
+        model,
+        int(fold),
+    ])[:24]
 
 
 def _paths(root: Path, dataset: str, seed: int, model: str, fold: int) -> dict[str, Path]:
@@ -135,14 +146,31 @@ def _paths(root: Path, dataset: str, seed: int, model: str, fold: int) -> dict[s
     }.items()}
 
 
-def _load_completion(path: Path, config: Mapping[str, Any], split_hash: str) -> list[dict[str, Any]] | None:
+def _load_completion(
+    path: Path,
+    config: Mapping[str, Any],
+    split_hash: str,
+    *,
+    expected_identities: Sequence[str] | None = None,
+    expected_labels: Sequence[int] | None = None,
+) -> list[dict[str, Any]] | None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
         if (payload["version"] != CHECKPOINT_VERSION or payload["config"] != dict(config)
                 or payload["split_membership_hash"] != split_hash):
             return None
         rows = payload["predictions"]
-        return rows if isinstance(rows, list) else None
+        if not isinstance(rows, list):
+            return None
+        if expected_identities is not None:
+            actual = [str(row.get("source_identity_hash", "")) for row in rows]
+            if actual != [str(value) for value in expected_identities]:
+                return None
+        if expected_labels is not None:
+            actual = [int(row.get("y_true", -1)) for row in rows]
+            if actual != [int(value) for value in expected_labels]:
+                return None
+        return rows
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
         return None
 
@@ -302,11 +330,19 @@ def _encode_and_fit(
         )
         model = (TextCNN if model_name == "textcnn" else BiLSTMClassifier)(vocab_size=len(vocab)).to(device)
     membership = np.repeat(np.arange(len(train)), train_counts)
-    tr_loader = DataLoader(Subset(train_ds, np.flatnonzero(np.isin(membership, inner_train))), batch_size=int(config["batch_size"]), shuffle=False)
+    train_indices = np.flatnonzero(np.isin(membership, inner_train))
     va_mask = np.isin(membership, inner_val)
     va_loader = DataLoader(Subset(train_ds, np.flatnonzero(va_mask)), batch_size=int(config["batch_size"]))
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5 if is_bert else 1e-3)
-    criterion = torch.nn.BCEWithLogitsLoss()
+    train_labels = labels[train_indices]
+    positive_count = int(np.sum(train_labels == 1))
+    negative_count = int(np.sum(train_labels == 0))
+    if positive_count == 0 or negative_count == 0:
+        raise ValueError("inner training chunks must contain both classes")
+    positive_weight = float(negative_count / positive_count)
+    criterion = torch.nn.BCEWithLogitsLoss(
+        pos_weight=torch.tensor(positive_weight, dtype=torch.float32, device=device)
+    )
     best_state, best_loss, stale, start_epoch, start_batch = copy.deepcopy(model.state_dict()), float("inf"), 0, 1, 0
     state = _load_training(checkpoint, config, split_hash) if checkpoint else None
     if state:
@@ -315,12 +351,30 @@ def _encode_and_fit(
         start_epoch, start_batch = state["epoch"], state["batch"]
         torch.set_rng_state(state["torch_rng"]); np.random.set_state(state["numpy_rng"]); random.setstate(state["python_rng"])
     for epoch in range(start_epoch, int(config["epochs"]) + 1):
+        epoch_rng = np.random.default_rng(int(seed) * 10_000 + int(epoch))
+        shuffled_indices = train_indices[epoch_rng.permutation(len(train_indices))]
+        tr_loader = DataLoader(
+            Subset(train_ds, shuffled_indices.tolist()),
+            batch_size=int(config["batch_size"]),
+            shuffle=False,
+        )
+
         def save_batch(batch: int, total: int) -> None:
             if checkpoint and (batch % TRAIN_CHECKPOINT_INTERVAL == 0 or batch == total):
                 _save_training(checkpoint, {"config": dict(config), "split_membership_hash": split_hash, "model_state": model.state_dict(), "optimizer_state": optimizer.state_dict(), "best_state": best_state, "best_loss": best_loss, "stale": stale, "epoch": epoch, "batch": batch, "torch_rng": torch.get_rng_state(), "numpy_rng": np.random.get_state(), "python_rng": random.getstate()})
         train_epoch(model, tr_loader, optimizer, criterion, device, is_bert=is_bert, progress_callback=save_batch, start_batch=start_batch if epoch == start_epoch else 0)
         val_prob = predict(model, va_loader, device, is_bert=is_bert)
-        val_loss = float(torch.nn.functional.binary_cross_entropy(torch.from_numpy(val_prob).float(), torch.from_numpy(labels[va_mask]).float()))
+        validation_labels = torch.from_numpy(labels[va_mask]).float()
+        validation_weights = torch.where(
+            validation_labels == 1,
+            torch.tensor(positive_weight, dtype=torch.float32),
+            torch.tensor(1.0, dtype=torch.float32),
+        )
+        val_loss = float(torch.nn.functional.binary_cross_entropy(
+            torch.from_numpy(val_prob).float(),
+            validation_labels,
+            weight=validation_weights,
+        ))
         if val_loss < best_loss:
             best_state, best_loss, stale = copy.deepcopy(model.state_dict()), val_loss, 0
         else:
@@ -340,7 +394,8 @@ def run_within_corpus(
     seeds: Sequence[int] = (42, 43, 44, 45, 46), *, folds: int = 5, epochs: int = 10,
     patience: int = 3, batch_size: int = 16, validation_fraction: float = 0.2,
     checkpoint_dir: Path | str | None = None, resume: bool = True,
-    device: str = "cpu",
+    device: str = "cpu", fold_indices: Sequence[int] | None = None,
+    max_samples_per_class: int | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
     canonical, audit = canonicalize(frame)
     root = Path(checkpoint_dir) if checkpoint_dir else None
@@ -348,31 +403,85 @@ def run_within_corpus(
     coverage: dict[str, Any] = {}; split_memberships: dict[str, str] = {}
     for dataset in datasets:
         selected = canonical[canonical["source_dataset"] == dataset].reset_index(drop=True)
+        if max_samples_per_class is not None:
+            if int(max_samples_per_class) < 1:
+                raise ValueError("max_samples_per_class must be at least 1")
+            selected = (
+                selected.groupby("y", group_keys=False)
+                .sample(
+                    n=min(
+                        int(max_samples_per_class),
+                        int(selected["y"].value_counts().min()),
+                    ),
+                    random_state=0,
+                )
+                .sort_index()
+                .reset_index(drop=True)
+            )
         preprocessor = SourcePreprocessor(selected)
         groups = groups_for(selected, dataset)
         n_folds = min(folds, len(np.unique(groups)))
         if n_folds < 2 or selected["y"].nunique() < 2:
             raise ValueError(f"{dataset} cannot support binary {n_folds}-fold group CV")
+        requested_folds = (
+            set(range(n_folds))
+            if fold_indices is None
+            else {int(index) for index in fold_indices}
+        )
+        invalid_folds = requested_folds.difference(range(n_folds))
+        if invalid_folds:
+            raise ValueError(
+                f"Requested fold indices are outside 0..{n_folds - 1}: "
+                f"{sorted(invalid_folds)}"
+            )
         for seed in seeds:
             outer = GroupKFold(n_splits=n_folds)
             for fold, (outer_train, outer_test) in enumerate(outer.split(selected, selected["y"], groups)):
+                if fold not in requested_folds:
+                    continue
                 inner_train, inner_val = group_disjoint_inner_split(selected.iloc[outer_train], groups[outer_train], int(seed) + fold, validation_fraction)
                 inner_train, inner_val = outer_train[inner_train], outer_train[inner_val]
                 if set(groups[inner_train]) & set(groups[inner_val]) or set(groups[outer_train]) & set(groups[outer_test]):
                     raise AssertionError("group-disjoint split violated")
-                membership = {"outer_train": selected.iloc[outer_train]["_source_identity"].tolist(), "outer_test": selected.iloc[outer_test]["_source_identity"].tolist(), "inner_train": selected.iloc[inner_train]["_source_identity"].tolist(), "inner_validation": selected.iloc[inner_val]["_source_identity"].tolist()}
+
+                def split_records(indices: np.ndarray) -> list[dict[str, Any]]:
+                    return [
+                        {
+                            "source_identity_hash": str(
+                                selected.iloc[index]["_source_identity"]
+                            ),
+                            "label": int(selected.iloc[index]["y"]),
+                            "group": int(groups[index]),
+                        }
+                        for index in indices
+                    ]
+
+                membership = {
+                    "outer_train": split_records(outer_train),
+                    "outer_test": split_records(outer_test),
+                    "inner_train": split_records(inner_train),
+                    "inner_validation": split_records(inner_val),
+                }
                 split_hash = _stable_hash(membership)
                 split_memberships[f"{dataset}/{seed}/{fold}"] = split_hash
                 outer_positions = {int(value): position for position, value in enumerate(outer_train)}
                 for model in models:
-                    if model == "textcnn":
-                        # Preserve compatibility with the active v1 TextCNN campaign.
-                        config = {"protocol": "within_corpus_dl_v1", "dataset": dataset, "seed": int(seed), "model": model, "fold": fold, "epochs": int(epochs), "patience": int(patience), "batch_size": int(batch_size), "validation_fraction": float(validation_fraction), "threshold": FIXED_THRESHOLD, "device": "cpu", "token_windows": {"text": TOKEN_WINDOW, "transformer": BERT_WINDOW}}
-                    else:
-                        config = {"protocol": "within_corpus_dl_v2", "preprocessing_version": PREPROCESSING_VERSION, "dataset": dataset, "seed": int(seed), "model": model, "fold": fold, "epochs": int(epochs), "patience": int(patience), "batch_size": int(batch_size), "validation_fraction": float(validation_fraction), "threshold": FIXED_THRESHOLD, "device": str(device), "token_windows": {"text": TOKEN_WINDOW, "transformer_input": BERT_WINDOW, "transformer_payload": BERT_WINDOW - 2}, "optimizer": {"name": "AdamW", "learning_rate": 2e-5 if model in {"codebert", "unixcoder"} else 1e-3}, "transformer_frozen_layers": 8}
+                    config = {"protocol": "within_corpus_dl_v3", "preprocessing_version": PREPROCESSING_VERSION, "source_sanitization_version": SOURCE_SANITIZATION_VERSION, "dataset": dataset, "seed": int(seed), "model": model, "fold": fold, "epochs": int(epochs), "patience": int(patience), "batch_size": int(batch_size), "validation_fraction": float(validation_fraction), "threshold": FIXED_THRESHOLD, "device": str(device), "token_windows": {"text": TOKEN_WINDOW, "transformer_input": BERT_WINDOW, "transformer_payload": BERT_WINDOW - 2}, "optimizer": {"name": "AdamW", "learning_rate": 2e-5 if model in {"codebert", "unixcoder"} else 1e-3, "loss": "chunk-balanced BCEWithLogitsLoss", "batch_order": "deterministic epoch shuffle"}, "transformer_frozen_layers": 8}
                     paths = _paths(root, dataset, int(seed), model, fold) if root else {}
-                    rows = _load_completion(paths["complete"], config, split_hash) if root and resume else None
+                    rows = _load_completion(
+                        paths["complete"],
+                        config,
+                        split_hash,
+                        expected_identities=selected.iloc[outer_test][
+                            "_source_identity"
+                        ].astype(str).tolist(),
+                        expected_labels=selected.iloc[outer_test]["y"].astype(int).tolist(),
+                    ) if root and resume else None
                     if rows is None:
+                        logger.info(
+                            "Training dataset=%s model=%s seed=%s fold=%s",
+                            dataset, model, seed, fold,
+                        )
                         probs, chunks_ = _encode_and_fit(model, selected.iloc[outer_train], selected.iloc[outer_test], np.asarray([outer_positions[int(index)] for index in inner_train]), np.asarray([outer_positions[int(index)] for index in inner_val]), int(seed), config, split_hash, paths.get("training"), preprocessor)
                         counts = chunks_[-len(outer_test):]; cursor = 0; rows = []
                         for index, count in zip(outer_test, counts):
@@ -383,8 +492,21 @@ def run_within_corpus(
                             _append_jsonl(paths["predictions"], rows)
                             _atomic_json(paths["complete"], {"version": CHECKPOINT_VERSION, "config": config, "split_membership_hash": split_hash, "predictions": rows})
                             if paths["training"].exists(): paths["training"].unlink()
+                    else:
+                        logger.info(
+                            "Resumed completed dataset=%s model=%s seed=%s fold=%s",
+                            dataset, model, seed, fold,
+                        )
                     fold_frame = pd.DataFrame(rows)
-                    metric_rows.append({"dataset": dataset, "model": model, "random_state": int(seed), "fold": fold, "n_contracts": len(rows), "n_groups_test": len(np.unique(groups[outer_test])), "split_membership_hash": split_hash, **_metrics(fold_frame.y_true.to_numpy(), fold_frame.y_prob.to_numpy())})
+                    prediction_std = float(fold_frame.y_prob.std(ddof=0))
+                    collapsed = prediction_std < COLLAPSED_PREDICTION_STD
+                    if collapsed:
+                        logger.warning(
+                            "Near-constant predictions dataset=%s model=%s seed=%s "
+                            "fold=%s std=%.8g",
+                            dataset, model, seed, fold, prediction_std,
+                        )
+                    metric_rows.append({"dataset": dataset, "model": model, "random_state": int(seed), "fold": fold, "n_contracts": len(rows), "n_groups_test": len(np.unique(groups[outer_test])), "split_membership_hash": split_hash, "prediction_std": prediction_std, "collapsed_prediction": bool(collapsed), **_metrics(fold_frame.y_true.to_numpy(), fold_frame.y_prob.to_numpy())})
                     prediction_rows.extend(rows)
         dataset_predictions = [row for row in prediction_rows if row["dataset"] == dataset]
         coverage[dataset] = {
@@ -396,5 +518,5 @@ def run_within_corpus(
             },
         }
     predictions, metrics = pd.DataFrame(prediction_rows), pd.DataFrame(metric_rows)
-    metadata = {"protocol": {"name": "within_corpus_full_source_dl_v2", "scope": "within-corpus only", "outer_split": "GroupKFold", "inner_validation": "group-disjoint outer-training-only", "threshold": FIXED_THRESHOLD, "no_test_selection_assertion": True, "source_execution": False, "device": str(device)}, "duplicate_audit": audit, "chunking": {"textcnn_bilstm_tokens": TOKEN_WINDOW, "codebert_unixcoder_input_tokens": BERT_WINDOW, "codebert_unixcoder_payload_tokens": BERT_WINDOW - 2, "overlap": 0, "aggregation": "contract mean"}, "preprocessing": {"version": PREPROCESSING_VERSION, "scope": "in-memory per dataset", "vocabulary_fit": "outer-training-only"}, "data_coverage": coverage, "split_membership_hashes": split_memberships, "models": list(models), "seeds": list(seeds)}
+    metadata = {"protocol": {"name": "within_corpus_full_source_dl_v3", "scope": "within-corpus only", "outer_split": "GroupKFold", "selected_fold_indices": None if fold_indices is None else sorted({int(index) for index in fold_indices}), "max_samples_per_class": max_samples_per_class, "partial_fold_smoke_run": fold_indices is not None or max_samples_per_class is not None, "publication_metrics": fold_indices is None and max_samples_per_class is None, "inner_validation": "group-disjoint outer-training-only", "threshold": FIXED_THRESHOLD, "no_test_selection_assertion": True, "source_execution": False, "device": str(device), "training_loss": "chunk-balanced BCEWithLogitsLoss", "batch_order": "deterministic epoch shuffle", "collapsed_prediction_std_threshold": COLLAPSED_PREDICTION_STD}, "duplicate_audit": audit, "chunking": {"textcnn_bilstm_tokens": TOKEN_WINDOW, "codebert_unixcoder_input_tokens": BERT_WINDOW, "codebert_unixcoder_payload_tokens": BERT_WINDOW - 2, "overlap": 0, "aggregation": "contract mean"}, "preprocessing": {"version": PREPROCESSING_VERSION, "source_sanitization_version": SOURCE_SANITIZATION_VERSION, "dappscan_swc_annotation_comments_removed": True, "scope": "in-memory per dataset", "vocabulary_fit": "outer-training-only"}, "data_coverage": coverage, "split_membership_hashes": split_memberships, "models": list(models), "seeds": list(seeds)}
     return predictions, metrics, metadata

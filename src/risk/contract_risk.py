@@ -28,6 +28,8 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 import pandas as pd
 
+from src.source_sanitization import read_source_record
+
 
 # src/risk/contract_risk.py -> repo root is two levels up from this file
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -1884,6 +1886,7 @@ class ContractRiskUtil:
         sol_path: str,
         *,
         address: str = "",
+        source_dataset: str = "",
     ) -> Dict[str, Any]:
         """
         Read a local ``.sol`` file (or directory of .sol files) and extract features.
@@ -1892,23 +1895,17 @@ class ContractRiskUtil:
         """
         p = Path(sol_path)
         if p.is_dir():
-            sols = sorted(p.rglob("*.sol"))
-            texts = []
-            for s in sols:
-                try:
-                    texts.append(s.read_text(encoding="utf-8", errors="ignore"))
-                except Exception:
-                    pass
-            text = "\n".join(texts)
-            n_files = len(texts)
+            n_files = len(list(p.rglob("*.sol")))
         elif p.is_file():
-            try:
-                text = p.read_text(encoding="utf-8", errors="ignore")
-            except Exception:
-                text = ""
-            n_files = 1 if text else 0
+            n_files = 1
         else:
-            text = ""
+            n_files = 0
+        text = read_source_record(
+            sol_path,
+            source_dataset,
+            errors="ignore",
+        )
+        if not text:
             n_files = 0
 
         return self.extract_features_from_source_text(

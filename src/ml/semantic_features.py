@@ -16,13 +16,14 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from pathlib import Path
 from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
+
+from src.source_sanitization import read_source_record
 
 # ── Regex patterns for Solidity identifiers ─────────────────────────────────
 _RE_FUNCTION = re.compile(r'\bfunction\s+([a-zA-Z_]\w*)')
@@ -102,27 +103,10 @@ _RE_NUMBER_LITERAL = re.compile(r'\b\d+\b')
 _RE_WORD_TOKEN = re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*')
 
 
-def read_source(path_str: str) -> str:
-    """Read Solidity source from a file path or directory of .sol files."""
-    if not path_str:
-        return ""
-    p = Path(path_str)
-    if not p.exists():
-        return ""
-    if p.is_file():
-        try:
-            return p.read_text(errors='ignore')
-        except Exception:
-            return ""
-    if p.is_dir():
-        texts = []
-        for sol in sorted(p.rglob("*.sol")):
-            try:
-                texts.append(sol.read_text(errors='ignore'))
-            except Exception:
-                pass
-        return "\n".join(texts)
-    return ""
+def read_source(path_str: str, source_dataset: object = "") -> str:
+    """Read the dataset-aware, sanitized model view of Solidity source."""
+
+    return read_source_record(path_str, source_dataset, errors="ignore")
 
 
 def _split_identifier(name: str) -> List[str]:
@@ -212,12 +196,18 @@ def add_identifier_features_to_frame(
 
     if source_column not in frame.columns:
         raise KeyError(f"Missing source column: {source_column}")
-    cache: Dict[str, Dict[str, float]] = {}
+    datasets = frame.get("source_dataset", pd.Series("", index=frame.index))
+    cache: Dict[tuple[str, str], Dict[str, float]] = {}
     rows: List[Dict[str, float]] = []
-    for value in frame[source_column].fillna("").astype(str):
-        if value not in cache:
-            cache[value] = compute_identifier_features(read_source(value))
-        rows.append(cache[value])
+    for value, dataset in zip(
+        frame[source_column].fillna("").astype(str),
+        datasets.fillna("").astype(str),
+        strict=True,
+    ):
+        key = (value, dataset)
+        if key not in cache:
+            cache[key] = compute_identifier_features(read_source(value, dataset))
+        rows.append(cache[key])
     semantic = pd.DataFrame(rows, index=frame.index).fillna(0.0)
     semantic = semantic.add_prefix("semantic_")
     return pd.concat([frame, semantic], axis=1)
@@ -305,15 +295,21 @@ def add_semantic_features_to_frame(
 
     if source_column not in frame.columns:
         raise KeyError(f"Missing source column: {source_column}")
-    cache: Dict[str, Dict[str, float]] = {}
+    datasets = frame.get("source_dataset", pd.Series("", index=frame.index))
+    cache: Dict[tuple[str, str], Dict[str, float]] = {}
     rows: List[Dict[str, float]] = []
-    for value in frame[source_column].fillna("").astype(str):
-        if value not in cache:
-            source = read_source(value)
+    for value, dataset in zip(
+        frame[source_column].fillna("").astype(str),
+        datasets.fillna("").astype(str),
+        strict=True,
+    ):
+        key = (value, dataset)
+        if key not in cache:
+            source = read_source(value, dataset)
             features = compute_identifier_features(source)
             features.update(compute_context_features(source))
-            cache[value] = features
-        rows.append(cache[value])
+            cache[key] = features
+        rows.append(cache[key])
     semantic = pd.DataFrame(rows, index=frame.index).fillna(0.0)
     semantic = semantic.add_prefix("semantic_")
     return pd.concat([frame, semantic], axis=1)
