@@ -4,9 +4,9 @@
 
 The corrected full feature table remains the source of truth. Computationally
 cheap SCAFE experiments run on all canonical records. Expensive neural
-baselines run on one frozen, deterministic DAppSCAN sample. Sampled neural
-results must be reported as sampled within-corpus estimates, never as
-full-corpus or cross-corpus results.
+baselines use two frozen, deterministic samples: a DAppSCAN sample for
+within-corpus evaluation and an equal-size-per-corpus sample for LODO. Sampled
+neural results must never be reported as full-corpus estimates.
 
 ## Frozen neural sample
 
@@ -44,6 +44,23 @@ One seed estimates performance for this fixed sampled campaign; it does not
 measure seed uncertainty. Uncertainty should therefore use record/project
 bootstrap intervals over out-of-fold predictions, and conclusions must remain
 sample-specific.
+
+## Frozen LODO sample
+
+- Corpora: DAppSCAN, DIVE, and Empirical-Analysis.
+- Sample: 500 records from each corpus, sampled independently without
+  replacement at each corpus's natural prevalence with seed 42.
+- Protocol: hold out each sampled corpus in turn; fit on the other two sampled
+  corpora after removing detected source overlap with the target.
+- Models: SCAFE Random Forest, TextCNN, BiLSTM, CodeBERT, and UniXcoder.
+- Neural settings: seed 42, maximum 10 epochs, patience 3, batch size 16,
+  complete sanitized source with contract-level chunk aggregation, Apple MPS.
+- Reporting boundary: these are sampled LODO estimates. They supplement, but
+  do not replace, the full-corpus SCAFE LODO results.
+
+Equal corpus budgets prevent DIVE's much larger corpus from dominating the
+sampled training pool. This changes the natural corpus mixture and must be
+disclosed as an equal-budget comparison.
 
 ## Full-corpus SCAFE analyses
 
@@ -112,3 +129,35 @@ venv/bin/python -u scripts/run_dl_within_corpus_cv.py \
 ```
 
 The same DL command resumes after interruption or reboot.
+
+Create or verify the frozen multicorpus LODO sample:
+
+```bash
+venv/bin/python -u scripts/build_sampled_lodo_campaign.py \
+  --datasets DAppSCAN DIVE Empirical-Analysis \
+  --sample-size 500 --seed 42
+```
+
+Matched sampled SCAFE LODO:
+
+```bash
+venv/bin/python -u scripts/run_scafe_repeated_lodo.py \
+  --input data/derived/sanitized_v1/sampled_lodo_campaign_v1/scored_sample.csv \
+  --output-dir data/derived/sanitized_v1/ml_results/sampled_lodo_campaign_v1/scafe \
+  --datasets DAppSCAN DIVE Empirical-Analysis --models rf --seeds 42
+```
+
+Resumable sampled neural LODO:
+
+```bash
+venv/bin/python -u -m src.ml.fair_baseline_eval \
+  --input-csv data/derived/sanitized_v1/sampled_lodo_campaign_v1/scored_sample.csv \
+  --output-csv data/derived/sanitized_v1/ml_results/sampled_lodo_campaign_v1/dl/predictions.csv \
+  --metrics-csv data/derived/sanitized_v1/ml_results/sampled_lodo_campaign_v1/dl/metrics.csv \
+  --metadata-json data/derived/sanitized_v1/ml_results/sampled_lodo_campaign_v1/dl/protocol.json \
+  --checkpoint-dir data/derived/sanitized_v1/ml_results/sampled_lodo_campaign_v1/dl/checkpoints \
+  --datasets DAppSCAN,DIVE,Empirical-Analysis \
+  --models textcnn,bilstm,codebert,unixcoder \
+  --seeds 42 --epochs 10 --patience 3 --batch-size 16 \
+  --device mps --resume
+```

@@ -223,6 +223,7 @@ def _fit_predict(
     batch_progress_callback: Any | None = None,
     training_checkpoint_path: Path | None = None,
     unit_manifest_hash: str = "",
+    device: str = "cpu",
 ) -> np.ndarray:
     """Fit one model using only train/internal-validation data."""
     import torch
@@ -274,7 +275,7 @@ def _fit_predict(
             for s in test_sources])
         train_ds = SolidityBERTDataset(X_train, M_train, y_train)
         test_ds = SolidityBERTDataset(X_test, M_test, y_test)
-        model = CodeBERTClassifier(model_name=hf_name, freeze_layers=8).to("cpu")
+        model = CodeBERTClassifier(model_name=hf_name, freeze_layers=8).to(device)
     else:
         tokenized_train = [chunk for s in train_sources for chunk in
                            chunk_tokens(tokenize_solidity(s))]
@@ -291,7 +292,7 @@ def _fit_predict(
         y_test = np.repeat(test["y"].to_numpy(), [len(chunk_tokens(tokenize_solidity(s))) for s in test_sources])
         train_ds, test_ds = SolidityTokenDataset(X_train, y_train), SolidityTokenDataset(X_test, y_test)
         model_cls = TextCNN if model_name == "textcnn" else BiLSTMClassifier
-        model = model_cls(vocab_size=len(vocab)).to("cpu")
+        model = model_cls(vocab_size=len(vocab)).to(device)
     internal_train, internal_val = _internal_split(train, seed, 0.2)
     # Chunk indices are derived from contract indices, so validation remains contract-disjoint.
     train_contracts = set(internal_train.tolist())
@@ -313,7 +314,7 @@ def _fit_predict(
         raise ValueError("internal training chunks must contain both classes")
     positive_weight = float(negative_count / positive_count)
     criterion = torch.nn.BCEWithLogitsLoss(
-        pos_weight=torch.tensor(positive_weight, dtype=torch.float32)
+        pos_weight=torch.tensor(positive_weight, dtype=torch.float32, device=device)
     )
     best_state, best_loss, stale = copy.deepcopy(model.state_dict()), float("inf"), 0
     start_epoch, start_batch = 1, 0
@@ -373,11 +374,11 @@ def _fit_predict(
             if batch_progress_callback is not None:
                 batch_progress_callback(epoch, batch, total)
         train_epoch(
-            model, tr_loader, optimizer, criterion, "cpu", is_bert=is_bert,
+            model, tr_loader, optimizer, criterion, device, is_bert=is_bert,
             progress_callback=report_train_batch,
             start_batch=epoch_start_batch,
         )
-        val_prob = predict(model, va_loader, "cpu", is_bert=is_bert)
+        val_prob = predict(model, va_loader, device, is_bert=is_bert)
         val_y = y_train[va_mask]
         val_weights = np.where(val_y == 1, positive_weight, 1.0)
         val_loss = float(torch.nn.functional.binary_cross_entropy(
@@ -423,7 +424,12 @@ def _fit_predict(
             })
         start_batch = 0
     model.load_state_dict(best_state)
-    return predict(model, DataLoader(test_ds, batch_size=batch_size), "cpu", is_bert=is_bert)
+    return predict(
+        model,
+        DataLoader(test_ds, batch_size=batch_size),
+        device,
+        is_bert=is_bert,
+    )
 
 
 def _checkpoint_path(checkpoint_dir: Path, seed: int, held_out: str, model: str) -> Path:
@@ -442,6 +448,7 @@ def _unit_manifest_hash(
     epochs: int,
     batch_size: int,
     patience: int,
+    device: str = "cpu",
 ) -> str:
     """Hash every input that can change a completed LODO unit."""
 
@@ -466,6 +473,7 @@ def _unit_manifest_hash(
         "epochs": int(epochs),
         "batch_size": int(batch_size),
         "patience": int(patience),
+        "device": str(device),
         "train": records(train),
         "test": records(test),
     }
@@ -710,6 +718,7 @@ def run_fair_lodo(
     patience: int = 3,
     checkpoint_dir: Path | str | None = None,
     resume: bool = True,
+    device: str = "cpu",
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     """Run fair LODO and return contract-level predictions plus protocol metadata."""
     frame = _validate_contract_frame(frame)
@@ -738,6 +747,7 @@ def run_fair_lodo(
                     epochs=epochs,
                     batch_size=batch_size,
                     patience=patience,
+                    device=device,
                 )
                 unit_number = completed_count + 1
                 checkpoint = (
@@ -841,7 +851,8 @@ def run_fair_lodo(
                                          progress_callback=report_epoch,
                                          batch_progress_callback=report_batch,
                                          training_checkpoint_path=training_artifact,
-                                         unit_manifest_hash=manifest_hash)
+                                         unit_manifest_hash=manifest_hash,
+                                         device=device)
                     counts = [len(chunk_tokenizer_ids([]))] * len(test)
                     # Reconstruct counts without retaining model-specific intermediate arrays.
                     if model in {"codebert", "unixcoder"}:
@@ -935,6 +946,7 @@ def run_fair_lodo(
                 "internal_validation_for_early_stopping": True,
                 "training_loss": "chunk-balanced BCEWithLogitsLoss",
                 "batch_order": "deterministic epoch shuffle",
+                "device": str(device),
                 "datasets": list(datasets), "models": list(models), "seeds": list(seeds),
                 "checkpoint_version": CHECKPOINT_VERSION,
                 "checkpoint_dir": str(checkpoint_root) if checkpoint_root is not None else None,
@@ -946,12 +958,21 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-csv", type=Path, default=None)
     parser.add_argument("--output-csv", type=Path, default=Path("data/derived/fair_baseline_predictions.csv"))
+    parser.add_argument(
+        "--metrics-csv",
+        type=Path,
+        default=None,
+        help="Per-held-out-corpus/model metrics (defaults beside output-csv).",
+    )
     parser.add_argument("--metadata-json", type=Path, default=Path("data/derived/fair_baseline_protocol.json"))
     parser.add_argument("--datasets", default="DAppSCAN,FORGE")
     parser.add_argument("--models", default=",".join(DEFAULT_MODELS))
     parser.add_argument("--seeds", default="42")
     parser.add_argument("--max-contracts", type=int, default=None)
     parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--patience", type=int, default=3)
+    parser.add_argument("--device", choices=("cpu", "mps"), default="cpu")
     parser.add_argument("--checkpoint-dir", type=Path,
                         default=Path("data/derived/fair_baseline_checkpoints"))
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
@@ -963,10 +984,32 @@ def main() -> None:
         [x.strip() for x in args.models.split(",") if x.strip()],
         [int(x) for x in args.seeds.split(",") if x.strip()],
         max_contracts=args.max_contracts, epochs=args.epochs,
-        checkpoint_dir=args.checkpoint_dir, resume=args.resume)
+        batch_size=args.batch_size, patience=args.patience,
+        checkpoint_dir=args.checkpoint_dir, resume=args.resume,
+        device=args.device)
     args.output_csv.parent.mkdir(parents=True, exist_ok=True)
     args.metadata_json.parent.mkdir(parents=True, exist_ok=True)
     predictions.to_csv(args.output_csv, index=False)
+    metric_rows = []
+    for (dataset, model, random_state), group in predictions.groupby(
+        ["dataset", "model", "random_state"],
+        sort=False,
+    ):
+        metric_rows.append({
+            "dataset": dataset,
+            "model": model,
+            "random_state": int(random_state),
+            "n_contracts": int(len(group)),
+            "positive_prevalence": float(group["y_true"].mean()),
+            **reevaluate_contract_predictions(group),
+        })
+    metrics_path = (
+        args.metrics_csv
+        if args.metrics_csv is not None
+        else args.output_csv.with_name(f"{args.output_csv.stem}_metrics.csv")
+    )
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(metric_rows).to_csv(metrics_path, index=False)
     args.metadata_json.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
 
 
