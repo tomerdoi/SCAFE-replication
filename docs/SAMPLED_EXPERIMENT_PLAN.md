@@ -161,3 +161,19 @@ venv/bin/python -u -m src.ml.fair_baseline_eval \
   --seeds 42 --epochs 10 --patience 3 --batch-size 16 \
   --device mps --resume
 ```
+
+Derived per-contract analyses (no base-model retraining):
+
+```bash
+venv/bin/python -u scripts/summarize_sampled_within_models.py
+venv/bin/python -u scripts/run_sampled_prediction_ensembles_v2.py develop
+venv/bin/python -u scripts/run_sampled_prediction_ensembles_v2.py evaluate
+```
+
+The within-corpus summary aligns all five models on the same 1,500
+out-of-fold records and uses paired DAppSCAN-project bootstrap intervals. The
+ensemble analysis uses only DAppSCAN within-corpus out-of-fold predictions to
+select TextCNN, fit the logistic stacker, and choose the SCAFE
+distance-to-cutoff cascade gate. The development command writes a sealed lock
+before the evaluation command reads DIVE or Empirical-Analysis predictions.
+Target-label-selected ensembles are prohibited.

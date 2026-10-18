@@ -944,7 +944,10 @@ def run_fair_lodo(
                 },
                 "threshold": FIXED_THRESHOLD, "held_out_threshold_tuning": False,
                 "internal_validation_for_early_stopping": True,
-                "training_loss": "chunk-balanced BCEWithLogitsLoss",
+                "training_loss": (
+                    "chunk-level class-weighted BCEWithLogitsLoss; contracts "
+                    "contribute in proportion to chunk count"
+                ),
                 "batch_order": "deterministic epoch shuffle",
                 "device": str(device),
                 "datasets": list(datasets), "models": list(models), "seeds": list(seeds),

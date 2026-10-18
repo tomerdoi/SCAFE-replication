@@ -102,6 +102,30 @@ slither_constructs = pd.read_csv(
 slither_correlations = pd.read_csv(
     REPO / "data/derived/slither_correlation/correlation_results.csv"
 )
+sampled_within = pd.read_csv(
+    REPO / "data/derived/sanitized_v1/ml_results/sampled_campaign_v1/"
+    "model_comparison/model_metrics.csv"
+)
+sampled_within_protocol = json.loads(
+    (REPO / "data/derived/sanitized_v1/ml_results/sampled_campaign_v1/"
+     "model_comparison/protocol.json").read_text()
+)
+sampled_lodo = pd.read_csv(
+    REPO / "data/derived/sanitized_v1/ml_results/sampled_ensemble_v2/"
+    "ensemble_metrics.csv"
+)
+sampled_ensemble_protocol = json.loads(
+    (REPO / "data/derived/sanitized_v1/ml_results/sampled_ensemble_v2/"
+     "ensemble_protocol.json").read_text()
+)
+sampled_ensemble_lock = json.loads(
+    (REPO / "data/derived/sanitized_v1/ml_results/sampled_ensemble_v2/"
+     "ensemble_lock.json").read_text()
+)
+sampled_dl_protocol = json.loads(
+    (REPO / "data/derived/sanitized_v1/ml_results/sampled_lodo_campaign_v1/"
+     "dl/protocol.json").read_text()
+)
 
 require(corrected["feature_count"] == 244, "corrected transfer feature count is not 244")
 require(corrected["seeds"] == [42, 43, 44, 45, 46], "corrected LODO seed list is incomplete")
@@ -238,6 +262,8 @@ require(math.isclose(
     0.7580383241,
 ), "Empirical weak-label sensitivity changed")
 require("56{,}943" in TEX, "manuscript does not distinguish source-bearing rows")
+require("no remaining SWC markers" in TEX,
+        "manuscript does not disclose DAppSCAN annotation sanitization")
 require("All numeric exclusions" in TEX,
         "manuscript does not account for all 57 excluded numeric columns")
 require(exact_benchmarks["feature_count"] == 244,
@@ -282,12 +308,51 @@ require(math.isclose(correlations["halstead_volume"], 0.356),
 require("0.533 on TRACE-CVE" in TEX, "manuscript lacks current TRACE slice result")
 require("0.154 on PropertyGPT-CVE" in TEX,
         "manuscript lacks current PropertyGPT slice result")
+require(sampled_within_protocol["aligned_contracts"] == 1500,
+        "sampled within-corpus comparison is not aligned on 1,500 contracts")
+require(sampled_within_protocol["project_groups"] == 305,
+        "sampled within-corpus project-group count changed")
+within_roc = sampled_within.set_index("model")["roc_auc"].to_dict()
+require(math.isclose(within_roc["scafe"], 0.8259186047),
+        "sampled within-corpus SCAFE ROC-AUC changed")
+require(math.isclose(within_roc["textcnn"], 0.7994077979),
+        "sampled within-corpus TextCNN ROC-AUC changed")
+require("SCAFE & 0.826 & 0.213" in (
+    PAPER / "figures/tab_sampled_model_comparison.tex"
+).read_text(), "sampled model table lacks current SCAFE values")
+require(len(sampled_dl_protocol["completed_units"]) == 12,
+        "sampled neural LODO does not contain all 12 completed units")
+require(all(unit["n_predictions"] == 500
+            for unit in sampled_dl_protocol["completed_units"]),
+        "sampled neural LODO unit coverage changed")
+external_sampled = sampled_lodo[
+    sampled_lodo["dataset"].isin(["DIVE", "Empirical-Analysis"])
+].set_index(["dataset", "method"])
+require(math.isclose(external_sampled.loc[("DIVE", "scafe"), "roc_auc"],
+                     0.5524621212),
+        "sampled DIVE SCAFE ROC-AUC changed")
+require(math.isclose(
+    external_sampled.loc[("Empirical-Analysis", "unixcoder"), "roc_auc"],
+    0.5867491473,
+), "sampled Empirical UniXcoder ROC-AUC changed")
+require(sampled_ensemble_protocol["selected_neural_partner"] == "textcnn",
+        "ensemble neural partner changed")
+require(sampled_ensemble_protocol["target_labels_used_for_selection_or_fitting"] is False,
+        "ensemble protocol permits target-label selection")
+require(sampled_ensemble_lock["target_artifacts_read_during_development"] is False,
+        "ensemble development lock read external target artifacts")
+require(sampled_ensemble_lock["development_records"] == 1500
+        and sampled_ensemble_lock["development_positive"] == 87,
+        "ensemble development population changed")
+require("stacking changes ROC-AUC from 0.552 to 0.538" in TEX,
+        "manuscript lacks current ensemble result")
 require("anonymous.4open.science" not in TEX,
         "manuscript claims an inaccessible anonymous artifact URL")
 require((PAPER / "sc_vulnerability_detection.pdf").exists(), "compiled manuscript PDF is missing")
 for figure in (
     "fig_model_comparison.pdf", "fig_confusion_matrices.pdf",
-    "fig_feature_ablation.pdf", "fig_shap_cases.pdf"
+    "fig_feature_ablation.pdf", "fig_shap_cases.pdf",
+    "fig_sampled_model_comparison.png",
 ):
     require((PAPER / "figures" / figure).exists(), f"corrected figure missing: {figure}")
 for obsolete_table in (
