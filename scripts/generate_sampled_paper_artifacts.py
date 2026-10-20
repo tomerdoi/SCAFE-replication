@@ -135,7 +135,7 @@ def comparison_figure(within: pd.DataFrame, lodo: pd.DataFrame, output: Path) ->
         axes[1].bar(x + (index - 2) * width, values, width, label=DISPLAY[model],
                     color=color)
     axes[1].set_title("(b) Sampled leave-one-dataset-out")
-    axes[1].set_xticks(x, ("DAppSCAN\n(dev.)", "DIVE", "Empirical"))
+    axes[1].set_xticks(x, ("DAppSCAN\n(reverse)", "DIVE", "Empirical"))
     axes[1].set_ylim(0.35, 0.75)
     axes[1].axhline(0.5, color="black", linestyle="--", linewidth=0.8)
     axes[1].legend(fontsize=7, ncol=2, loc="upper right")

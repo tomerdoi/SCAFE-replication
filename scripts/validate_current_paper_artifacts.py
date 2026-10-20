@@ -17,6 +17,9 @@ from src.ml.baseline_comparison import source_feature_columns
 REPO = Path(__file__).resolve().parents[1]
 PAPER = REPO.parent / "sc_risk_score_overleaf"
 TEX = (PAPER / "sc_vulnerability_detection.tex").read_text(encoding="utf-8")
+DEVELOPMENT_TABLE = (
+    PAPER / "figures/tab_development_model_selection.tex"
+).read_text(encoding="utf-8")
 ERRORS: list[str] = []
 
 
@@ -202,6 +205,21 @@ require(within_metadata["feature_count"] == 244,
 require(math.isclose(rf_development["roc_auc_mean"], 0.8662907429),
         "DAppSCAN model-selection result changed")
 require("0.866 ROC-AUC" in TEX, "manuscript lacks current model-selection result")
+for model, display in (
+    ("et", "Extra Trees"),
+    ("hgb", "HistGradientBoosting"),
+    ("rf", "Random Forest"),
+    ("xgb", "XGBoost"),
+):
+    row = within_summary[
+        (within_summary["dataset"] == "DAppSCAN")
+        & (within_summary["model"] == model)
+    ].iloc[0]
+    expected = f"{row['roc_auc_mean']:.4f}"
+    require(
+        display in DEVELOPMENT_TABLE and expected in DEVELOPMENT_TABLE,
+        f"development-selection table is stale for {display}",
+    )
 require(lexical_protocol["feature_count"] == 331,
         "lexical/context comparison does not use 331 features")
 require(lexical_protocol["protocol"]["identifier_context_extension"] is True,
