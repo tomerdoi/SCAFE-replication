@@ -41,10 +41,15 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def align(scafe: pd.DataFrame, neural: pd.DataFrame) -> pd.DataFrame:
+def align(
+    scafe: pd.DataFrame,
+    neural: pd.DataFrame,
+    *,
+    scafe_model: str = "rf",
+) -> pd.DataFrame:
     scafe = scafe[
         scafe["dataset"].eq("DAppSCAN")
-        & scafe["model"].eq("rf")
+        & scafe["model"].eq(scafe_model)
         & scafe["random_state"].eq(42)
     ].copy()
     if len(scafe) != 1_500 or scafe["contract_id"].duplicated().any():

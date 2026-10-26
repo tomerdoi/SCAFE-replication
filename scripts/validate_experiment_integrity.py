@@ -10,7 +10,8 @@ import sys
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = REPO_ROOT / "data" / "derived" / "ml_results" / "baseline_comparison"
+SANITIZED = REPO_ROOT / "data" / "derived" / "sanitized_v1"
+OUTPUT = SANITIZED / "ml_results"
 
 
 def _load(name: str) -> object:
@@ -21,9 +22,14 @@ def _load(name: str) -> object:
 
 
 def main() -> None:
-    primary = OUTPUT / "source_only_raw_canonical"
+    primary = OUTPUT / "primary_lodo"
     protocol_record = json.loads(
         (primary / "scafe_repeated_lodo.json").read_text()
+    )
+    sanitized_manifest = json.loads((SANITIZED / "manifest.json").read_text())
+    assert (
+        protocol_record["input_sha256"]
+        == sanitized_manifest["scored_csv_sha256"]
     )
     protocol = protocol_record["protocol"]
     assert protocol_record["feature_count"] == 244
@@ -34,20 +40,23 @@ def main() -> None:
     assert protocol["exclude_cross_training_label_conflicts"] is True
     assert protocol["collapse_cross_training_same_label_duplicates"] is True
     assert protocol["test_threshold_tuning"] is False
-    assert protocol["primary_model"] == "rf_selected_by_dappscan_project_group_cv"
+    assert (
+        protocol["primary_model"]
+        == "et_selected_by_sanitized_dappscan_project_group_cv"
+    )
     assert protocol["external_targets"] == ["DIVE", "Empirical-Analysis"]
 
     metrics = pd.read_csv(primary / "scafe_repeated_lodo.csv")
     assert not metrics.empty
     assert (metrics["n_duplicate_train_excluded"] >= 0).all()
     assert metrics["dataset"].nunique() == 3
-    assert metrics["model"].nunique() == 4
+    assert metrics["model"].unique().tolist() == ["et"]
     assert metrics["random_state"].nunique() == 5
     summary = pd.read_csv(primary / "scafe_repeated_lodo_summary.csv")
     assert (summary["n_seeds"] == 5).all()
 
     ablations = pd.read_csv(
-        OUTPUT / "source_only_raw_canonical_ablations/scafe_feature_ablations.csv"
+        OUTPUT / "feature_ablations/scafe_feature_ablations.csv"
     )
     assert set(ablations["feature_variant"]) == {
         "raw_structural_244",
@@ -64,7 +73,7 @@ def main() -> None:
         f"{len(metrics)} transfer rows, "
         f"{protocol_record['feature_count']} raw source features, "
         f"{metrics['random_state'].nunique()} repeated seeds, "
-        f"{len(protocol['external_targets'])} external targets."
+        f"{len(protocol['external_targets'])} LODO targets."
     )
 
 

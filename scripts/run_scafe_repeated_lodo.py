@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -37,6 +38,14 @@ DATASET_SPECS = [
     DatasetSpec("Empirical-Analysis"),
     DatasetSpec("FORGE", accepted_labels=("unknown", "vulnerable")),
 ]
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def parse_args() -> argparse.Namespace:
@@ -93,6 +102,8 @@ def main() -> None:
     json_path.write_text(
         json.dumps(
             {
+                "input": str(args.input.resolve()),
+                "input_sha256": _sha256(args.input),
                 "datasets": [spec.name for spec in specs],
                 "models": args.models,
                 "seeds": args.seeds,
@@ -117,7 +128,12 @@ def main() -> None:
                         else "fixed_0.5"
                     ),
                     "test_threshold_tuning": False,
-                    "primary_model": "rf_selected_by_dappscan_project_group_cv",
+                    "primary_model": (
+                        f"{args.models[0]}_selected_by_sanitized_"
+                        "dappscan_project_group_cv"
+                        if len(args.models) == 1
+                        else "diagnostic_multi_model_run"
+                    ),
                     "development_dataset": "DAppSCAN",
                     "external_targets": ["DIVE", "Empirical-Analysis"],
                     "uncertainty": "seed_mean_and_standard_deviation",

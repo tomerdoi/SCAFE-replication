@@ -68,7 +68,7 @@ def test_v2_development_writes_target_isolated_lock(tmp_path, monkeypatch):
     monkeypatch.setattr(
         ensemble_v2,
         "align_development",
-        lambda _scafe, _neural: aligned,
+        lambda _scafe, _neural, *, scafe_model: aligned,
     )
     scafe_path = tmp_path / "within_scafe.csv"
     neural_path = tmp_path / "within_neural.csv"
@@ -82,5 +82,6 @@ def test_v2_development_writes_target_isolated_lock(tmp_path, monkeypatch):
 
     assert lock == written
     assert written["target_artifacts_read_during_development"] is False
+    assert written["scafe_model"] == "rf"
     assert written["development_records"] == 1_500
     assert "external_inputs" not in written

@@ -69,12 +69,15 @@ def develop(
     within_scafe_path: Path,
     within_dl_path: Path,
     output: Path,
+    *,
+    scafe_model: str = "rf",
 ) -> dict:
     """Select and fit every ensemble component without reading external artifacts."""
 
     aligned = align_development(
         pd.read_csv(within_scafe_path, low_memory=False),
         pd.read_csv(within_dl_path, low_memory=False),
+        scafe_model=scafe_model,
     )
     model_metrics = {
         model: metric_values(
@@ -136,6 +139,7 @@ def develop(
     lock = {
         "version": 2,
         "development_dataset": DEVELOPMENT_DATASET,
+        "scafe_model": scafe_model,
         "external_targets": list(TARGET_DATASETS),
         "development_protocol": "sampled five-fold project-group-disjoint OOF",
         "development_records": int(len(aligned)),
@@ -208,6 +212,7 @@ def evaluate(
     aligned = align_external_predictions(
         pd.read_csv(external_scafe_path, low_memory=False),
         pd.read_csv(external_dl_path, low_memory=False),
+        scafe_model=str(lock.get("scafe_model", "rf")),
     )
     external = aligned[aligned["dataset"].isin(TARGET_DATASETS)].copy()
     stack_probability = _stack_probability(external, partner, lock["stacking"])
@@ -309,6 +314,7 @@ def parse_args() -> argparse.Namespace:
     develop_parser.add_argument("--within-scafe", type=Path, default=DEFAULT_WITHIN_SCAFE)
     develop_parser.add_argument("--within-dl", type=Path, default=DEFAULT_WITHIN_DL)
     develop_parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    develop_parser.add_argument("--scafe-model", default="rf")
     evaluate_parser = subparsers.add_parser("evaluate")
     evaluate_parser.add_argument(
         "--lock", type=Path, default=DEFAULT_OUTPUT / "ensemble_lock.json"
@@ -326,7 +332,12 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     if args.command == "develop":
-        lock = develop(args.within_scafe, args.within_dl, args.output_dir)
+        lock = develop(
+            args.within_scafe,
+            args.within_dl,
+            args.output_dir,
+            scafe_model=args.scafe_model,
+        )
         print(json.dumps({
             "selected_neural_partner": lock["selected_neural_partner"],
             "cascade": lock["cascade"]["selected"],

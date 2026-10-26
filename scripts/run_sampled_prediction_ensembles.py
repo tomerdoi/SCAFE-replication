@@ -68,7 +68,12 @@ def metric_values(y_true: np.ndarray, y_prob: np.ndarray) -> dict[str, float]:
     }
 
 
-def align_predictions(scafe: pd.DataFrame, neural: pd.DataFrame) -> pd.DataFrame:
+def align_predictions(
+    scafe: pd.DataFrame,
+    neural: pd.DataFrame,
+    *,
+    scafe_model: str = "rf",
+) -> pd.DataFrame:
     """Return one strictly aligned row per corpus/contract with all scores."""
 
     required_scafe = {"dataset", "contract_id", "y_true", "y_prob", "random_state"}
@@ -80,7 +85,7 @@ def align_predictions(scafe: pd.DataFrame, neural: pd.DataFrame) -> pd.DataFrame
     scafe = scafe.loc[
         scafe["dataset"].isin((DEVELOPMENT_DATASET, *TARGET_DATASETS))
         & scafe["random_state"].eq(42)
-        & scafe.get("model", "rf").eq("rf")
+        & scafe.get("model", scafe_model).eq(scafe_model)
     ].copy()
     if scafe.duplicated(["dataset", "contract_id"]).any():
         raise ValueError("Duplicate SCAFE dataset/contract predictions")

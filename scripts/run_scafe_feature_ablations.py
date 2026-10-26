@@ -141,7 +141,9 @@ def main() -> None:
                     "exclude_cross_training_label_conflicts": True,
                     "collapse_cross_training_same_label_duplicates": True,
                     "threshold": "fixed_0.5",
-                    "model_selection": "fixed_rf_selected_on_dappscan_development",
+                    "model_selection": (
+                        "fixed development-selected head; see models field"
+                    ),
                 },
             },
             indent=2,

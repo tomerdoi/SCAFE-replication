@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -30,8 +31,8 @@ from src.ml.baseline_comparison import (  # noqa: E402
 from src.ml.baseline_comparison import DatasetSpec  # noqa: E402
 
 
-INPUT = REPO / "data/derived/unified_contract_eval_scored.csv"
-OUTPUT = REPO / "data/derived/shap_results/fold_consistent_primary"
+INPUT = REPO / "data/derived/sanitized_v1/unified_contract_eval_scored.csv"
+OUTPUT = REPO / "data/derived/sanitized_v1/shap_results/fold_consistent_primary"
 PAPER_FIGURES = REPO.parent / "sc_risk_score_overleaf/figures"
 ALL_DATASETS = ("DAppSCAN", "DIVE", "Empirical-Analysis")
 TARGETS = ("DIVE", "Empirical-Analysis")
@@ -73,10 +74,20 @@ def _case_indices(y_true: np.ndarray, probabilities: np.ndarray) -> list[tuple[s
     return selections
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", type=Path, default=INPUT)
+    parser.add_argument("--output-dir", type=Path, default=OUTPUT)
+    parser.add_argument("--paper-figures", type=Path, default=PAPER_FIGURES)
+    parser.add_argument("--model", default="et")
+    return parser.parse_args()
+
+
 def main() -> None:
-    OUTPUT.mkdir(parents=True, exist_ok=True)
-    PAPER_FIGURES.mkdir(parents=True, exist_ok=True)
-    frame = _canonicalize(load_scored_frame(str(INPUT)))
+    args = parse_args()
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    args.paper_figures.mkdir(parents=True, exist_ok=True)
+    frame = _canonicalize(load_scored_frame(str(args.input)))
     feature_columns = sorted(
         column
         for column in frame.columns
@@ -95,7 +106,7 @@ def main() -> None:
         )
         train, removed = exclude_test_source_duplicates(train, test)
         train, collapsed, conflicts = canonicalize_training_sources(train)
-        fitted = _fit(train, feature_columns, "rf", random_state=42)
+        fitted = _fit(train, feature_columns, args.model, random_state=42)
         x_test = fitted.scaler.transform(_feature_matrix(test, feature_columns))
         probabilities = fitted.estimator.predict_proba(x_test)[:, 1]
         y_true = test["y"].to_numpy(dtype=int)
@@ -122,7 +133,7 @@ def main() -> None:
                             str(row.get("local_source_path", ""))
                         ),
                         "fold_protocol": "LODO",
-                        "model": "rf",
+                        "model": args.model,
                         "seed": 42,
                         "y_true": int(row["y"]),
                         "y_probability": float(probabilities[position]),
@@ -137,11 +148,11 @@ def main() -> None:
                 )
 
     cases_frame = pd.DataFrame(cases)
-    cases_frame.to_csv(OUTPUT / "local_shap_cases.csv", index=False)
+    cases_frame.to_csv(args.output_dir / "local_shap_cases.csv", index=False)
     metadata = {
         "protocol": "canonicalized source-only external-target transfer",
         "datasets": list(TARGETS),
-        "model": "rf",
+        "model": args.model,
         "seed": 42,
         "threshold": 0.5,
         "case_categories": ["TP", "FP", "FN"],
@@ -149,7 +160,9 @@ def main() -> None:
         "feature_count": len(feature_columns),
         "explanation_scope": "held-out fold only; fold-specific scaler/model/background",
     }
-    (OUTPUT / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
+    (args.output_dir / "metadata.json").write_text(
+        json.dumps(metadata, indent=2) + "\n"
+    )
 
     fig, axes = plt.subplots(3, 3, figsize=(12, 10), squeeze=False)
     for ax, case_id in zip(axes.ravel(), metadata["cases"]):
@@ -163,7 +176,7 @@ def main() -> None:
         ax.axis("off")
     fig.suptitle("Fold-consistent local SHAP case studies (held-out LODO folds)", fontsize=12)
     fig.tight_layout()
-    fig.savefig(PAPER_FIGURES / "fig_shap_cases.pdf", bbox_inches="tight")
+    fig.savefig(args.paper_figures / "fig_shap_cases.pdf", bbox_inches="tight")
     plt.close(fig)
     print(json.dumps(metadata, indent=2))
 

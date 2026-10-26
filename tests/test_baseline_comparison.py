@@ -131,7 +131,7 @@ def test_cross_dataset_training_sources_are_jointly_canonicalized(tmp_path):
     assert conflicts == 2
 
 
-def test_repeated_lodo_summary_reports_seed_confidence_interval():
+def test_repeated_lodo_summary_reports_seed_resampling_interval():
     metrics = pd.DataFrame(
         {
             "dataset": ["Toy"] * 3,
@@ -148,5 +148,5 @@ def test_repeated_lodo_summary_reports_seed_confidence_interval():
     summary = summarize_repeated_lodo(metrics)
     assert summary.loc[0, "n_seeds"] == 3
     assert np.isclose(summary.loc[0, "roc_auc_mean"], 0.7)
-    assert summary.loc[0, "roc_auc_ci95_low"] <= 0.7
-    assert summary.loc[0, "roc_auc_ci95_high"] >= 0.7
+    assert summary.loc[0, "roc_auc_seed_resample95_low"] <= 0.7
+    assert summary.loc[0, "roc_auc_seed_resample95_high"] >= 0.7

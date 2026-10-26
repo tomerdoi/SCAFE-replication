@@ -38,7 +38,7 @@ DISPLAY = {
     "unixcoder": "UniXcoder",
     "soft_vote": "Soft vote",
     "stacking": "Stacking",
-    "confidence_cascade": "Confidence cascade",
+    "confidence_cascade": "Score-margin cascade",
 }
 
 
@@ -54,7 +54,7 @@ def model_table(within: pd.DataFrame, lodo: pd.DataFrame) -> str:
     lines = [
         r"\begin{table*}[t]",
         r"\centering",
-        r"\caption{Controlled sampled comparison using complete-source chunk aggregation. Within-corpus values pool the five project-group-disjoint DAppSCAN out-of-fold predictions (1,500 records). LODO values use 500 records per corpus; DAppSCAN is development evidence, while DIVE and Empirical-Analysis are external targets. All rows use seed 42.}",
+        r"\caption{Exploratory comparison on common test records and splits with full-source chunk aggregation. Within-corpus values pool 1,500 project-group-disjoint DAppSCAN out-of-fold predictions; LODO values use 500 records per corpus. Training duplicate handling, tokenization, chunk weighting, and optimization differ across model families. All rows use seed 42.}",
         r"\label{tab:sampled_models}",
         r"\small",
         r"\begin{tabular}{lrrrrrr}",
@@ -85,14 +85,14 @@ def ensemble_table(lodo: pd.DataFrame) -> str:
     lines = [
         r"\begin{table*}[t]",
         r"\centering",
-        r"\caption{Frozen post-hoc ensemble diagnostic on sampled external targets. TextCNN, the cascade gate, and the stacker are selected or fitted using DAppSCAN within-corpus out-of-fold development predictions only. No DIVE or Empirical-Analysis labels are used for selection.}",
+        r"\caption{Frozen post-hoc ensemble diagnostic on sampled LODO targets. TextCNN, the score-margin cascade, and the stacker are selected or fitted using DAppSCAN within-corpus out-of-fold development predictions only. No DIVE or Empirical-Analysis labels are used for selection.}",
         r"\label{tab:sampled_ensembles}",
         r"\small",
-        r"\begin{tabular}{lrrrrrr}",
+        r"\begin{tabular}{lrrrr}",
         r"\toprule",
-        r"& \multicolumn{3}{c}{DIVE} & \multicolumn{3}{c}{Empirical-Analysis} \\",
-        r"\cmidrule(lr){2-4}\cmidrule(lr){5-7}",
-        r"Method & ROC-AUC & PR-AUC & F1 & ROC-AUC & PR-AUC & F1 \\",
+        r"& \multicolumn{2}{c}{DIVE} & \multicolumn{2}{c}{Empirical-Analysis} \\",
+        r"\cmidrule(lr){2-3}\cmidrule(lr){4-5}",
+        r"Method & ROC-AUC & PR-AUC & ROC-AUC & PR-AUC \\",
         r"\midrule",
     ]
     for method in methods:
@@ -100,10 +100,8 @@ def ensemble_table(lodo: pd.DataFrame) -> str:
             f"{DISPLAY[method]} & "
             f"{_value(lodo, 'DIVE', method, 'roc_auc'):.3f} & "
             f"{_value(lodo, 'DIVE', method, 'pr_auc'):.3f} & "
-            f"{_value(lodo, 'DIVE', method, 'f1'):.3f} & "
             f"{_value(lodo, 'Empirical-Analysis', method, 'roc_auc'):.3f} & "
-            f"{_value(lodo, 'Empirical-Analysis', method, 'pr_auc'):.3f} & "
-            f"{_value(lodo, 'Empirical-Analysis', method, 'f1'):.3f} \\\\"
+            f"{_value(lodo, 'Empirical-Analysis', method, 'pr_auc'):.3f} \\\\"
         )
     lines.extend([r"\bottomrule", r"\end{tabular}", r"\end{table*}", ""])
     return "\n".join(lines)
@@ -154,6 +152,7 @@ def comparison_figure(within: pd.DataFrame, lodo: pd.DataFrame, output: Path) ->
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--within-metrics", type=Path, default=DEFAULT_WITHIN)
+    parser.add_argument("--within-scafe-metrics", type=Path)
     parser.add_argument("--lodo-metrics", type=Path, default=DEFAULT_LODO)
     parser.add_argument("--lodo-dl-metrics", type=Path, default=DEFAULT_LODO_DL)
     parser.add_argument("--lodo-scafe-metrics", type=Path, default=DEFAULT_LODO_SCAFE)
@@ -164,6 +163,22 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     within = pd.read_csv(args.within_metrics)
+    if args.within_scafe_metrics:
+        within_scafe = pd.read_csv(args.within_scafe_metrics)
+        within_scafe = within_scafe[
+            within_scafe["dataset"].eq("DAppSCAN")
+        ].rename(
+            columns={
+                "roc_auc_mean": "roc_auc",
+                "pr_auc_mean": "pr_auc",
+                "f1_mean": "f1",
+                "precision_mean": "precision",
+                "recall_mean": "recall",
+            }
+        )
+        within_scafe["model"] = "scafe"
+        within = within[~within["model"].eq("scafe")]
+        within = pd.concat([within, within_scafe], ignore_index=True, sort=False)
     lodo = pd.read_csv(args.lodo_metrics)
     dl_development = pd.read_csv(args.lodo_dl_metrics)
     dl_development = dl_development[dl_development["dataset"].eq("DAppSCAN")].rename(

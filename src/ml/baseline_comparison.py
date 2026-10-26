@@ -649,7 +649,7 @@ def run_repeated_leave_one_dataset_out(
 
 
 def summarize_repeated_lodo(metrics: pd.DataFrame) -> pd.DataFrame:
-    """Compute seed means and percentile confidence intervals."""
+    """Compute seed means, standard deviations, and seed-resampling intervals."""
 
     if metrics.empty:
         return pd.DataFrame()
@@ -666,8 +666,8 @@ def summarize_repeated_lodo(metrics: pd.DataFrame) -> pd.DataFrame:
             if len(values) == 0:
                 result[f"{metric}_mean"] = float("nan")
                 result[f"{metric}_std"] = float("nan")
-                result[f"{metric}_ci95_low"] = float("nan")
-                result[f"{metric}_ci95_high"] = float("nan")
+                result[f"{metric}_seed_resample95_low"] = float("nan")
+                result[f"{metric}_seed_resample95_high"] = float("nan")
                 continue
             rng = np.random.default_rng(42)
             samples = rng.choice(
@@ -677,8 +677,12 @@ def summarize_repeated_lodo(metrics: pd.DataFrame) -> pd.DataFrame:
             ).mean(axis=1)
             result[f"{metric}_mean"] = float(values.mean())
             result[f"{metric}_std"] = float(values.std(ddof=0))
-            result[f"{metric}_ci95_low"] = float(np.percentile(samples, 2.5))
-            result[f"{metric}_ci95_high"] = float(np.percentile(samples, 97.5))
+            result[f"{metric}_seed_resample95_low"] = float(
+                np.percentile(samples, 2.5)
+            )
+            result[f"{metric}_seed_resample95_high"] = float(
+                np.percentile(samples, 97.5)
+            )
         rows.append(result)
     return pd.DataFrame(rows)
 
