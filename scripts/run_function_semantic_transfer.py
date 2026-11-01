@@ -39,6 +39,10 @@ from sklearn.metrics import (
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from src.source_sanitization import SOURCE_SANITIZATION_VERSION, read_source_record
+
+SCORING_PROTOCOL = "sanitized-function-pattern-scoring-v2"
+
 DEFAULT_AUXILIARY = Path.home() / "Downloads" / "codebert_dataset_expanded.csv"
 DEFAULT_REGISTRY = REPO / "data/derived/sanitized_v1/unified_contract_eval_scored.csv"
 DEFAULT_OUTPUT = REPO / "data/derived/sanitized_v1/ml_results/function_semantic_transfer"
@@ -102,32 +106,29 @@ def extract_functions(source: str) -> list[tuple[str, str]]:
     return result
 
 
-def _source_text(path_value: str) -> str:
+def _source_text(path_value: str, dataset: str = "") -> str:
+    """Use the same dataset-aware model-input boundary as the primary pipeline."""
+
     path = Path(path_value)
-    try:
-        if path.is_file() and path.suffix.lower() == ".sol":
-            return path.read_text(encoding="utf-8", errors="replace")
-        if path.is_dir():
-            return "\n".join(
-                item.read_text(encoding="utf-8", errors="replace")
-                for item in sorted(path.rglob("*.sol"))
-            )
-    except OSError:
+    if path.is_file() and path.suffix.lower() != ".sol":
         return ""
-    return ""
+    return read_source_record(path_value, dataset)
 
 
 def _registry_function_hashes(registry: pd.DataFrame) -> set[str]:
     """Return exact normalized function hashes from primary evaluation sources."""
 
     hashes: set[str] = set()
-    seen_paths: set[str] = set()
+    seen_paths: set[tuple[str, str]] = set()
     primary = registry[registry["source_dataset"].isin(PRIMARY_DATASETS)]
-    for path_value in primary["local_source_path"].dropna().astype(str):
-        if not path_value or path_value in seen_paths:
+    for record in primary.dropna(subset=["local_source_path"]).itertuples(index=False):
+        path_value = str(record.local_source_path)
+        dataset = str(record.source_dataset)
+        key = (dataset, path_value)
+        if not path_value or key in seen_paths:
             continue
-        seen_paths.add(path_value)
-        for _, function in extract_functions(_source_text(path_value)):
+        seen_paths.add(key)
+        for _, function in extract_functions(_source_text(path_value, dataset)):
             hashes.add(_sha256(_normalise(function)))
     return hashes
 
@@ -228,6 +229,7 @@ def train(args: argparse.Namespace) -> None:
         raise ValueError(f"Filtering left an incomplete split: {split_counts}")
     overlap_audit = {
         "protocol": "exact-normalized-function-overlap-v1",
+        "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
         "auxiliary": str(args.auxiliary.resolve()),
         "registry": str(args.registry.resolve()),
         "primary_datasets": list(PRIMARY_DATASETS),
@@ -341,6 +343,7 @@ def train(args: argparse.Namespace) -> None:
     history: list[dict[str, float | int]] = []
     start_epoch = 1
     run_config = {
+        "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
         "model_name": model_name,
         "max_length": args.max_length,
         "freeze_layers": args.freeze_layers,
@@ -462,6 +465,7 @@ def train(args: argparse.Namespace) -> None:
     pd.DataFrame(test_metrics).to_csv(output / "internal_test_metrics.csv", index=False)
     metadata = {
         "protocol": "external-function-pattern-multilabel-v1",
+        "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
         "model": args.model,
         "model_name": model_name,
         "labels": list(LABELS),
@@ -542,8 +546,8 @@ def score(args: argparse.Namespace) -> None:
         & registry["local_source_path"].notna()
     ].copy()
     rows: list[dict[str, object]] = []
-    source_cache: dict[str, list[tuple[str, str]]] = {}
-    source_identity_cache: dict[str, str] = {}
+    source_cache: dict[tuple[str, str], list[tuple[str, str]]] = {}
+    source_identity_cache: dict[tuple[str, str], str] = {}
 
     def predict(texts: list[str]) -> np.ndarray:
         result = []
@@ -565,19 +569,21 @@ def score(args: argparse.Namespace) -> None:
     pending: list[tuple[dict[str, object], str]] = []
     for _, record in registry.iterrows():
         path_value = str(record["local_source_path"])
-        functions = source_cache.get(path_value)
+        dataset = str(record["source_dataset"])
+        key = (dataset, path_value)
+        functions = source_cache.get(key)
         if functions is None:
-            source = _source_text(path_value)
+            source = _source_text(path_value, dataset)
             functions = extract_functions(source)
-            source_cache[path_value] = functions
-            source_identity_cache[path_value] = _sha256(_normalise(source)) if source else ""
+            source_cache[key] = functions
+            source_identity_cache[key] = _sha256(_normalise(source)) if source else ""
         for ordinal, (name, text) in enumerate(functions):
             pending.append(
                 (
                     {
                         "dataset": record["source_dataset"],
                         "contract_id": record["contract_id"],
-                        "source_identity_hash": source_identity_cache[path_value],
+                        "source_identity_hash": source_identity_cache[key],
                         "function_ordinal": ordinal,
                         "function_name": name,
                         "function_hash": _sha256(_normalise(text)),
@@ -623,6 +629,11 @@ def score(args: argparse.Namespace) -> None:
     (args.output / "scoring_protocol.json").write_text(
         json.dumps(
             {
+                "protocol": SCORING_PROTOCOL,
+                "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
+                "aggregates_sha256": hashlib.sha256(
+                    (args.output / "contract_aggregates.csv").read_bytes()
+                ).hexdigest(),
                 "checkpoint": str(args.checkpoint.resolve()),
                 "datasets": list(args.datasets),
                 "aggregation": {
@@ -648,9 +659,28 @@ def _metric(y_true: np.ndarray, probability: np.ndarray) -> dict[str, float]:
     }
 
 
+def _validate_scoring_protocol(aggregates: Path) -> dict[str, object]:
+    """Fail closed on raw/unversioned inputs; never silently reuse legacy scores."""
+
+    protocol_path = aggregates.parent / "scoring_protocol.json"
+    if not protocol_path.is_file():
+        raise ValueError("Missing scoring protocol; rescore with the canonical sanitizer")
+    protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
+    if (
+        protocol.get("protocol") != SCORING_PROTOCOL
+        or protocol.get("source_sanitization_version") != SOURCE_SANITIZATION_VERSION
+    ):
+        raise ValueError("Legacy or incompatible scoring protocol; sanitized rescoring required")
+    actual_hash = hashlib.sha256(aggregates.read_bytes()).hexdigest()
+    if protocol.get("aggregates_sha256") != actual_hash:
+        raise ValueError("Aggregate hash does not match its scoring protocol")
+    return protocol
+
+
 def evaluate(args: argparse.Namespace) -> None:
     """Freeze development-selected semantic fusion and evaluate LODO targets."""
 
+    scoring_protocol = _validate_scoring_protocol(args.aggregates)
     aggregates = pd.read_csv(args.aggregates, low_memory=False)
     development = pd.read_csv(args.development_predictions, low_memory=False)
     lodo = pd.read_csv(args.lodo_predictions, low_memory=False)
@@ -792,6 +822,8 @@ def evaluate(args: argparse.Namespace) -> None:
         json.dumps(
             {
                 "version": 1,
+                "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
+                "scoring_protocol": scoring_protocol,
                 "development_dataset": "DAppSCAN",
                 "external_targets": ["DIVE", "Empirical-Analysis"],
                 "scafe_model": "Extra Trees",
