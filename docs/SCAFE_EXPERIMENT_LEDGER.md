@@ -103,3 +103,200 @@ near-clone/template grouping and provenance remain unresolved research issues.
 Outcome: useful integrity improvement; **no demonstrated predictive gain**.
 No commit/push approval is requested for this iteration. No commit, push, PR,
 publication, training, software installation, paid compute, or private upload.
+
+## 2026-11-01 16:00 Israel — Saved-tokenizer annotation exposure audit
+
+Status at registration: active; exclusive lock `/tmp/scafe-research-iteration.lock`.
+Baseline: replication `a83f518`, manuscript `7e4cd05`, both clean. Previous five-file
+integrity fix is now committed and will be preserved. Historical heading above
+said active when first registered; that earlier run completed and released its
+lock. No matching research jobs were found for this iteration. A separate
+data-centric audit may be active; this run is single-threaded tokenizer work and
+will not write any shared baseline/feature CSV, train, or load model weights.
+
+Hypotheses and configuration fixed before evaluation:
+
+- Some of the 493 previously identified annotation-bearing function occurrences
+  expose annotation comment text or full SWC-number markers within the saved
+  CodeBERT 512-token window.
+- Canonical sanitization may change actual token IDs. Count changes without
+  inferring prediction effects or improved vulnerability detection.
+- Use saved local tokenizer, right truncation and special tokens. Verify token IDs
+  and offsets against the historical local AutoTokenizer path for every raw and
+  sanitized input; do not download or substitute a tokenizer.
+- Audit all previously affected DAppSCAN records. Mark the primary development
+  subset using existing IDs; do not use external labels or fit/select any model.
+- Before considering rescoring, inspect checkpoint/score lineage and auxiliary
+  input availability. A current checkpoint hash cannot retrospectively prove
+  which checkpoint produced old scores.
+
+Success criteria: reproducible complete/partial annotation-window counts, no
+annotation exposure after sanitization, focused tests and both integrity
+validators passing, followed by a fresh isolated pdflatex/BibTeX build at the end
+of the iteration, including for code-only changes. Preserve all originals and
+previous paper PDF. No commit/push/PR/publication/install/upload is authorized.
+
+Planned evidence directory:
+`data/derived/sanitized_v1/ml_results/function_tokenizer_exposure_20261101_1600/`.
+
+### Tokenizer audit result and final validation
+
+The hypothesis was confirmed: with the actual saved local CodeBERT tokenizer,
+right truncation, special tokens and a 512-token input window, **450 of 493**
+previously affected function occurrences expose complete SWC-number markers.
+These functions occur in **304 of 325** audited records. Removing annotations
+changes the token IDs for exactly 450 functions; the other 43 annotated functions
+have no annotation tokens inside their retained window and unchanged input IDs.
+There are 553 marker occurrences in the affected function texts, of which 494
+complete markers survive truncation. Zero sanitized function windows contain
+removable annotation comments.
+
+Within the existing primary Extra Trees development subset, **417 of 457**
+affected function occurrences expose complete markers, spanning **278 of 298**
+records; sanitization changes the same 417 input-ID sequences and removes all
+annotation exposure. Counts are occurrences, not independent projects. Token IDs
+and offsets were checked against local AutoTokenizer for every raw/sanitized
+pair (986 encodings). The CPU audit took 2.538 seconds after imports. No model
+weights were loaded, and no detector metric or prediction effect was estimated.
+No external dataset source or labels were used for new model selection.
+
+Historical scoring metadata records a checkpoint path but no checkpoint checksum.
+The current checkpoint SHA-256 was recorded for future identity checking; it
+cannot establish which weights produced historical scores. The auxiliary CSV
+at its recorded training path is still unavailable. Consequently, sanitized
+prediction comparisons/rescoring were deferred in this bounded iteration. These
+are evidence/lineage limits, not a claim that new inference is impossible.
+Old fusion results remain unvalidated for new scientific claims.
+
+Changes: added `scripts/audit_function_tokenizer_exposure.py` and
+`tests/test_function_tokenizer_exposure.py`; appended this ledger entry.
+The previously committed pipeline fix, raw data, shared feature CSVs, model
+checkpoints, saved scores, TeX and repository PDF are preserved. New ignored
+results live in the planned dedicated directory as `summary.json` and
+`function_window_audit.csv`, with tokenizer/checkpoint/input hashes.
+
+Validation before final manuscript build:
+
+- `PYTHONDONTWRITEBYTECODE=1 TOKENIZERS_PARALLELISM=false OMP_NUM_THREADS=1 venv/bin/python -m unittest discover -s tests -p 'test_function*.py' -v`: **15 tests passed**.
+- Both `validate_experiment_integrity.py` and
+  `validate_submission_artifacts.py`: **passed**.
+- AST parsing of both new Python files and `git diff --check`: **passed**.
+- Full pytest suite: **not run**, pytest still absent; nothing installed.
+- Actual tokenizer IDs/offsets match the historical local AutoTokenizer path on
+  all raw/sanitized pairs, so this finding is stronger than extracted-text counts.
+
+Mandatory final isolated manuscript build evidence is recorded outside both
+repositories at
+`/Users/tomer.doitshman/Documents/Codex/2026-11-01/task/scafe_iteration_20261101_1600/manuscript_build/build_report.json`.
+That report is the source of truth for compilation outcome; this entry does not
+prejudge the pending build. The run must not be reported complete without that
+fresh build check. The earlier one-time authorization to replace the repository
+PDF does not authorize replacement by this iteration.
+
+Next step: establish explicit checkpoint/registry/tokenizer hashes for a new
+sanitized scoring campaign, then bound any raw-versus-sanitized diagnostic under
+the same frozen weights. Keep development-only selection and acknowledge that
+previously inspected external corpora are exploratory, not fresh confirmation.
+Dataset provenance, paired/template grouping, context extraction, hard negatives,
+and reliable suspicious-pattern labels remain research priorities.
+
+Outcome: confirmed model-window leakage and reproducible forensic evidence;
+**no predictive improvement demonstrated**. No commit/push approval requested.
+
+## 2026-11-01 — Reference-informed frozen-weight sensitivity pilot
+
+Status at registration: reference review completed; diagnostic pending. Standing
+user authorization now permits reviewed task-owned commits/pushes after tests,
+fresh isolated manuscript compilation and verified local PDF refresh. Older
+ask-each-run/no-push clauses above describe historical runs and are superseded
+for current work. No force push, private-data upload or ignored-artifact staging.
+
+The prior tokenizer audit/tests/ledger were checked against their saved hashes:
+all are task-owned and unchanged since the completed 16:00 iteration. Existing
+replication HEAD is `a83f518`; manuscript HEAD `7e4cd05`. No other user edits were
+present. Current upstreams are GitHub SCAFE-replication `main` and the existing
+Overleaf repository `master`; verify before any push. The paper PDF was refreshed
+at 17:06 Israel and will be backed up before this iteration's final refresh.
+
+Reference review: `docs/SCAFE_REFERENCE_REVIEW_20261101.md` inventories all eleven
+original PDFs, distinguishes verified publication years, conference/journal/
+preprint/pre-proof versions, and provides page/section citations, protocol
+cautions and prioritized gaps. Originals and shared data remain read-only.
+
+Predefined diagnostic (before model outputs):
+
+- New protocol `frozen-annotation-diagnostic-v1`; local checkpoint hash must match
+  the hash established by the tokenizer audit. Restricted `weights_only=True`
+  loading, strict state-dict match, offline cached config/tokenizer only, one CPU
+  thread, no training and a 240-second inference deadline.
+- Sample exactly 24 eligible nonempty DAppSCAN `source_subdataset` project groups,
+  one exposed primary-development function per project, selected by fixed SHA-256
+  ordering without model scores or labels. Project names are grouping metadata,
+  not a verified independent-population guarantee.
+- For each function compare raw text, canonical annotation removal, and a secondary
+  fixed-window control masking only annotation-overlapping token IDs. Keep all
+  11 pattern outputs; duplicate the first three raw inputs to check numerical
+  repeatability. Masking retains context/positions but introduces mask tokens.
+- Primary descriptive endpoint: per-project maximum absolute output change across
+  the 11 labels, its mean and a fixed-seed 2,000 project-resample interval.
+  Report all per-label deltas and uncalibrated 0.5-boundary crossings secondarily.
+- This is a conditional nuisance-sensitivity diagnostic, not a vulnerability
+  accuracy test, calibrated risk estimate, repaired-code test, historical-score
+  reproduction, external validation, or improvement claim. Deletion may also
+  alter truncation/context; the mask control is not a neutral natural-code edit.
+- Cross-project compute lock `/tmp/paper-research-compute.lock`, plus the existing
+  SCAFE advisory lock, must be held throughout model loading/inference. Do not
+  run if locks are busy or another heavy paper job is detected. No GPU use.
+
+Planned isolated evidence directory:
+`data/derived/sanitized_v1/ml_results/frozen_annotation_diagnostic_20261101/`.
+Preserve original scores/checkpoint and never relabel them as newly sanitized.
+
+### Frozen-weight pilot outcome
+
+The preregistered sample included 24 distinct project metadata groups from 212
+eligible groups (417 functions). All 24 raw/sanitized/masked triplets completed
+in 6.590 seconds after imports, under the cross-paper and SCAFE advisory locks,
+on one CPU thread. The first three duplicate raw controls matched exactly.
+
+Annotation removal: mean per-function maximum absolute change across 11 pattern
+outputs **0.075962**, conditional project-resample 95% interval
+**[0.038019, 0.125323]**, median **0.026987**, largest **0.551014**. One of 24
+functions crossed an uncalibrated 0.5 output boundary on at least one pattern.
+Mean absolute change across all 264 function/pattern cells was **0.009658**.
+
+Fixed-window annotation masking: corresponding mean maximum change **0.109704**,
+interval **[0.062750, 0.166493]**, median **0.045311**, largest **0.469841**;
+two functions crossed an uncalibrated boundary. This control holds token/window
+positions and context fixed but introduces mask tokens, so it is not a neutral
+natural-code edit. Deletion also changes truncation/context. Report both
+interventions, all per-label effects and the deterministic control rather than
+selecting a favorable pattern. Intervals condition on the selected 24 project
+names and frozen weights; no population, training or label uncertainty is covered.
+
+Current checkpoint identity is explicitly bound to inputs/config/code/selection
+hashes. Tensor-only checkpoint loading and strict state matching succeeded. Old
+historical scores were not reused, repaired or claimed reproduced. No model was
+trained, downloaded or selected; no external labels or sources were consulted.
+Shared registry and checkpoint hashes matched before and after inference.
+This confirms pattern-output nuisance sensitivity, **not an accuracy gain**.
+
+`docs/FROZEN_ANNOTATION_DIAGNOSTIC_20261101.md` contains the full prespecified
+result and limits. The new reference review inventories eleven editions, with
+page citations, exact PDF hashes, verified/uncertain publication status, protocol
+criticisms and prioritized testable gaps. Original papers remain read-only.
+
+The primary manuscript's scientific claims are unchanged: this small conditional
+pilot is retained in the research record rather than promoted to primary
+vulnerability evidence. A larger provenance-rich hard-negative evaluation and
+recovered training data are still needed. The mandatory fresh isolated build and
+local PDF refresh are final validation steps even though TeX is unchanged.
+The report at the task workspace's
+`scafe_iteration_20261101_refs/manuscript_build/build_report.json`, together with
+`pdf_refresh_result.json` and `run.json`, records actual validation outcomes.
+
+The prior 16:00 tokenizer audit/tests/ledger are attributed to this task and may
+be included with the reviewed new work under the user's current standing
+commit/push authorization. Only explicitly reviewed source/tests/docs may be
+staged; no ignored data, paper PDFs, raw references, private files or unrelated
+edits. Commit/push results and any failures are reported after final validation.
