@@ -300,3 +300,94 @@ be included with the reviewed new work under the user's current standing
 commit/push authorization. Only explicitly reviewed source/tests/docs may be
 staged; no ignored data, paper PDFs, raw references, private files or unrelated
 edits. Commit/push results and any failures are reported after final validation.
+
+## 2026-11-02 10:00 Israel — Safe function-label intake and pilot handoff
+
+Baseline: clean replication `98e029f`; clean manuscript `7e4cd05`. No relevant
+Python jobs were observed and both compute locks were available. Shared registry
+SHA-256 still matches the frozen manifest. No previous experiment was rerun.
+
+The user identified the new pilot at
+`/Users/tomer.doitshman/Desktop/D_local/func-dataset/scafe_function_dataset_pilot`.
+Only authorized files were read; no restricted cross-chat memory was accessed.
+README/report/ledger establish bounded public-source construction with pinned
+revisions, no training, no independent review, all unified pattern labels unknown,
+and no assigned splits. All eighteen delivered hashes match. Originals remain
+read-only, including scripts, manifests, queues and data. No builder/acquisition
+script will be executed and no duplicate dataset/training run will be started.
+
+Predeclared bounded advance: validate this handoff read-only, preserving staging
+states, and fix the independent legacy encoder intake flaw. Controlled pre-change
+unit inputs UNKNOWN, CONTEXT_REQUIRED, missing, a whitespace-padded known label,
+and CLEAN+positive encoded to counts [0,0,0,0,1]. These are software regression
+fixtures, not labeled research examples or performance evidence.
+
+Success criteria:
+
+- Explicit unknown/context-dependent/missing/unsupported annotations must raise
+  before becoming negative targets. CLEAN is accepted only alone; whitespace
+  around known pattern labels is handled deliberately.
+- Validate required CSV fields, unique IDs, all declared splits, exact-text
+  cross-split duplicates and same-text conflicting claims before output creation,
+  registry access or model imports. Do not infer ground truth from these checks.
+- Verify the new pilot's delivered identities, counts, pinned source revisions,
+  unknown labels, review/training/split states and provenance/context coverage
+  without modifying it, constructing labels, assigning splits, or training.
+- Do not automatically map its three categories into the legacy eleven-label
+  closed-set encoder. Partial labels need explicit observation masks and a
+  reviewed schema; unlisted labels are not automatically audited absences.
+- Run focused regressions and both existing integrity validators. Finish with a
+  fresh isolated full TeX/BibTeX build, visual checks, backed-up verified local PDF
+  refresh, then reviewed task-owned commit/push under standing authorization.
+
+Use cross-paper compute and SCAFE advisory locks for the bounded audit and build.
+No installs, downloads, model inference/training, original-data edits or scientific
+accuracy/Q1-readiness claims are part of this iteration.
+
+### Verified handoff and intake outcome
+
+All 18 delivery hashes were independently verified before and after the read-only
+handoff audit. There are 4,299 staging records and 2,323 standalone candidates.
+The latter retain 6,969 unknown unified pattern cells, zero reviewed/training-
+eligible records and zero assigned splits. Of the candidates, 1,680 lack project
+IDs and 1,570 are marked as missing context; 753 report source-file availability,
+which does not establish sufficient caller/modifier/state context. There are 15
+named source/project metadata pairs and one reported token group spanning sources.
+These are producer metadata/count checks, not semantic or clone revalidation.
+
+The new pilot's path, pinned revisions and intended unreviewed state are now
+established from authorized files. Training remains blocked by design until
+independent annotation/adjudication, context/localization review, explicit label
+semantics/observation masks, project/near-clone overlap controls and frozen splits
+are supplied. Its three categories are not mapped into the eleven-output legacy
+classifier. No acquisition, extraction, data construction, relabeling or training
+was repeated, and no original or queue was modified.
+
+The independent legacy intake bug is fixed: unknown, missing, unsupported and
+contradictory CLEAN+positive labels now raise; surrounding whitespace on valid
+labels is recognized. Only sole explicit CLEAN yields the all-zero legacy
+closed-set target. No claim that CLEAN means verified security is made. Malformed
+CSV fields, duplicate IDs, incomplete/invalid splits, exact-text split leakage and
+same-text conflicting claims fail before output creation, registry access or
+model imports. Exact identities do not collapse whitespace within literals and
+do not purport to detect near clones or project leakage.
+
+Code review also found that resume configuration used row count without binding
+label/source/split contents. A new ordered input fingerprint is stored in resume,
+overlap and training metadata. Same-count label/code/split edits and row-order
+changes now alter that identity; incompatible historical resumable states fail
+the existing configuration equality check. No historical state was edited.
+
+The 36 focused unittest tests (31 function/intake/handoff tests plus five frozen-
+diagnostic tests), both integrity validators, and `git diff --check` passed.
+The full pytest suite remains unavailable and was not claimed run. Tests use
+controlled software fixtures, not fabricated research annotations. Details and
+limits are in `docs/FUNCTION_DATASET_INTAKE_20261102.md`. The independent handoff
+report is in the new ignored `function_pilot_handoff_20261102_1000/` result directory.
+
+The primary manuscript claims are unchanged. Final fresh isolated compilation,
+visual inspection, safe backed-up PDF refresh, final/staged review and authorized
+commit/push are required before reporting this iteration complete. Actual final
+outcomes are recorded outside the repos in the task workspace's
+`scafe_iteration_20261102_1000/run.json` and `manuscript_build/build_report.json`.
+No accuracy improvement or Q1-readiness claim is made.

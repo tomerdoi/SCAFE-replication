@@ -133,14 +133,81 @@ def _registry_function_hashes(registry: pd.DataFrame) -> set[str]:
     return hashes
 
 
+def _parse_pattern_labels(value: object, row_number: int) -> tuple[str, ...]:
+    """Encode only explicit legacy closed-set annotations; never guess negatives."""
+
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"Missing pattern annotation at data row {row_number}")
+    parts = tuple(part.strip() for part in value.split(","))
+    if any(not part for part in parts):
+        raise ValueError(f"Empty pattern annotation component at data row {row_number}")
+    if set(parts).intersection({"UNKNOWN", "CONTEXT_REQUIRED", "UNREVIEWED", "UNCERTAIN"}):
+        raise ValueError(
+            f"Unresolved pattern annotation at data row {row_number}; "
+            "unknown/context-dependent labels cannot be encoded as negatives"
+        )
+    if "CLEAN" in parts:
+        if parts != ("CLEAN",):
+            raise ValueError(f"CLEAN must be the sole annotation at data row {row_number}")
+        return ()
+    if any(part not in LABELS for part in parts):
+        raise ValueError(f"Unsupported pattern annotation at data row {row_number}")
+    return tuple(dict.fromkeys(parts))
+
+
 def _multihot(labels: pd.Series) -> np.ndarray:
     matrix = np.zeros((len(labels), len(LABELS)), dtype=np.float32)
     index = {label: position for position, label in enumerate(LABELS)}
-    for row, value in enumerate(labels.astype(str)):
-        for label in value.split(","):
-            if label in index:
-                matrix[row, index[label]] = 1.0
+    for row, value in enumerate(labels):
+        for label in _parse_pattern_labels(value, row + 1):
+            matrix[row, index[label]] = 1.0
     return matrix
+
+
+def _validate_auxiliary_frame(frame: pd.DataFrame) -> pd.DataFrame:
+    """Cheap intake checks before registry access, output creation or model imports.
+
+    This legacy CSV gate does not establish label truth, project independence,
+    near-clone exclusion or compatibility with partially observed label corpora.
+    """
+
+    required = {"id", "statement", "label", "split"}
+    missing = required.difference(frame.columns)
+    if missing:
+        raise ValueError(f"Auxiliary CSV misses columns: {sorted(missing)}")
+    if frame.empty:
+        raise ValueError("Auxiliary CSV is empty")
+    for column in ("id", "statement"):
+        if not frame[column].map(lambda value: isinstance(value, str) and bool(value.strip())).all():
+            raise ValueError(f"Auxiliary CSV has a missing or empty {column}")
+    if frame["id"].duplicated().any():
+        raise ValueError("Auxiliary CSV has duplicate record IDs")
+    if not frame["split"].isin(("train", "val", "test")).all():
+        raise ValueError("Auxiliary split must be train, val, or test")
+    if set(frame["split"]) != {"train", "val", "test"}:
+        raise ValueError("Auxiliary CSV must contain train, val, and test splits")
+    label_keys = [tuple(sorted(_parse_pattern_labels(value, position + 1))) for position, value in enumerate(frame["label"])]
+    identities = pd.DataFrame({
+        "source": frame["statement"].map(lambda text: _sha256(text)).to_numpy(),
+        "split": frame["split"].to_numpy(),
+        "labels": label_keys,
+    })
+    groups = identities.groupby("source")
+    if groups["split"].nunique().gt(1).any():
+        raise ValueError("Identical source text crosses auxiliary splits")
+    if groups["labels"].nunique().gt(1).any():
+        raise ValueError("Identical source text has conflicting annotations; context review required")
+    return frame.copy()
+
+
+def _auxiliary_input_fingerprint(frame: pd.DataFrame) -> str:
+    """Bind actual ordered training inputs and annotations, not just row count."""
+
+    digest = hashlib.sha256()
+    for values in frame[["id", "statement", "label", "split"]].itertuples(index=False, name=None):
+        digest.update(json.dumps(values, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
 
 
 def _thresholds(y_true: np.ndarray, probabilities: np.ndarray) -> list[float]:
@@ -195,6 +262,8 @@ def _set_seed(seed: int) -> None:
 def train(args: argparse.Namespace) -> None:
     """Fine-tune a frozen-bottom transformer and save a reusable checkpoint."""
 
+    auxiliary = _validate_auxiliary_frame(pd.read_csv(args.auxiliary, low_memory=False))
+
     import torch
     from torch import nn
     from torch.utils.data import DataLoader, Dataset
@@ -208,14 +277,6 @@ def train(args: argparse.Namespace) -> None:
     output = args.output / args.model
     output.mkdir(parents=True, exist_ok=True)
     registry = pd.read_csv(args.registry, low_memory=False)
-    auxiliary = pd.read_csv(args.auxiliary, low_memory=False)
-    required = {"id", "statement", "label", "split"}
-    missing = required.difference(auxiliary.columns)
-    if missing:
-        raise ValueError(f"Auxiliary CSV misses columns: {sorted(missing)}")
-    if not set(auxiliary["split"]).issubset({"train", "val", "test"}):
-        raise ValueError("Auxiliary split must be train, val, or test")
-
     overlap_hashes = _registry_function_hashes(registry)
     function_hashes = auxiliary["statement"].astype(str).map(
         lambda text: _sha256(_normalise(text))
@@ -230,6 +291,7 @@ def train(args: argparse.Namespace) -> None:
     overlap_audit = {
         "protocol": "exact-normalized-function-overlap-v1",
         "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
+        "auxiliary_input_fingerprint": _auxiliary_input_fingerprint(filtered),
         "auxiliary": str(args.auxiliary.resolve()),
         "registry": str(args.registry.resolve()),
         "primary_datasets": list(PRIMARY_DATASETS),
@@ -344,6 +406,7 @@ def train(args: argparse.Namespace) -> None:
     start_epoch = 1
     run_config = {
         "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
+        "auxiliary_input_fingerprint": _auxiliary_input_fingerprint(filtered),
         "model_name": model_name,
         "max_length": args.max_length,
         "freeze_layers": args.freeze_layers,
@@ -466,6 +529,7 @@ def train(args: argparse.Namespace) -> None:
     metadata = {
         "protocol": "external-function-pattern-multilabel-v1",
         "source_sanitization_version": SOURCE_SANITIZATION_VERSION,
+        "auxiliary_input_fingerprint": _auxiliary_input_fingerprint(filtered),
         "model": args.model,
         "model_name": model_name,
         "labels": list(LABELS),
