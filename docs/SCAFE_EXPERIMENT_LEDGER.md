@@ -391,3 +391,52 @@ commit/push are required before reporting this iteration complete. Actual final
 outcomes are recorded outside the repos in the task workspace's
 `scafe_iteration_20261102_1000/run.json` and `manuscript_build/build_report.json`.
 No accuracy improvement or Q1-readiness claim is made.
+
+
+## 2 November 2026, 12:00 Israel — actionable function review pilot
+
+Hypothesis and success criteria were recorded before evaluation in the task
+workspace `scafe_iteration_20261102_1200/run.json`. Prepare 24 source-balanced,
+short, distinct-input/family candidates with independent two-reviewer templates,
+three categories and three explicit axes, exact evidence spans, unknown-preserving
+comparison and an adjudication queue. Preserve all delivered originals and source
+claims separately; do not create training labels, assign splits or run a model.
+No full-source snapshot cache is present in the delivered pilot, so provided
+context is snippet-only and contextual/vulnerability labels cannot be promoted.
+This is a feasibility/review-tooling advance, not classifier evaluation.
+
+### Verified review-pilot outcome
+
+Created the new local derivative
+`scafe_function_dataset_pilot/derivatives/review_pilot_v1_20261102T1200/`: 24
+functions, eight per source, 216 explicit category/axis cells per reviewer (432
+across two blank packets), a readable claim-withheld view, coordinator-only
+provenance key, rubric and immutable artifact manifest. Distinct exact model-input
+hashes and producer family hashes in the selected queue are 24/24, not a global
+near-clone or project-independence certification. Sixteen selected candidates lack
+project IDs; 16 report source availability and eight missing context, but no
+full-source snapshot bytes are present in the delivered handoff. This version
+therefore records snippet-only context and blocks non-unknown contextual suspicion
+or vulnerability judgments. It neither relabels the originals nor assigns splits.
+
+All seven final kit files, including its manifest, were byte-identical on replay.
+The 18 delivered originals passed before/after hash checks. Blank actual packets
+were rejected by the comparison CLI with no output artifact. The two reviewer
+forms are pending independent completion, not completed annotations. All 2,323
+original candidates retain unknown labels, zero reviewed/training-eligible rows
+and zero assigned splits. No human review or model training was performed.
+
+Fifty focused stdlib unittest tests passed (45 function/intake/handoff/review tests
+plus five frozen-diagnostic tests), including 14 new review regressions; both
+integrity validators passed. Full pytest remains unavailable; no installation was
+attempted. Scientific value is an executable, evidence-preserving annotation
+workflow and concrete small review action, not measured accuracy improvement.
+See `docs/FUNCTION_REVIEW_PILOT_20261102.md` for rubric, limitations and commands.
+
+Required end-of-run fresh isolated manuscript compilation/visual checks, safe
+backed-up local PDF refresh, final/staged review and authorized commit/push are
+recorded in the task workspace `scafe_iteration_20261102_1200/run.json` and its
+`manuscript_build/build_report.json`. Manuscript claims are unchanged. The next
+independent advance is recovering pinned context bytes/provenance and registering
+a new context-enriched release while arranging the bounded first-pass review.
+This pilot cannot become a training benchmark merely through reviewer agreement.
