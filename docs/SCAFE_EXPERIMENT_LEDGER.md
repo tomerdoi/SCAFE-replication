@@ -551,3 +551,60 @@ are unchanged. The next gate is independent category-specific context adjudicati
 and resulting evidence requests, followed by separately versioned pattern-label
 annotation, project/clone controls and frozen evaluation cohorts. Agreement is not
 truth, sufficient context is not exploitability, and unknowns are never negatives.
+
+
+## 2 November 2026, 15:00 Israel — all-candidate split constraints
+
+Predeclared hypothesis/protocol and input identities are recorded in task workspace
+`scafe_iteration_20261102_1500/run.json`. Build exact/provenance constraints for all
+2,323 candidates, then a separate consistent-identifier-template sensitivity graph.
+Preserve literal values/member selectors and distinguish verified input identities
+from source-asserted project/address/context metadata. Propagate existing raw-context
+corpus-presence seeds conservatively, without claiming extra confirmed source
+matches, new project identities, semantic clones or actual train/test assignments.
+No labels, model training or performance-based graph selection are involved.
+
+### Verified grouping outcome
+
+All 2,323 candidates now have two versioned split-constraint memberships, stable
+component IDs and typed edge provenance. The exact/provenance graph has 1,326
+components (largest 68, one cross-source component, no multi-project metadata
+component). Adding identifier-template sensitivity constraints gives 1,228
+components (largest 170, four cross-source components, three multi-project metadata
+components of sizes 170/150/109 spanning 4/3/2 recorded project anchors). Template
+relationships may be common boilerplate or distinct callees/types; they are not
+verified semantic clones, project identities or proof of leakage under an unrun
+split. The source/metadata versus template distinction is retained explicitly.
+
+The 136 directly verified local-context corpus-presence seeds remain 136. Their
+conservative component quarantine propagates to 255 evidence-graph records (+119)
+and 307 strict-template records (+171). These are policy-derived exclusion scopes,
+not new independently confirmed raw-source matches. Missing original project IDs
+remain 1,680; no new IDs, labels, eligibility or split assignments were inferred.
+Raw context coverage remains 136/2,323 and independently reviewed labels remain zero.
+
+Lexical signatures were computed for 2,321 records (1,865 token signatures; 1,743
+identifier-template signatures). Two HF records fail the new heuristic literal
+scanner and are retained with explicit representation-review status and no guessed
+token/template edges. This is not a compiler rejection; original snippets remain
+unchanged. The new local derivative is
+`scafe_function_dataset_pilot/derivatives/constraint_groups_v1_20261102T1500/`.
+All five artifacts reproduce byte-for-byte. An independent registry check verified
+both complete/disjoint partitions, recomputed component IDs, all 2,771 typed spanning
+edges held within their declared graphs, monotonic quarantine and unchanged unknown
+labels/false eligibility/unassigned splits. All 18 original hashes and the recovery
+release are preserved; no source/data/reviewer payload was uploaded.
+
+All 83 focused unittest tests passed (78 function-related, including nine new
+grouping regressions, plus five frozen-diagnostic tests), as did both integrity
+validators. Full pytest remains unavailable and was not installed/run. Scientific
+value is measured prospective evaluation constraints, template sensitivity and two
+representation-review findings, not classifier accuracy or dataset-finalization.
+See `docs/FUNCTION_GROUPING_20261102.md` for protocol, reproduction and limitations.
+
+Fresh isolated TeX/BibTeX build/visual/PDF-refresh checks, final/staged review and
+commit/push evidence are in task workspace `scafe_iteration_20261102_1500/run.json`
+and its build report. Manuscript scientific claims are unchanged. Next inspect
+strict-template bridges/overmerge, recover the two flagged representations, resolve
+provenance and independent labels, then prespecify frozen grouped evaluation rather
+than selecting a favorable grouping using model performance. No training occurred.
