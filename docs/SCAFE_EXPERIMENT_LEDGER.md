@@ -492,3 +492,62 @@ or claimed run. Final fresh isolated TeX/BibTeX build, PDF visual checks/backed-
 local refresh, final/staged review and commit/push outcomes are recorded in the
 task workspace `scafe_iteration_20261102_1300/run.json` and its build report. The
 manuscript claims are unchanged; context availability is the measured data gain.
+
+
+## 2 November 2026, 14:00 Israel — context-enriched review release
+
+The interrupted startup left no staging artifacts, owner file or active run.
+After reconnection, clean worktrees, free locks and all 18 original hashes were
+verified before resuming the same iteration. Predeclared goals and input hashes
+are in task workspace `scafe_iteration_20261102_1400/run.json`. Prepare a separate
+context-sufficiency review release for the four exact recoverable records from
+the prior review queue, preserving raw sources, claims and all pattern unknowns.
+Mask comments while preserving literals, Unicode offsets and source line endings;
+expose dependency gaps without declaring closure or promoting labels.
+
+The exact-legacy-view criterion initially failed: three fragments were identical,
+one differed only in 15 comment carriage returns formerly masked as spaces. The
+amended boundary permits only raw CR/legacy-space at verified comment positions
+or endings, records both hashes/counts and rejects every other difference. No
+output existed at that failed check. This is a separately versioned review view,
+not a silent change to original model inputs or checkpoint lineage.
+
+### Verified context-review outcome
+
+Created the separate local derivative
+`scafe_function_dataset_pilot/derivatives/context_review_v1_20261102T1400/` with
+four full-source review views, exact function links and 12 category-specific
+context-assessment cells per reviewer. This is the exact recoverable intersection
+of the earlier 24-function queue: three SCRUBD records and one CoinFabrik record.
+All raw contexts and prior packets remain unchanged. 118 comment spans are masked
+with string literals, Unicode offsets and source CR/LF preserved; one import
+directive is exposed as unresolved. Dependency closure is unverified for all four,
+including zero-import cases. Both legacy/new hashes and the one 15-character CR
+comment-view difference are recorded. Generator and both input manifest hashes
+bind the output. All final artifacts were byte-identical on replay.
+
+Two independent context-assessment templates require per-category reasons, exact
+document-bound evidence, assumptions/dependency reasoning for sufficient proposals
+and concrete missing evidence for insufficient proposals. Every cell, including
+agreements, enters independent context adjudication; the tool never passes a
+context gate, promotes pattern labels or assigns eligibility/splits. Actual blank
+packets were rejected by the CLI with no output. No reviewer was contacted, no
+independent review was completed and no training occurred. Existing-corpus
+quarantine and license/project unknowns remain. Overall recovered raw context
+coverage stays 136/2,323; first-pass context-view availability improves from zero
+to four. This is review-tooling/data-readiness work, not accuracy improvement.
+
+All 74 focused unittest tests passed (69 function-related, including 12 new
+context-review tests, plus five frozen-diagnostic tests). Both integrity validators
+passed. Full pytest remains unavailable and was not installed/run. The brief
+shared-compute-lock contention deferred preparation without overlapping jobs; it
+resolved before final generation. The earlier interrupted startup was confirmed
+not to have created a stage or active run before safely resuming.
+
+Fresh isolated TeX/BibTeX build/visual checks, backed-up verified local PDF refresh
+and reviewed commit/push evidence are in task workspace
+`scafe_iteration_20261102_1400/run.json` and its build report. The manuscript claims
+are unchanged. The next gate is independent category-specific context adjudication
+and resulting evidence requests, followed by separately versioned pattern-label
+annotation, project/clone controls and frozen evaluation cohorts. Agreement is not
+truth, sufficient context is not exploitability, and unknowns are never negatives.
