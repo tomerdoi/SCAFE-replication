@@ -440,3 +440,55 @@ recorded in the task workspace `scafe_iteration_20261102_1200/run.json` and its
 independent advance is recovering pinned context bytes/provenance and registering
 a new context-enriched release while arranging the bounded first-pass review.
 This pilot cannot become a training benchmark merely through reviewer agreement.
+
+
+## 2 November 2026, 13:00 Israel — pinned local context recovery
+
+Predeclared hypothesis, bounds and success criteria are in the task workspace
+`scafe_iteration_20261102_1300/run.json`: recover only exact pinned context texts
+from existing authorized local corpora, preserve raw/text hashes and original
+labels, quarantine existing-corpus overlap, and report coverage honestly. No
+network acquisition, source execution, training or split assignment is authorized
+for this bounded advance. The initial directory walk hit its 100,000-directory
+budget before output creation; bounded null-delimited rg listing replaced it.
+
+### Verified context recovery outcome
+
+Recovered 21 exact pinned source texts from 22 existing local files, covering
+136/2,323 candidates (5.85%): 112 CoinFabrik and 24 SCRUBD. All 136 linked raw
+function fragments passed exact hash/character-span checks. This establishes
+inspectable bytes and lexical fragment identity, not sufficient semantic context,
+AST validity or annotation truth. For CoinFabrik the pinned producer offset is
+checked; the single candidate span status is not global semantic uniqueness.
+
+The new local derivative is
+`scafe_function_dataset_pilot/derivatives/local_context_v1_20261102T1300/`.
+Its 21 source files and five metadata files reproduce byte-for-byte on a second
+run. Of 212,823 listed local Solidity paths, only 48 basename-matched files were
+read. The initial stdlib walk exceeded its directory budget before output; the
+bounded existing rg listing resolved that resource issue. All 18 delivered hashes
+and all 48 selected local source hashes were checked unchanged. No sources were
+downloaded, executed, modified or uploaded.
+
+Every recovered candidate is flagged `quarantine_existing_corpus_overlap`, since
+matches reside in local FORGE or smartbugs-wild corpora. This is presence evidence,
+not a determination of historical train/test membership. Audit-folder hints do
+not become project IDs. All original labels, unresolved licenses and missing
+project IDs remain unchanged; zero independent annotations, training-eligible
+records or frozen splits were added. 2,187 candidates still lack verified context
+in this derivative. CodeBERT was not trained and no accuracy gain is claimed.
+
+Four records in the old 24-function review queue have recovered source hashes;
+that immutable snippet-only queue is not retroactively upgraded. Full source may
+still omit imports, callers or relevant callees, and its comments may reveal
+annotation claims. A separately versioned context-enriched review protocol and
+context-sufficiency checks are next; raw evidence is not a sanitized model input.
+See `docs/FUNCTION_CONTEXT_RECOVERY_20261102.md` for bounds, schema and limits.
+
+Sixty-two focused unittest tests passed (57 function-related tests including 12
+new context-recovery regressions, plus five frozen-diagnostic tests). Both project
+integrity validators passed. Full pytest remains unavailable and was not installed
+or claimed run. Final fresh isolated TeX/BibTeX build, PDF visual checks/backed-up
+local refresh, final/staged review and commit/push outcomes are recorded in the
+task workspace `scafe_iteration_20261102_1300/run.json` and its build report. The
+manuscript claims are unchanged; context availability is the measured data gain.
