@@ -86,4 +86,56 @@ class FunctionInlineAnnotationTests(unittest.TestCase):
             source.write_text('tampered')
             with self.assertRaises(ValueError):clean.prepare(pilot,baseline,recovery,root/'three')
 
+class FunctionIfBlockAnnotationTests(unittest.TestCase):
+    def test_complete_if_prefix_balances_nested_calls_and_literals(self):
+        self.assertTrue(clean.complete_if_block_prefix('    if (IERC20(token).balanceOf(address(this)) == 0) {'))
+        self.assertTrue(clean.complete_if_block_prefix('if (message == "(literal)") {'))
+        for prefix in ['function f() {','while (ok) {','else if (ok) {','if (call(x) {','if (ok) {} {','if (ok) {\n']:
+            with self.subTest(prefix=prefix):self.assertFalse(clean.complete_if_block_prefix(prefix))
+
+    def test_if_block_mask_is_explicit_opt_in_and_preserves_guard(self):
+        text='function f(){\n    if (ok) { <- @audit-issue explanation\r\n        execute();\n    }\n}'
+        self.assertEqual(clean.filter_view(text)[0],text)
+        view,audit=clean.filter_view(text,include_if_blocks=True)
+        self.assertEqual(len(audit['events']),1);self.assertEqual(audit['events'][0]['anchor'],'complete_if_block_opener')
+        self.assertIn('if (ok) {',view);self.assertIn('execute();',view);self.assertEqual(len(view),len(text))
+        self.assertEqual([i for i,c in enumerate(view) if c in '\r\n'],[i for i,c in enumerate(text) if c in '\r\n'])
+
+    def test_structural_tails_other_headers_and_comparisons_are_not_masked(self):
+        cases=['if (ok) { <- @audit-issue note; execute(); }','if (ok) { <- audit-issue note }',
+               'while (ok) { <- audit-issue note\n}', 'function f() { <- audit-issue note\n}',
+               'if (x <-audit-issue) { execute(); }','if (message == "<- @audit-issue") {execute();}']
+        for text in cases:
+            with self.subTest(text=text):self.assertEqual(clean.filter_view(text,include_if_blocks=True)[0],text)
+
+    def test_v2_requires_explicit_prior_view(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            with self.assertRaisesRegex(ValueError,'requires an immutable prior'):
+                clean.prepare(root/'pilot',root/'baseline',root/'recovery',root/'out',include_if_blocks=True)
+
+    def test_prior_v1_views_reproduced_and_annotated_migration_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);pilot=root/'pilot';(pilot/'public_output').mkdir(parents=True)
+            ifbad='function g(){\n if (ok) { <- @audit-issue note\n execute();\n }\n}'
+            rows=[row('a',BAD),row('b',ifbad)];clean.write_jsonl(pilot/'public_output/function_candidates.jsonl',rows)
+            (pilot/'DELIVERY_SHA256.json').write_text(json.dumps({'public_output/function_candidates.jsonl':clean.sha256(pilot/'public_output/function_candidates.jsonl')}))
+            recovery=pilot/'derivatives/recovery';recovery.mkdir(parents=True);clean.write_jsonl(recovery/'candidate_context_links.jsonl',[{'record_id':r['record_id'],'context_file':None} for r in rows])
+            (recovery/'recovery_manifest.json').write_text(json.dumps({'delivery_manifest_sha256':clean.sha256(pilot/'DELIVERY_SHA256.json'),'artifact_sha256':{'candidate_context_links.jsonl':clean.sha256(recovery/'candidate_context_links.jsonl')}}))
+            baseline=pilot/'derivatives/baseline';clean.grouping.prepare(pilot,recovery,baseline)
+            prior=pilot/'derivatives/v1';clean.prepare(pilot,baseline,recovery,prior)
+            before={str(p):clean.sha256(p) for p in pilot.rglob('*') if p.is_file()}
+            result=clean.prepare(pilot,baseline,recovery,root/'v2',include_if_blocks=True,prior_view=prior)
+            self.assertEqual(result['protocol'],clean.VERSION_IF_BLOCK);self.assertEqual(result['changed_records'],2)
+            self.assertEqual(result['prior_view_comparison']['changed_record_ids'],['b']);self.assertEqual(result['remaining_marker_matches'],0)
+            for name,digest in before.items():self.assertEqual(clean.sha256(Path(name)),digest)
+            prior_rows=list(clean.jsonl_rows(prior/'function_model_views.jsonl'));new_rows=list(clean.jsonl_rows(root/'v2/function_model_views.jsonl'))
+            self.assertEqual(prior_rows[0]['model_code'],new_rows[0]['model_code'])
+            self.assertTrue(all(r['view_protocol']==clean.VERSION_IF_BLOCK and not r['training_eligible'] for r in new_rows))
+            prior_rows[0]['pattern_labels']['authorization']=True;prior_rows[0]['label_observation_mask']['authorization']=True
+            clean.write_jsonl(prior/'function_model_views.jsonl',prior_rows);manifest=json.loads((prior/'manifest.json').read_text())
+            manifest['artifact_sha256']['function_model_views.jsonl']=clean.sha256(prior/'function_model_views.jsonl');(prior/'manifest.json').write_text(json.dumps(manifest))
+            with self.assertRaisesRegex(ValueError,'explicit label migration'):
+                clean.prepare(pilot,baseline,recovery,root/'refused',include_if_blocks=True,prior_view=prior)
+
 if __name__=='__main__':unittest.main()

@@ -666,3 +666,59 @@ rule, residual stable ID, schema, lineage and limits. Next resolve the remaining
 block-opener artifact from original evidence and independent context/category
 review. Other cue types, labels, licenses, provenance and frozen-evaluation gates
 remain unresolved; tokenizability is not training readiness or Q1 readiness.
+
+
+## 3 November 2026, 11:00 Israel — guarded if-block view v2
+
+Work began after the scheduled 11:00 Israel start, following read-only preflight.
+Predeclared hypothesis and acceptance gates are in task workspace
+`scafe_iteration_20261103_1100/run.json`. Extend the filter only via explicit v2
+opt-in and an immutable prior v1 release, for a same-line complete balanced
+`if (...) {` header outside literals/comments, rejecting any brace or semicolon
+in the annotation tail. Reproduce every default v1 code view before extension,
+allow changes only to prior residual-flagged records, preserve all prior masks,
+source offsets, unknown labels and ancestor hashes. No training, compiler/gold-label
+or performance claim is involved. The staged-import precedence issue rejected a
+new keyword before processing; explicit loaded-module identity corrected it.
+
+### Verified v2 outcome
+
+All 2,323 default v1 code views reproduced against their immutable parent before
+extension. Exactly one record changes relative to v1:
+`b407a429c804fffa264515bba167e0c7bcf394622854252df70c3bb0baf50db8`.
+The new event follows a complete balanced same-line if header and its annotation
+tail contains no brace/semicolon. The condition, block delimiters and statements
+remain outside the recorded mask span. All six old semicolon masks are unchanged.
+
+The separate local release is
+`scafe_function_dataset_pilot/derivatives/annotation_view_v2_20261103T1100/`.
+There are seven total masks versus delivered originals, zero residual occurrences
+of the declared audit-issue marker and zero flags for this declared representation
+issue. Lexical-signature success remains 2,323/2,323, evidence/strict components stay
+1,324/1,226, direct raw-context overlap stays 136 and conservative quarantine remains
+255/307. These are source-view/constraint facts, not compiler, semantic, gold-label,
+performance or complete cue-removal validation. Independent reviews, observed
+labels, training eligibility and actual splits remain zero.
+
+Every v2 model record binds original and direct-parent input hashes/protocols;
+prior manifests, ancestor hashes and generator/helpers are retained. Existing
+human labels/review states in a parent require explicit migration rather than a
+silent reset. All nine generated artifacts reproduce byte-for-byte. Independent
+checks verify one prior-view delta, seven hashed spans (six old + one if block),
+unchanged Unicode/CR/LF positions and out-of-span code, fresh group input hashes,
+complete/disjoint partitions and held-together edges, with unknown/unobserved
+labels and no eligibility/splits. Originals and prior releases remain unchanged;
+no source/candidate/reviewer data was uploaded.
+
+All 99 focused unittest tests passed (94 function-related, including five new
+if-block regressions, plus five frozen-diagnostic tests), as did both integrity
+validators. Full pytest remains unavailable and was not installed/run. The old
+module selected during first staged validation rejected the new keyword before
+processing; corrected path precedence plus loaded-file assertion resolved it.
+
+Fresh isolated full TeX/BibTeX build/visual/PDF-refresh and final/staged/Git proof
+are recorded in task workspace `scafe_iteration_20261103_1100/run.json` and its
+build report. See `docs/FUNCTION_IF_BLOCK_ANNOTATIONS_20261103.md` for exact scope,
+reproduction and limits. Next pursue independent context/category evidence and
+provenance/license/frozen-evaluation gates; finishing this known annotation form
+is not training readiness or a Q1-journal performance result. No training occurred.
