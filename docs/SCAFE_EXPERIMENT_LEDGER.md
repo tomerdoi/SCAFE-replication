@@ -608,3 +608,61 @@ and its build report. Manuscript scientific claims are unchanged. Next inspect
 strict-template bridges/overmerge, recover the two flagged representations, resolve
 provenance and independent labels, then prespecify frozen grouped evaluation rather
 than selecting a favorable grouping using model performance. No training occurred.
+
+
+## 3 November 2026, 10:00 Israel — inline audit-prose model-view filter
+
+Predeclared hypothesis, narrow acceptance rule and input identities are in task
+workspace `scafe_iteration_20261103_1000/run.json`. Two literal-scanner failures
+contain audit-issue prose after completed statements, outside comments. Audit the
+whole 2,323-record cohort and create a separate view masking only that exact
+post-semicolon form outside literals/comments. Preserve CR/LF/Unicode offsets,
+original files, unknown labels and all code outside recorded spans. Report every
+residual honestly; recompute signatures/groups without stale producer hashes.
+No training, compiler-validity, gold-label or accuracy claim is made.
+
+### Verified inline annotation-view outcome
+
+The whole-cohort audit found seven declared inline audit-marker occurrences.
+Six post-semicolon tails in six records satisfy the predeclared outside-literal/
+comment rule and are masked in the new versioned view. One marker follows a block
+opener and remains untouched with explicit representation-review flags; the rule
+was not broadened to conceal that residual. Both known apostrophe-induced literal
+scanner failures resolve under the frozen heuristic tokenizer: successes rise
+2,321→2,323, failures 2→0. This is not compiler/semantic validation or recovery of
+an independently audited original contract. Source claims never become labels.
+
+The new local derivative is
+`scafe_function_dataset_pilot/derivatives/annotation_view_v1_20261103T1000/`.
+All 2,323 views bind parent/new input hashes, exact masking spans and ancestry;
+producer token/template fields are omitted instead of copied stale. Three-category
+labels remain null with explicit all-false observation masks (unknown, not negative).
+All rows remain unreviewed, training-ineligible and unsplit. Original records and
+prior derivatives remain intact, with annotation prose available only in parent
+evidence rather than new model code for the six handled tails.
+
+Recomputed grouping uses the frozen implementation and actual context-overlap
+seeds. Evidence components decrease 1,326→1,324; strict-template components decrease
+1,228→1,226, exposing additional token-signature duplicate constraints. Raw-context
+overlap stays 136, conservative quarantine stays 255/307, and all provenance/clone/
+overmerge limitations remain. Old input signatures, checkpoints and group releases
+cannot be silently mixed with the new representation. No model was trained or
+rescored and no accuracy gain is claimed.
+
+All nine final artifact files reproduce byte-for-byte. Independent checks verify
+all changes lie inside the six hashed masking spans, unchanged Unicode offsets
+and CR/LF positions, all unknown/unobserved targets, no eligibility/splits or stale
+producer fields, and all 2,775 recomputed graph edges held inside their declared
+complete/disjoint partitions. All 18 delivered originals and input release hashes
+were preserved. All 94 focused unittest tests passed (89 function-related including
+11 new inline-filter regressions, plus five frozen-diagnostic tests), and both
+integrity validators passed. Full pytest remains unavailable; no installation/run
+was claimed.
+
+Fresh isolated full TeX/BibTeX build/visual/PDF-refresh and reviewed commit/push
+proof is recorded in task workspace `scafe_iteration_20261103_1000/run.json` and
+its build report. See `docs/FUNCTION_INLINE_ANNOTATIONS_20261103.md` for acceptance
+rule, residual stable ID, schema, lineage and limits. Next resolve the remaining
+block-opener artifact from original evidence and independent context/category
+review. Other cue types, labels, licenses, provenance and frozen-evaluation gates
+remain unresolved; tokenizability is not training readiness or Q1 readiness.
