@@ -780,3 +780,52 @@ reviews, training-eligible records and assigned splits remain zero; no model
 training, inference or accuracy gain is claimed. Next inspect the newly available
 context for category/dependency evidence and resolve ambiguous enclosing-contract
 mappings before any adjudication or frozen evaluation design.
+
+## 3 November 2026, 13:00 Israel — qualified lexical function scopes
+
+Predeclared scope-mapping hypothesis and conservative acceptance rules are in
+workspace `scafe_iteration_20261103_1300/run.json`. Across all 145 context-covered
+records, test whether the explicit producer contract-qualified function identifier
+agrees with one exact original fragment at direct member depth in its lexical
+contract/library/interface declaration. Comments/literals cannot create scopes;
+braces/body boundaries must match. Repeated owners, multiple alternatives,
+unsupported qualifiers/forms and malformed scope evidence stay unresolved. No
+first-match selection, source execution, corpus rescan, inference or training.
+
+All three previously ambiguous records have one owner-compatible lexical selection:
+RC.giveToken at character 11,315 (line 314), RC.refundEther at 12,328 (line 345),
+and RCpro.refundEther at 19,566 (line 549). RC starts at source line 168 and RCpro
+at 360. The refund functions have identical bytes; qualifiers distinguish their
+lexical definitions conditionally. Producer qualifier truth is not independently
+verified. Original raw uniqueness remains 142 and all three multiple-span lists
+are preserved; do not relabel this as 145 unique raw fragments.
+
+Whole covered-cohort results: 139 unique named-function/qualified-owner mappings,
+six unsupported special forms (five constructor qualifiers and one receive), and
+2,178 records without supplied context. The six are not demonstrated owner errors
+or bad labels. Initial generic unsupported/conflict diagnostics were refined to
+name special forms; selection and the predeclared named-function-only rule stayed
+unchanged. Context documents/coverage remain 26/145, direct overlap remains 145,
+and conservative quarantine remains 264/316. No new source, project/license truth,
+label, reviewed annotation, training eligibility or split was created.
+
+New local four-file derivative:
+`scafe_function_dataset_pilot/derivatives/scope_mappings_v1_20261103T1300/`.
+The manifest binds the original delivery, prior context release and exact helpers.
+Context artifact references resolve against that immutable input release; no raw
+source is copied or uploaded. All four files reproduce byte-for-byte. Independent
+checks confirm chosen raw hashes, declaration/function boundaries and qualifiers,
+three explicit selections, six unsupported forms, all original alternatives,
+unknown/unobserved labels, unchanged parent contexts/groups and original 18 files.
+This is contextual provenance evidence, not a Solidity AST/inheritance resolver,
+compiler validity, dependency sufficiency, suspicious-pattern truth or accuracy gain.
+
+All 117 focused tests passed: 112 function-related including ten new scope
+regressions, plus five frozen-diagnostic tests. Both integrity validators passed;
+full pytest is absent and was not installed/run. The reference review's P1
+context/dependency gap motivates this evidence step. Fresh full isolated paper
+compilation, visual checks, backed-up PDF refresh and final/staged/Git evidence
+are recorded in the current workspace run/build reports. Manuscript scientific
+claims and current model code remain unchanged. Next use the localized context
+for concrete category/dependency review; independent adjudication, provenance/
+license controls, frozen grouped evaluation and simple baselines still gate CodeBERT.
