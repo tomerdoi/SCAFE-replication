@@ -829,3 +829,52 @@ are recorded in the current workspace run/build reports. Manuscript scientific
 claims and current model code remain unchanged. Next use the localized context
 for concrete category/dependency review; independent adjudication, provenance/
 license controls, frozen grouped evaluation and simple baselines still gate CodeBERT.
+
+## 3 November 2026, 14:00 Israel — call-result source evidence and review queue
+
+Before evaluation, workspace `scafe_iteration_20261103_1400/run.json` fixed all 139
+qualified named functions and the member spellings call/delegatecall/staticcall/
+callcode/send. Transfer was excluded because address/token meaning is type-dependent.
+Extract exact source spans and immediate result-use shapes; do not infer external
+call semantics, safe negatives, suspicious-pattern truth or training labels.
+
+All 139 functions were analyzed across 26 existing contexts. 28 sites occur in 21 functions:
+14 call and 14 send spellings; 15 direct, 10 legacy gas/value and 3 modern-option invocations.
+Fourteen sites in ten functions match the conservative complete bare-expression
+result-discard rule; seven are lexical guard-expression contexts, three assignment
+contexts and four ambiguous/other. No returned-expression sites occur here.
+Guards/assignments are comparators, not verified handled failures or hard negatives.
+Indexed/complex receivers and compound-flow windows can conservatively remain
+ambiguous even when their result is actually ignored. These counts are descriptive
+source facts, not precision, recall, prevalence or confirmed vulnerability yield.
+
+New local five-file release:
+`scafe_function_dataset_pilot/derivatives/call_evidence_v1_20261103T1400/`.
+It includes 2,323 function status rows, 28 hash/offset-bound call-site records, a complete
+21-function coordinator queue, summary and manifest. Queue priorities retain the
+ten bare-result-candidate functions first and all other observed-site functions
+as comparators. No reviewer was contacted or decision fabricated. Context/selected
+function references bind the immutable prior context and scope releases; codeviews,
+originals, groups, 145 direct overlap seeds and 264/316 quarantine counts stay unchanged.
+
+All 28 site excerpts were inspected as source evidence. Compound/guard lexical windows
+can span multiple statements, so the field is explicitly statement_window_span,
+not an AST statement. This naming clarification did not change sites, selection
+or dispositions. Member/invocation/window raw and masked hashes, absolute Unicode
+spans, queue membership, immutable parents and unknown/unobserved label fields
+passed independent checks. All five release files reproduce byte-for-byte.
+Missing-context 2,178 records and six unsupported special functions have null analysis
+counts, never negative labels. An analyzed function with no observed spelling is
+not clean. Receiver types, CFG/value propagation, dependency sufficiency, qualifier
+truth, licenses and independent category decisions remain review requirements.
+
+All 127 focused tests passed: 122 function-related including ten new evidence regressions,
+plus five frozen diagnostics. Both integrity validators passed. Full pytest is
+absent and was not installed/run. Fresh isolated full paper compilation, visual
+checks, backed-up PDF refresh and final/staged/Git evidence are recorded in the
+current workspace run/build reports. The reference review's P1 context-aware call
+question motivates this concrete evidence, not a source-label shortcut. Scientific
+manuscript claims remain unchanged. Independent reviews, training-eligible records
+and splits remain zero; no model inference, training, accuracy or Q1-readiness gain.
+Next establish receiver/callee and result-propagation evidence for the ten priority
+functions and seek independent category adjudication before CodeBERT evaluation.
