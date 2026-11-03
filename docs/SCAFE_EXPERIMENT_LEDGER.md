@@ -722,3 +722,61 @@ build report. See `docs/FUNCTION_IF_BLOCK_ANNOTATIONS_20261103.md` for exact sco
 reproduction and limits. Next pursue independent context/category evidence and
 provenance/license/frozen-evaluation gates; finishing this known annotation form
 is not training readiness or a Q1-journal performance result. No training occurred.
+
+## 3 November 2026, 12:00 Israel — bounded filename-independent context recovery
+
+Predeclared hypothesis: source files missed by the prior basename prefilter may
+still exist under different names in authorized local corpora. Before evaluation,
+workspace `scafe_iteration_20261103_1200/run.json` fixed a corpus-round-robin sorted
+search, at most 2 GiB / 90,000 read files, 16 MiB/file and 500,000 listed paths.
+Only exact producer-pinned whole-source text hashes count as recovered context;
+original function hashes/spans are checked separately. Similarity cannot establish
+source identity. Shared compute locks serialized scan/replay/tests with the active
+data-centric task; one validation attempt did not start because its lock was busy.
+
+The search listed 212,823 Solidity files and checked 90,000, reading 1,071,278,311
+bytes before the file limit. Five newly matching whole-source texts cover nine
+additional SCRUBD functions. Context coverage increases 136/2,323 (5.85%) to
+145/2,323 (6.24%); documents increase 21 to 26. Six new functions have unique exact
+original-fragment spans; three have multiple identical fragments and stay ambiguous.
+Total unique original-fragment localizations are 142, not 145. Dependency closure,
+compiler validity, source authenticity beyond producer pins, license clearance and
+independent category truth are not established by these lexical source matches.
+
+Two new text matches occur in DIVE and three in local paper-benchmark corpora.
+All nine are new direct corpus-presence overlap seeds: 136 to 145. On the unchanged
+current annotation-v2 model views, evidence/strict component counts remain
+1,324/1,226; conservative quarantine increases 255 to 264 and 307 to 316. Propagated
+quarantine remains a sensitivity constraint, not independently confirmed extra
+raw-source overlap. No candidate is promoted to a fresh holdout or training set.
+
+Separate local derivative:
+`scafe_function_dataset_pilot/derivatives/content_context_v1_20261103T1200/`.
+All 52 release files reproduce byte-for-byte in a full second preparation. The
+manifest binds the original delivery, prior recovery, current model view, generator
+and helpers. Combined links, contexts and group constraints retain unknown labels,
+no observation/eligibility promotion and no assigned splits. Original 18 delivered
+files and earlier derivatives remain unchanged; no raw data is staged or uploaded.
+Independent checks passed for context/fragment hashes, six unique versus three
+ambiguous new localizations, unchanged old links, input hashes, partitions/edges,
+unknown labels and corpus quarantine. The reference review's P1 context/dependency
+and cohort-separation gaps motivate this evidence work, not an architecture claim.
+
+The first staged preparation failed a stored-context checksum because universal
+newline reading changed an old CRLF file. It produced only partial workspace
+output, retained separately without a release manifest. Exact byte decoding fixed
+it and a CRLF regression now passes. Direct scanner tests also exposed unresolved
+macOS /var aliases; root resolution was made consistent without relaxing containment.
+Failures and resolutions are preserved in the workspace, not hidden as successful
+runs. No original/source input changed.
+
+All 107 focused tests passed: 102 function-related including eight new recovery
+regressions, plus five frozen-diagnostic tests. Both experiment/submission integrity
+validators passed. Full pytest remains unavailable and was not installed or run.
+Fresh isolated full TeX/BibTeX build, visual/PDF-refresh and final/staged/Git evidence
+are recorded in the current workspace run report and build report. Manuscript
+scientific claims and all current model-code views are unchanged. Independent
+reviews, training-eligible records and assigned splits remain zero; no model
+training, inference or accuracy gain is claimed. Next inspect the newly available
+context for category/dependency evidence and resolve ambiguous enclosing-contract
+mappings before any adjudication or frozen evaluation design.
