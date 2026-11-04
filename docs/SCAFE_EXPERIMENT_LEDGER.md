@@ -85,7 +85,7 @@ review interpretation in older instructions.
 
 ### Rolling outcomes and current critical path
 
-The last recorded baseline (3 November, 14:00 entry) has zero independent reviews,
+The historical baseline (3 November, 14:00 entry) has zero independent reviews,
 zero training-eligible records and no assigned splits. It provides 28 call-shaped
 sites in 21 functions, with ten priority functions for possible ignored-result
 review. These are source observations, not confirmed suspicious patterns. Refresh
@@ -100,6 +100,17 @@ require new independent labels for every training function.
 | 1. Reusable source-supervision core | Deliver a versioned category crosswalk and source-label adapter with pinned provenance, exact function mappings, original meanings, supervision tiers and partial observation masks. Begin with justified native annotations (such as SCRUBD RE); leave other categories unknown. Report mapped/observed class supports, exclusions and source-training eligibility separately from independent review. | Highest-value next step: compatible target definitions, exact function linkage, existing source metadata and the current fail-closed intake. Resolve ambiguity; do not invent labels. The ten call-evidence priority functions are a targeted audit aid, not a mandatory manual pass over the whole training corpus. | Target one or two existing bounded sessions for a source-supervision export/protocol if definitions and local evidence suffice. If blocked, finish the supported subset and precise mapping/dependency decisions in that window; no training is started by this policy update. |
 | 2. Measured label quality and independent evaluation core | Audit a justified stratified sample of source/weak labels and adjudicate ambiguous/conflicting cases; report uncertainty, error rates and resulting exclusions. Separately create an independently reviewed/adjudicated evaluation cohort with project/clone-aware frozen splits. Preserve unknowns and quarantine, and document source-supervised training eligibility without calling it gold truth. | Milestone 1 plus sample design, qualified independent evaluation review, context/provenance/license sufficiency and legitimate grouped cohort gates. Two new reviews of every training row are not required. Missing review blocks the dependent evaluation claim, not all useful source-supervision work. | Target one bounded session for the audit/cohort protocol once the adapter is available; auditing/adjudication effort depends on sample size and actual ambiguity. Integrate complete review submissions in a bounded session when available. Reviewer turnaround is unconfirmed; set no invented calendar deadline and continue independent supported work. |
 | 3. Decisive source-supervised pipeline experiment | Run predefined matched-cohort majority/nuisance/rule/lexical baselines and, only when data/checkpoint/compute gates pass, a bounded CodeBERT pilot with a loss compatible with observation masks. Deliver reproducible inputs/checkpoints, grouped development selection, source-label versus reviewed-evaluation results, per-class supports/metrics/uncertainty, error analysis and a proceed/change/stop decision for integration. A negative result is a decision, not an accuracy gain. | Milestones 1–2 with sufficient class/project support and measured supervision quality, a frozen independently reviewed evaluation protocol, existing dependencies/checkpoint and an affordable measured runtime. Source/weak training supervision is permitted; no inspected external set becomes a fresh test and no extraction rule supplies its own correctness oracle. | Aim for one bounded baseline session after gates pass. Estimate the encoder pilot from actual volume/checkpoint/runtime; if blocked, deliver the runnable protocol and measured blocker rather than launch a large campaign or promise strong results. |
+
+### Latest adapter checkpoint — 4 November 2026, 10:00 UTC
+
+Initial source-supervision adapter implemented in a separate versioned layer:
+33 exact-span RE proxies (14 positive/19 negative), preserving all 110 native RE
+claims; 77 remain mapping-pending. These are source assessments, not independently
+reviewed gold or three-axis pattern labels. Eight stratified pilot audit rows are
+prepared, not completed. Training/evaluation eligibility and splits remain zero.
+Next critical path: targeted source-quality/meaning audit, independent grouped
+evaluation readiness and compatible masked learning, then matched baselines and
+gated CodeBERT. Current artifacts/entry below supersede historical readiness counts.
 
 ### Execution gates and unambiguous run states — 4 November 2026
 
@@ -1035,3 +1046,65 @@ manuscript claims remain unchanged. Independent reviews, training-eligible recor
 and splits remain zero; no model inference, training, accuracy or Q1-readiness gain.
 Next establish receiver/callee and result-propagation evidence for the ten priority
 functions and seek independent category adjudication before CodeBERT evaluation.
+
+## 4 November 2026, 10:00 UTC — initial source-label adapter
+
+Recovered the prior instruction-review interruption before writes: old PID 32734
+was absent, the OS SCAFE/compute flocks were free, and only old owner metadata
+remained. Under the newly acquired SCAFE lock, archived that stale metadata without
+removing a lock file or stopping a process. Prior guidance edits were already
+committed in 202b0eb; no duplicate edits were made. Repaired the missing prior final
+checkpoint report from the saved prompt/settings/build/PDF artifacts and verified
+recovery state. This run used its own live owner metadata and shared compute flock
+for generation/replay, tests and build; data-centric work retained its own lock.
+
+Predeclared hypothesis and acceptance rules are in workspace
+`scafe_iteration_20261104_1000UTC/run.json`. Implement source-label reuse rather
+than repeat unchanged audits or require fresh double review of every training row.
+The adapter preserves all 110 native SCRUBD RE claims (52 positive/58 negative) and
+native UX (39 positive/32 negative/39 unknown) separately. A distinct target definition
+maps source-assessed RE susceptibility as an explicit source/weak proxy only when
+an original exact local function span and unique qualified owner are justified.
+It is not a conversion into syntactic pattern presence, independently reviewed
+contextual suspicion, exploitability or the legacy eleven-output model.
+
+New source-proxy layer: 33 observed RE cells, 14 positive/19 negative rows, 32 distinct
+model byte strings and 31 token groups. The other 77 SCRUBD RE claims remain available
+but unobserved in this target layer pending exact local qualified span evidence.
+There are no contradictory identical-code RE claims in this snapshot; the adapter
+quarantines such conflicts if present. No UX-to-unchecked-call, authorization,
+missing-label, folder, patched or no-known-vulnerability negatives are created.
+Original harmonized staging cells remain unchanged/null; new source proxies are
+not independent gold annotations. All 33 mapped rows retain direct corpus overlap
+and group/quarantine evidence, so none is a fresh independent confirmation example.
+
+Versioned local derivative:
+`scafe_function_dataset_pilot/derivatives/source_supervision_v1_20261104T1000UTC/`.
+Six files contain separate code-only model inputs and provenance-bound masked
+source targets, an 8-row stratified audit pilot, summary, data card and manifest.
+Inputs are byte-identical to annotation-v2; audit metadata is not concatenated to
+code. Masks distinguish observed RE negatives from disabled unknown cells.
+`masked_source_example` validates source-proxy schema, identities, hashes and
+label/mask consistency; requesting training fails while readiness blockers remain.
+No masked trainer/loss, inference, CodeBERT fitting or accuracy gain is claimed.
+
+Audit seed 202611041000 selects up to 2 rows per RE/student-flag stratum: 8 rows across
+four strata. Decisions remain null; no reviewer contacted, no noise estimate or
+independent evaluation is claimed. Targeted audit, independent reviewed evaluation,
+frozen grouped splits, provenance/license eligibility and compatible masked learning
+remain gates. Training/evaluation eligibility and actual splits remain zero.
+Independent checks passed for all source/target counts, exact spans, unchanged
+inputs/groups/ancestors, masks and 8 uncompleted audit rows; six-file replay is
+byte-identical. All 18 delivered originals remain unchanged and no pilot data uploaded.
+
+All 137 focused tests passed: 132 function-related (including ten new adapter
+regressions) plus five frozen diagnostics. Both integrity validators passed.
+Full pytest remains absent and was not installed/run. Fresh full isolated paper
+build, representative visual checks, backed-up verified PDF refresh, final/staged
+privacy review and Git outcome are recorded in this run's workspace reports.
+Manuscript scientific claims remain unchanged. This advances the adapter/data
+milestone with real source-supervision exports, not detector-performance evidence.
+Next validate the 8-row mapping/meaning pilot and source-label quality protocol,
+complete independent grouped evaluation/compatible learning readiness, and expand
+exact source mappings where authorized evidence supports them. Do not wait for
+blanket manual relabeling of the whole training corpus or call this pilot gold.
