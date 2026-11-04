@@ -1211,3 +1211,50 @@ controls, limitations and reproduction are in
 validators, fresh full TeX/BibTeX/visual checks, backed-up input-matched PDF refresh,
 final/staged privacy review and actual Git outcome are retained in this run's
 workspace report. Scientific manuscript claims are unchanged.
+
+## 4 November 2026, 13:00 UTC — resolve compiler part of a source-rationale concern
+
+Selected a concrete context dependency rather than another unchanged audit or
+more training infrastructure. Existing direct Solidity 0.4.24/0.4.25/0.4.26/0.5.3
+binaries were found inside the project virtual environment; no installation,
+download or solc-select configuration change. Workspace
+`scafe_iteration_20261104_1300UTC/run.json` pinned inputs/binaries, the seven-case
+matrix and optimizer-disabled Byzantium settings before compilation.
+
+The unchanged full MonkeyScam caller compiles with 0.4.24–0.4.26 without errors.
+All three selected PlayerBook calls map to CALL, including locally view-declared
+getPlayerName/getPlayerLAff. PCs are 3877/4069/4261 across those three builds.
+The identical two-call control uses CALL/CALL with old versions and CALL/STATICCALL
+with 0.5.3. The actual source was not patched for0.5.3. Four original warnings per
+actual build and zero per control are preserved, not fixed/hidden. Source-map
+instruction decoding accounts for PUSH data, UTF-8 byte locations and inherited
+fields, requiring one exact uniquely localized instruction per expression.
+
+This narrows/corrects the version-insensitive implication of the prior AI concern:
+view syntax alone is not a compiler-level reason to reject the source rationale
+under these old builds. Solidity's official0.5.0 notes document this semantic
+transition. It does not prove deployed compiler/bytecode, callee callback behavior,
+reachability, unsafe state or RE=1 correctness. Qualified adjudication still needs
+the actual callee/caller/deployment context. The POOHMO concern is untouched.
+CALL/STATICCALL observations are not new RE labels or independent evaluation truth.
+
+New private local 28-file derivative:
+`scafe_function_dataset_pilot/derivatives/compiler_call_evidence_v1_20261104T1300UTC/`.
+It contains pinned config/version outputs, seven complete compiler input/output/
+stderr bundles, report and manifest. All final files reproduce byte-for-byte.
+Initial/prototype/final/replay preparations total35 small compiler invocations;
+all attempts are retained. No contract bytecode or model was executed, no original
+source was modified and no payload is staged/uploaded. All native/source proxy
+claims,33observed masks, code views, group/overlap restrictions, prior AI reviews,
+18delivered originals and zero independent/adjudicated labels/eligibility/splits
+remain unchanged. Scientific value is conditional language-semantics evidence
+that removes a misleading review shortcut, not detector-performance improvement.
+
+`scripts/probe_function_compiler_calls.py`, decoder regressions and
+`docs/FUNCTION_COMPILER_CALLS_20261104.md` make the experiment reproducible.
+Applicable focused tests, both integrity validators, fresh full isolated TeX/
+BibTeX/visual checks, backed-up input-matched PDF refresh and final/staged privacy/
+Git outcome are recorded in the run report. Next semantic dependency is actual
+callee/caller/deployment evidence or qualified adjudication; source completion can
+continue independently without blanket manual relabeling. Scientific manuscript
+claims, training gates and automation schedule remain unchanged.
