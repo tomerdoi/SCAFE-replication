@@ -1161,3 +1161,53 @@ visual checks, outside-tracked PDF backup and exact-input verified refresh,
 final/staged privacy review and actual Git outcome are recorded in this run's
 workspace report. Scientific manuscript claims are unchanged; compilation is not
 scientific validation. Keep pilot/review data local and never force-add it to Git.
+
+## 4 November 2026, 12:00 UTC — observed-cell loss and source batch loader
+
+Continued from 8f8df8b/259282b without repeating the eight-case audit. Qualified
+adjudication of the two rationale issues is unavailable in this automated run;
+advanced the independent mask-compatible learning dependency. The hypothesis,
+success checks, fixed inputs and CPU-only budget were recorded before evaluation
+in workspace `scafe_iteration_20261104_1200UTC/run.json`. Existing PyTorch 2.10.0
+was used with one CPU thread; no model/tokenizer/checkpoint/optimizer, fitting,
+inference, install, download, paid compute or private upload occurred.
+
+Implemented `scripts/function_partial_supervision.py`: explicitly hash-pinned
+source-release loading, source-proxy/schema/ID/code-hash validation, code-only
+collation with inseparable masks and a three-category observed-cell-only stable
+BCEWithLogits objective. Category order and source meaning are explicit; legacy
+11-output code is unchanged. Optional positive weights are declared constants,
+not inferred from unknowns. Invalid observed values/order/width/masks/weights and
+an overflowed objective fail closed. All-unknown batches return no loss and
+require skipping the optimizer step, including weight decay.
+
+The immutable 2,323-row diagnostic has 33 observed RE proxies (14 positive/19
+negative) and 6,936 unknown cells. At fixed zero observed logits, unit-weight loss
+is 0.6931471805599453, unknown gradients are exactly zero and analytic observed
+gradient error is zero. Changing disabled cells from NaN to 100,000,000 leaves the
+objective/observed gradients unchanged. A deliberately incorrect dense-placeholder
+counterfactual gives all 6,936 unknown cells gradients and dilutes observed
+gradients by 211.1818; this illustrates objective construction, not current legacy
+behavior, label quality or model accuracy. The default training loader correctly
+refuses the actual release because readiness gates are unpassed. No eligibility
+flag, label, input, group, source/audit artifact, original delivery or split changed.
+
+This finishes a narrow usable loss/batching component, not the full training
+protocol or a CodeBERT model. The current source layer observes RE only; other
+outputs receive no source supervision and cannot be claimed trained. The broader
+learning-protocol gate remains pending actual model/config/tokenization/optimizer
+integration and reproducibility, in addition to semantic quality, independent
+reviewed evaluation, grouped splits, provenance/licenses and matched baselines.
+Source-proxy versus independent truth and the two unresolved rationale concerns
+remain unchanged. No independent/adjudicated labels, eligible records or splits
+were created. No accuracy or publication-readiness improvement is claimed.
+
+Next semantic deliverable remains qualified adjudication of the two precise
+rationale mechanisms. Reviewer turnaround is unconfirmed. Supported mapping or
+independent protocol/baseline implementation can continue in bounded sessions
+without waiting for double relabeling of every training function. Detailed API,
+controls, limitations and reproduction are in
+`docs/FUNCTION_PARTIAL_SUPERVISION_20261104.md`. Applicable tests, both integrity
+validators, fresh full TeX/BibTeX/visual checks, backed-up input-matched PDF refresh,
+final/staged privacy review and actual Git outcome are retained in this run's
+workspace report. Scientific manuscript claims are unchanged.
