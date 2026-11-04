@@ -1108,3 +1108,56 @@ Next validate the 8-row mapping/meaning pilot and source-label quality protocol,
 complete independent grouped evaluation/compatible learning readiness, and expand
 exact source mappings where authorized evidence supports them. Do not wait for
 blanket manual relabeling of the whole training corpus or call this pilot gold.
+
+## 4 November 2026, 11:00 UTC — source-quality target-alignment pilot
+
+Continued the published source adapter rather than repeating unchanged intake.
+The hypothesis, fixed eight-case sample and AI-versus-independent-review boundary
+were declared before source inspection in workspace
+`scafe_iteration_20261104_1100UTC/run.json`. Completed a single source-visible
+AI technical review of all eight preselected RE/student-stratified cases, with
+exact qualified spans, source-rationale hashes and 24 line-bound observations.
+The eight cases span six raw contexts and six evidence components, not eight
+independent projects. This is preliminary source-quality evidence, not human
+review, independent evaluation, adjudicated labels or a calibrated noise estimate.
+
+All eight pinned qualified mappings are consistent in this sample. Seven cases
+show interaction before later state writes, including three source-negative
+cases; five expose relevant guards outside the function-only snippet, and three
+identify unverified dependency implementations. Two concrete rationale issues
+need qualified adjudication: an RE0 explanation omits a separate low-level value
+call; an RE1 explanation names a locally view-declared method while another
+call is non-view. Neither observation proves that the original RE label is wrong.
+Compiler/EVM, caller guards, callee implementations and cross-function context
+remain unresolved; no vulnerability decision or label flip is fabricated.
+
+New four-file local derivative:
+`scafe_function_dataset_pilot/derivatives/source_quality_ai_v1_20261104T1100UTC/`.
+It preserves original AI submissions, enriched preliminary reviews, summary and
+manifest. The compiler verifies the immutable sample/source/lineage/evidence,
+refuses gold/human/eligibility promotion and replacement targets/model inputs,
+and supports byte-identical replay. Its integrity checks do not certify semantic
+reasoning. The 2,323 candidates, 110 native RE claims, 33 mapped source proxies
+(14 positive/19 negative), original 6,969 unknown staging cells, masks, model
+inputs, overlap/group constraints and delivered originals remain unchanged.
+Independent/adjudicated reviews, training/evaluation eligibility and splits remain
+zero; no model training/inference, accuracy gain or publication readiness claim.
+
+Milestone 1 has an implemented conservative adapter (8f8df8b); this run advances
+milestone 2 with actual preliminary evidence, not independent gold. The next
+small deliverable is qualified adjudication of the two precise rationale issues
+with documented compiler/callee/caller sufficiency and target meaning. Review
+turnaround is unconfirmed; processing complete submissions fits a bounded session.
+Do not require two new reviews of every training function. Independent grouped
+evaluation, justified source-quality measurement, provenance/licenses, frozen
+splits, matched baselines and mask-compatible learning still gate CodeBERT.
+If review is unavailable, continue supported mapping/context or independent
+compatible-learning work without promoting eligibility. The reference-to-gap
+review's P1 context/dependency concern motivates this decision. Detailed protocol
+and evidence boundaries are in `docs/FUNCTION_SOURCE_QUALITY_20261104.md`.
+
+Applicable tests, both integrity validators, fresh full isolated TeX/BibTeX build,
+visual checks, outside-tracked PDF backup and exact-input verified refresh,
+final/staged privacy review and actual Git outcome are recorded in this run's
+workspace report. Scientific manuscript claims are unchanged; compilation is not
+scientific validation. Keep pilot/review data local and never force-add it to Git.
