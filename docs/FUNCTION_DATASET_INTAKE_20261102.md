@@ -5,6 +5,31 @@ separate dataset-construction work. No restricted chat memory was accessed.
 Original files were inspected read-only; no acquisition/build script was run,
 no record was relabeled, no split was assigned, and no duplicate training began.
 
+## Current supervision policy update — 4 November 2026
+
+The handoff counts below describe the 2 November 2026 staging snapshot. Importer
+behavior and readiness observations describe their dated inspection, not a
+permanent current-state assertion; verify relevant current code/artifacts before
+reusing an availability or implementation claim.
+Upstream labels/findings are already preserved; null harmonized targets do not
+mean those source annotations are absent. Future training may reuse justified
+source/weak supervision with provenance, exact function/category mapping, partial
+observation masks, targeted stratified sample auditing and ambiguous-case
+adjudication. There is no requirement for two new independent reviews of every
+training example. Keep a separate independently reviewed/adjudicated evaluation
+cohort, project/clone-aware splits and rigorous matched simple baselines before
+a bounded CodeBERT pilot. No absent-label, patched-function or no-known-vulnerability
+blanket negatives, audit-text leakage or circular rule-based evaluation is allowed.
+See the standing source-supervision policy and rolling outcomes in
+`docs/SCAFE_EXPERIMENT_LEDGER.md` for the current protocol direction.
+
+The 4 November policy update itself did not implement the adapter, change label
+fields, make the pilot training-eligible, or start training. Judge subsequent
+readiness from implemented code, artifact lineage and declared gates, not this
+historical implementation snapshot. All existing validation,
+privacy, compute and Git safeguards remain in force. The delivered pilot originals
+and prior independently reviewed/unreviewed status remain unchanged.
+
 ## Verified handoff
 
 All **18 delivered file hashes** match
@@ -86,9 +111,16 @@ were not independently rederived. The dated ignored local report is
 
 ## Next research gate
 
-Continue the existing blinded independent-review/adjudication workflow, resolve
-project/context/localization gaps, and cluster versions/pairs/near clones against
-SCAFE before freezing any cohort. Do not train on this pilot yet. The prior
+Implement a justified source-label crosswalk and provenance-preserving masked
+training adapter, using targeted stratified auditing and ambiguous-case adjudication.
+Retain a separate blinded independently reviewed/adjudicated evaluation cohort.
+Resolve project/context/localization gaps and cluster versions/pairs/near clones
+against SCAFE before freezing cohorts. There is no blanket re-review requirement
+for every source-labeled training function. Do not train on this pilot until the
+adapter, supervision-quality, independent-evaluation, grouped-split, matched
+simple-baseline and compute gates pass. Follow the ledger execution sequence
+through gated CodeBERT, credible function-level evaluation, frozen contract-score
+integration and evidence-bounded manuscript claims. The prior
 reference review supports these gates: MuSe's manual mutation validation (PDF
 pp.5–6), Susan et al.'s paired lexical-cue controls (pp.4–7), and BRLF's explicit
 preprocessing/split documentation (pp.14–16). Those publications do not validate

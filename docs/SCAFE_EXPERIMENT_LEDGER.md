@@ -5,7 +5,7 @@
 Strongly optimize for the shortest credible path to a defensible research
 contribution and a useful working detection pipeline. Prefer fast, high-quality,
 evidence-backed improvements. This direction supplements the existing task;
-it changes no automation schedule or definition, objective, reporting rule,
+it changes no automation schedule, objective, reporting rule,
 permission, security/privacy or no-pay constraint, scientific-integrity rule,
 validation requirement, known limitation, PDF safeguard or Git safeguard.
 Historical entries below describe their own runs; they do not override current
@@ -38,6 +38,51 @@ eligibility, decisive experiments and reproducible evidence are outcome measures
 Candidate/source/rule proposals never become ground truth by relabeling, and
 training must never be implied when it did not occur.
 
+### Source-supervised training and independent evaluation — 4 November 2026
+
+Reuse existing upstream labels and audit findings efficiently as source claims,
+with pinned provenance, original meanings, exact source/function references and
+explicit supervision tiers. A source-derived training label is not an independently
+validated evaluation label. Map a claim into a target category only when its
+definition and exact function span are justified. Preserve per-category observation
+masks; absent, unsupported or context-dependent categories remain unknown.
+
+Training may use source/weak supervision under a documented protocol with targeted
+stratified sample auditing, measured label quality and adjudication of ambiguous
+or conflicting cases. There is **no requirement for two new independent reviews
+of every training example**. Machine/heuristic/LLM annotations remain explicitly
+weak/proposed rather than independent ground truth; retain their provenance and
+audit evidence. Do not require manual independent relabeling of the entire training
+corpus before making justified source-supervised progress.
+
+Maintain a separate, independently reviewed and adjudicated evaluation cohort.
+Use qualified independent review, appropriate blinding and explicit unknowns for
+that cohort and for cases requiring adjudication. Keep project/clone-aware grouped
+splits and the existing near-clone, pair/version, source-overlap and external-set
+controls. Compare rigorous matched majority/nuisance/rule/lexical baselines before
+a bounded CodeBERT pilot; source/weak labels are not independent test truth.
+
+Do not fabricate category mappings or synthetic negative labels. Patched functions
+and no-known-vulnerability examples are not blanket verified negatives; a verified
+repair is finding-specific evidence, not proof of global safety or absence of
+other category instances. Keep audit descriptions/explanations and source-label
+cues out of model inputs. Do not evaluate against labels created by the same
+extraction/labeling rule and call that independent correctness.
+
+At the 4 November 2026 policy review, the inspected importer initialized all three
+harmonized targets to null and preserved upstream annotations separately; the
+adapter, supervision tiers, observation-mask handling, stratified audit and
+independent evaluation protocol were not implemented by that documentation update.
+Verify current implementation and artifact status in future sessions rather than
+treating this dated observation as a permanent blocker. No staging label is
+promoted and no training starts merely because instructions are revised.
+Source-supervised eligibility must be explicitly justified; it need not wait for
+fresh independent review of every training row. The three-category/legacy-eleven
+schema boundary and all compute, privacy, validation, PDF and Git safeguards remain.
+The immutable delivered README/reviewer kits describe their original snapshot;
+this standing policy governs future supervision work and narrows any blanket
+review interpretation in older instructions.
+
 ### Rolling outcomes and current critical path
 
 The last recorded baseline (3 November, 14:00 entry) has zero independent reviews,
@@ -45,13 +90,69 @@ zero training-eligible records and no assigned splits. It provides 28 call-shape
 sites in 21 functions, with ten priority functions for possible ignored-result
 review. These are source observations, not confirmed suspicious patterns. Refresh
 this baseline from current artifacts at the next scheduled work session; this
-instruction update performs no new dataset assessment or experiment.
+instruction update performs no new dataset assessment or experiment. These zero
+counts refer to the harmonized/independent-review fields, not an absence of upstream
+annotations. Reuse justified source labels through a versioned adapter rather than
+require new independent labels for every training function.
 
 | Outcome milestone | Concrete deliverable and completion checks | Dependencies / critical path | Conditional estimate |
 |---|---|---|---|
-| 1. First defensible category-review core | For the ten existing priority functions, produce versioned receiver/callee and result-propagation evidence plus proposed tri-state category decisions and explicit missing-context items. Bind exact source spans and hashes; separate automated proposals from independent decisions; make a review submission that can be adjudicated without guessing. Count evidence-complete and independently reviewed rows separately. | Highest-value next step. Existing local context and sufficient declaration/dependency evidence; any missing evidence remains unknown. Independent reviewers are required before reviewed-label coverage increases. | Target one or two existing bounded sessions for the evidence/proposal deliverable if local context suffices. Otherwise finish the supported subset and precise missing-evidence list in that window, then revise the estimate from the actual blocker. This is not a promise of completed human review. |
-| 2. Justified reviewed/training core | Ingest genuinely independent category reviews, record disagreements and adjudication, and produce a masked-label export with explicit inclusion/exclusion reasons. Report reviewed rows, observed class supports, source/project/clone groups and training eligibility; preserve unknowns and quarantine. | Critical path to credible training: milestone 1 plus qualified independent review, context/provenance/license sufficiency and legitimate grouped cohort gates. Never manufacture labels to unblock it. | One bounded integration session after complete review submissions arrive, subject to their format/quality. Reviewer availability and turnaround are currently unconfirmed; obtain that dependency before assigning a calendar estimate. Continue supported evidence work while waiting. |
-| 3. Decisive pipeline experiment | Run a predefined matched-cohort rule/lexical baseline and, only when data/checkpoint/compute gates pass, a bounded CodeBERT pilot. Deliver reproducible inputs/checkpoints, grouped development selection, class supports, per-class metrics/uncertainty, failure cases and an explicit proceed/change/stop decision for detection-pipeline integration. A valid negative result counts as a decision, not an accuracy gain. | Milestone 2 with sufficient class/project support, a frozen legitimate evaluation protocol, available existing dependencies/checkpoint and an affordable measured runtime. No inspected external set becomes a fresh test. | Aim for one bounded baseline session after eligibility gates pass. Estimate the encoder pilot only after checking actual data volume, checkpoint and runtime; if blocked, deliver the runnable protocol and measured blocker rather than launch a large campaign or promise strong results. |
+| 1. Reusable source-supervision core | Deliver a versioned category crosswalk and source-label adapter with pinned provenance, exact function mappings, original meanings, supervision tiers and partial observation masks. Begin with justified native annotations (such as SCRUBD RE); leave other categories unknown. Report mapped/observed class supports, exclusions and source-training eligibility separately from independent review. | Highest-value next step: compatible target definitions, exact function linkage, existing source metadata and the current fail-closed intake. Resolve ambiguity; do not invent labels. The ten call-evidence priority functions are a targeted audit aid, not a mandatory manual pass over the whole training corpus. | Target one or two existing bounded sessions for a source-supervision export/protocol if definitions and local evidence suffice. If blocked, finish the supported subset and precise mapping/dependency decisions in that window; no training is started by this policy update. |
+| 2. Measured label quality and independent evaluation core | Audit a justified stratified sample of source/weak labels and adjudicate ambiguous/conflicting cases; report uncertainty, error rates and resulting exclusions. Separately create an independently reviewed/adjudicated evaluation cohort with project/clone-aware frozen splits. Preserve unknowns and quarantine, and document source-supervised training eligibility without calling it gold truth. | Milestone 1 plus sample design, qualified independent evaluation review, context/provenance/license sufficiency and legitimate grouped cohort gates. Two new reviews of every training row are not required. Missing review blocks the dependent evaluation claim, not all useful source-supervision work. | Target one bounded session for the audit/cohort protocol once the adapter is available; auditing/adjudication effort depends on sample size and actual ambiguity. Integrate complete review submissions in a bounded session when available. Reviewer turnaround is unconfirmed; set no invented calendar deadline and continue independent supported work. |
+| 3. Decisive source-supervised pipeline experiment | Run predefined matched-cohort majority/nuisance/rule/lexical baselines and, only when data/checkpoint/compute gates pass, a bounded CodeBERT pilot with a loss compatible with observation masks. Deliver reproducible inputs/checkpoints, grouped development selection, source-label versus reviewed-evaluation results, per-class supports/metrics/uncertainty, error analysis and a proceed/change/stop decision for integration. A negative result is a decision, not an accuracy gain. | Milestones 1–2 with sufficient class/project support and measured supervision quality, a frozen independently reviewed evaluation protocol, existing dependencies/checkpoint and an affordable measured runtime. Source/weak training supervision is permitted; no inspected external set becomes a fresh test and no extraction rule supplies its own correctness oracle. | Aim for one bounded baseline session after gates pass. Estimate the encoder pilot from actual volume/checkpoint/runtime; if blocked, deliver the runnable protocol and measured blocker rather than launch a large campaign or promise strong results. |
+
+### Execution gates and unambiguous run states — 4 November 2026
+
+Use this dependency sequence; the rolling table groups these gates into three
+near-term outcomes rather than omitting later integration/publication work:
+
+1. **Adapter/data definition:** justified category definitions and exact function
+   mappings; a versioned provenance-preserving source-label export with observation
+   masks and a compatible loader/loss protocol. A policy document alone is not an
+   implemented adapter or a training-eligible dataset.
+2. **Supervision/evaluation readiness:** targeted stratified source-label audits,
+   quality measurement and ambiguous-case adjudication; adequate documented class
+   and project support; a separate independently reviewed/adjudicated evaluation
+   cohort; frozen project/clone-aware memberships and leakage controls. Declare
+   acceptance checks before evaluation. Source/weak training labels remain distinct
+   from evaluation truth; no blanket double re-review of every training row.
+3. **Baseline decision:** matched majority/nuisance/source-only, rule and lexical
+   baselines under the same legitimate grouped protocol and label masks, with
+   class supports, uncertainty and error analysis. Advance after the declared gate
+   passes; a valid negative result may justify changing or stopping that hypothesis.
+4. **Bounded CodeBERT pilot:** only after the preceding gates and existing-checkpoint,
+   dependency and compute readiness pass. Freeze inputs/configuration/checkpoint
+   lineage, use legitimate development selection and retain the required ablations,
+   truncation/leakage analysis, uncertainty and seed reporting. Do not imply that
+   an unrun pilot trained or improved a model.
+5. **Contract-score integration and article evidence:** only after credible
+   function-level evaluation, test frozen aggregation/fusion against fair contract
+   baselines. Update manuscript claims from reproducible measured evidence, with
+   failures and limitations. Compilation is not scientific validity; Q1 publication
+   remains a goal with no acceptance or performance guarantee.
+
+At session start, read current code/artifacts and current standing guidance.
+Every count, metric, checkpoint claim and availability observation in dated entries
+is historical evidence unless reverified for the present decision. Reuse valid
+prior evidence; do not redo unchanged audits merely to show activity. A completed
+gate should lead to the next authorized critical-path deliverable. Missing review
+or resources block dependent work, not unrelated supported adapter/data work.
+
+Record each step as **not attempted**, **running/checkpointed**, **passed**,
+**failed**, or **blocked (denied/pending/uncertain)**. A run is complete only when
+its authorized deliverable and required checks pass; otherwise checkpoint safely,
+identify the exact unmet gate/action/target/reason and give a smaller deliverable
+or revised conditional estimate. Distinguish local edits, actual label promotion,
+training/inference, local commits and remotely verified pushes. A review-only turn
+may correctly end with unstaged local instruction edits and no Git publication.
+
+Use the SCAFE run lock `/tmp/scafe-research-iteration.lock` and shared compute lock
+`/tmp/paper-research-compute.lock`, checking ownership/liveness. Coordinate or defer
+your conflicting writes; never stop another writer/job or remove its lock. Release
+only your own locks on safe completion/checkpoint. Respect denials and standing
+stop/report rules; no indirect retry through a different command or another commit.
+This instruction review changes no permission, schedule, enabled state, timezone,
+notification destination, runtime/model setting or other safeguard.
 
 Update this short table as outcomes and dependencies change. The immediate next
 proposed deliverable is milestone 1; this maintenance update does not start it.
