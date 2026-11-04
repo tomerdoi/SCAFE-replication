@@ -1,5 +1,61 @@
 # SCAFE experiment ledger
 
+## Standing operating direction — fast, evidence-backed outcomes (4 November 2026)
+
+Strongly optimize for the shortest credible path to a defensible research
+contribution and a useful working detection pipeline. Prefer fast, high-quality,
+evidence-backed improvements. This direction supplements the existing task;
+it changes no automation schedule or definition, objective, reporting rule,
+permission, security/privacy or no-pay constraint, scientific-integrity rule,
+validation requirement, known limitation, PDF safeguard or Git safeguard.
+Historical entries below describe their own runs; they do not override current
+standing instructions. No new experiment is authorized by this maintenance entry.
+
+Maintain at most three rolling outcome milestones. Each must name a concrete
+deliverable, measurable completion checks, dependencies, the current critical
+path and a realistic conditional effort/time estimate. Prefer milestones that
+fit days or a few existing bounded sessions when evidence and capacity support
+that estimate. Do not invent deadlines, promise successful research/publication,
+or stretch work into months without naming the dependency that requires it.
+
+Once a baseline is established, an audit must resolve a specific decision, risk
+or regression and lead to implementation or a decisive experiment. Reuse valid
+prior results; repeat a check only when relevant inputs changed or a standing
+validation requirement explicitly requires it. Do not count another status check,
+repackaged queue, tool or unchanged audit as an outcome improvement. During
+existing authorized work sessions, execute the highest-value critical-path step.
+Safely parallelize genuinely independent work only within the applicable agent,
+lock and resource rules; avoid conflicting writes and duplicate experiments.
+When a dependency blocks one step, continue another useful authorized step.
+
+Report concrete evidence of what improved, the next deliverable and actionable
+blockers under the existing reporting rules. If a milestone slips, identify the
+actual dependency/failure and revise its conditional estimate or deliver a smaller
+credible result; do not repeat an open-ended plan. Keep all quality gates: tests,
+baselines, ablations, reproducibility, uncertainty, negative results and limitations
+must not be weakened to appear faster. Reviewed-label coverage, justified training
+eligibility, decisive experiments and reproducible evidence are outcome measures.
+Candidate/source/rule proposals never become ground truth by relabeling, and
+training must never be implied when it did not occur.
+
+### Rolling outcomes and current critical path
+
+The last recorded baseline (3 November, 14:00 entry) has zero independent reviews,
+zero training-eligible records and no assigned splits. It provides 28 call-shaped
+sites in 21 functions, with ten priority functions for possible ignored-result
+review. These are source observations, not confirmed suspicious patterns. Refresh
+this baseline from current artifacts at the next scheduled work session; this
+instruction update performs no new dataset assessment or experiment.
+
+| Outcome milestone | Concrete deliverable and completion checks | Dependencies / critical path | Conditional estimate |
+|---|---|---|---|
+| 1. First defensible category-review core | For the ten existing priority functions, produce versioned receiver/callee and result-propagation evidence plus proposed tri-state category decisions and explicit missing-context items. Bind exact source spans and hashes; separate automated proposals from independent decisions; make a review submission that can be adjudicated without guessing. Count evidence-complete and independently reviewed rows separately. | Highest-value next step. Existing local context and sufficient declaration/dependency evidence; any missing evidence remains unknown. Independent reviewers are required before reviewed-label coverage increases. | Target one or two existing bounded sessions for the evidence/proposal deliverable if local context suffices. Otherwise finish the supported subset and precise missing-evidence list in that window, then revise the estimate from the actual blocker. This is not a promise of completed human review. |
+| 2. Justified reviewed/training core | Ingest genuinely independent category reviews, record disagreements and adjudication, and produce a masked-label export with explicit inclusion/exclusion reasons. Report reviewed rows, observed class supports, source/project/clone groups and training eligibility; preserve unknowns and quarantine. | Critical path to credible training: milestone 1 plus qualified independent review, context/provenance/license sufficiency and legitimate grouped cohort gates. Never manufacture labels to unblock it. | One bounded integration session after complete review submissions arrive, subject to their format/quality. Reviewer availability and turnaround are currently unconfirmed; obtain that dependency before assigning a calendar estimate. Continue supported evidence work while waiting. |
+| 3. Decisive pipeline experiment | Run a predefined matched-cohort rule/lexical baseline and, only when data/checkpoint/compute gates pass, a bounded CodeBERT pilot. Deliver reproducible inputs/checkpoints, grouped development selection, class supports, per-class metrics/uncertainty, failure cases and an explicit proceed/change/stop decision for detection-pipeline integration. A valid negative result counts as a decision, not an accuracy gain. | Milestone 2 with sufficient class/project support, a frozen legitimate evaluation protocol, available existing dependencies/checkpoint and an affordable measured runtime. No inspected external set becomes a fresh test. | Aim for one bounded baseline session after eligibility gates pass. Estimate the encoder pilot only after checking actual data volume, checkpoint and runtime; if blocked, deliver the runnable protocol and measured blocker rather than launch a large campaign or promise strong results. |
+
+Update this short table as outcomes and dependencies change. The immediate next
+proposed deliverable is milestone 1; this maintenance update does not start it.
+
 ## 2026-11-01 — Function-model annotation boundary audit
 
 Status: active. Exclusive lock: `/tmp/scafe-research-iteration.lock`.
