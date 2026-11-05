@@ -1363,3 +1363,58 @@ unknowns. Existing evidence is insufficient for verified negatives; review/conte
 availability controls timing, so no invented completion deadline or training claim.
 Adapter/masked learning are implemented; baselines/CodeBERT remain downstream of
 quality/evaluation/grouped-cohort/license/compute gates.
+
+## 5 November 2026, 12:00 UTC — native-UX-supported typed discarded-send cells
+
+Continued from local a7dbc0d, with no repeat of the completed272pair/V6/110000path
+analyses. SCAFE lock ownership and active work were checked; shared-compute
+conflicts were deferred. Fixed all11prior bare direct-send sites in8qualified
+native-UX-positive functions/4retained contexts before compiler evaluation.
+Workspace `scafe_iteration_20261105_1200UTC/run.json` binds this frame and inputs.
+
+New separate weak-proxy definition:
+`source-UX-supported-compiler-typed-discarded-address-send-result-v1`.
+Compiler AST proves exact unique owner/function/UTF-8 span, native address.send
+receiver/member type, bool result and direct ExpressionStatement disposal; exact
+prior member anchors and literal-preserving call retention in current code-only
+views are checked. All11sites pass, supporting8positive unchecked-call proxy
+cells where source derivatives previously had0on this axis. Native UX alone is
+not mapped wholesale: creation/high-level/other exception claims remain distinct.
+110native rows retain39UXpositive/32negative/39unknown claims. Only8positive
+pattern/source cells are observed; no negative targets. All8have existing-corpus
+overlap/group restrictions; they are not independent projects or evaluation truth.
+
+Initial0.4.24accepted1context/rejected3byexplicit0.4.25pragmas. Before replacement
+AST interpretation, an evidence-backed amendment fixed already-installed0.4.25
+for the entire unchanged4context frame, retaining original errors/warnings and
+never patching source/pragmas or ignoring errors. All4pass,48warnings perpass.
+A preparatory CRLF-normalizing read failed its raw hash assertion before source
+compilation; byte-preserving decoding corrected the preparation, not original data.
+A preliminary replay differs only in one compiler AST's contractDependencies
+integer-list ordering and corresponding manifest hash; both raw versions remain
+unchanged/hashed, all six derived decision/input/report files match. Final guarded
+export/replay matches20/20files byte-for-byte; raw compiler nondeterminism is still
+disclosed, not hidden by selecting a successful attempt.24small standard-JSON
+compilations total, no deployed execution/model/training/inference or metric gain.
+
+Private20fileversionedrelease:
+`scafe_function_dataset_pilot/derivatives/scrubd_send_source_supervision_v1_20261105T1200UTC/`.
+Original18deliveryfiles,6,969unknown harmonized cells,33SCRUBDRE/3CoinFabrik
+proxies and zero independent reviews/eligible/split counts remain unchanged.
+Source+compiler weak agreement is not independent gold or a label-accuracy estimate;
+never evaluate correctness against the same extraction rule. The loader refuses
+training and old namespaces are not silently migrated. Exact reproduction, failed
+attempts, limitations and native meanings are documented in
+`docs/FUNCTION_SCRUBD_SEND_20261105.md`. Source/compiler payloads remain private.
+
+Scientific/dataset value: measured supported source-supervision coverage on a
+second narrow axis, not detector performance. Software value: guarded exporter
+and typed-span/code-retention boundary regressions, reusing existing source/call
+and token evidence rather than a new scan/queue. Required tests, both validators,
+fresh isolated full TeX/BibTeX/visual checks and backed-up input-matched PDF refresh,
+reviewed local commit and held-publication state are recorded in the run report.
+Next milestone2criticalstep: targeted quality/target-alignment decision and declared
+source-supervised eligibility, independent grouped evaluation and license gates;
+then matched baselines and gated CodeBERT. No new blanket manual-review rule,
+student dependency, publication promise, manuscript scientific claim or automation
+change. The existing403publicationhold remains with no push/auth/remote retry.
