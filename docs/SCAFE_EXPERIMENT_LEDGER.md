@@ -1311,3 +1311,55 @@ are recorded in the run report. Next target source quality/alignment on these
 cases and missing qualified contexts, plus independently reviewed grouped
 evaluation and matched baselines, without requiring blanket double relabeling
 or student delivery. Manuscript scientific claims and automation are unchanged.
+
+## 5 November 2026, 11:00 UTC — measured CoinFabrik role-pair input limits
+
+Continued from locally validated a0731cd; the existing GitHub403publication hold
+remains, with no push/account/remote retry. Reused the prior filename inventory
+instead of repeating the eight missing-context lookup or110000path/V6 scans.
+Workspace `scafe_iteration_20261105_1100UTC/run.json` predeclared all643CoinFabrik
+candidates and exact project/role-stripped-path/qualified-symbol pairing at the
+unchanged pin, plus byte and literal-preserving heuristic-token comparisons.
+The shared compute lock initially conflicted; no comparison ran until available.
+
+Result:272unique pairs/544records,99unpaired records, no ambiguous buckets.
+131pairs48.16%have byte-identical current annotation-v2 inputs;149pairs54.78%
+have identical literal-preserving heuristic tokens. The latter is not actual
+CodeBERT-tokenizer equivalence. All272already share evidence/strict components;
+no grouping/quarantine/split changes. Opposing role-derived targets on the131
+exact-input pairs would be indistinguishable to a deterministic code-only model;
+no such labels were assigned and this is not a measured label-error rate.
+Contextual repairs can occur outside the retained function.123different-token
+pairs remain unverified repair candidates, never automatic clean negatives.
+
+All three previously source-positive functions have changed unique counterparts.
+The Venus swapVAIForStable view moves its state decrement before fee transfer,
+while both views retain nonReentrant. The other swap retains incoming transfer
+before state update despite other changes; textual change does not verify that
+source rationale's repair. Neptune _setPool adds validation/whole-struct assignment,
+not proof of resolved authority/caller-policy concerns. These view observations
+are not independent adjudication, contextual exploitability or negative labels.
+
+Private five-file versioned derivative:
+`scafe_function_dataset_pilot/derivatives/coinfabrik_pair_evidence_v1_20261105T1100UTC/`.
+It binds original delivery, three parent manifests, generator/helpers and output
+hashes; emits metadata/hashes only. All18delivered originals, prior derivatives,
+33SCRUBD/3CoinFabrik source cells,6,969unknown harmonized cells and zero gold/
+eligible/split counts remain unchanged. No model/training/inference or gain.
+Scientific value is measured support for rejecting blanket patched negatives;
+software value is deterministic pair evidence with ambiguity/literal regressions.
+
+See `docs/FUNCTION_COINFABRIK_PAIRS_20261105.md` for method, scope and fixed-three
+observations. Focused tests, both integrity validators, byte replay, independent
+checks, fresh isolated full TeX/BibTeX/visual build, backed-up input-matched PDF
+refresh and reviewed local Git outcome are recorded in the run report; publication
+remains held, not successful. Manuscript claims and automation are unchanged.
+
+Current critical path stays milestone2: source-quality/target-alignment decisions
+and separate independent grouped evaluation, not repeated inventories/tools.
+Small next deliverable: finding-specific context/adjudication for changed pairs,
+with a declared source-supervised eligibility decision and precise remaining
+unknowns. Existing evidence is insufficient for verified negatives; review/context
+availability controls timing, so no invented completion deadline or training claim.
+Adapter/masked learning are implemented; baselines/CodeBERT remain downstream of
+quality/evaluation/grouped-cohort/license/compute gates.
