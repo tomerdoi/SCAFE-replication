@@ -1258,3 +1258,56 @@ Git outcome are recorded in the run report. Next semantic dependency is actual
 callee/caller/deployment evidence or qualified adjudication; source completion can
 continue independently without blanket manual relabeling. Scientific manuscript
 claims, training gates and automation schedule remain unchanged.
+
+## 5 November 2026, 10:00 UTC — localized CoinFabrik finding proxies
+
+Reused workspace `scafe_iteration_20261105_0900UTC/run.json` rather than repeating
+the completed V6/source scan: retained totals agree with V6, exact tag/snapshot
+identity is unverified, and110000checked paths are recorded without a label change.
+Continued
+independently of student delivery using existing CoinFabrik finding/function links
+and retained raw context. Workspace `scafe_iteration_20261105_1000UTC/run.json`
+predeclared643candidates/171findingobjects, source/category definitions, vulnerable-
+role and exact source/span/symbol/line-anchor gates before export. No download,
+installation, scan, new source revision, model/tokenizer/checkpoint/optimizer,
+training or inference occurred. Shared-compute locks serialized generation/tests.
+
+New separate source-specific layer: three positive cells across three functions,
+two projects and two contexts. Two PegStability swap functions receive source-
+reported RE/order concerns anchored at lines163/189. The internal Neptune
+_setPool function receives an authority/privilege-policy concern with two retained
+findings anchored at18–68. The two supporting findings are one target cell, not
+independent labels. All three functions retain existing-corpus overlap/group
+quarantine. No independently reviewed truth, score gain or fresh evaluation claim.
+
+These definitions are not missing-guard/vulnerability labels, canonical pattern
+truth, legacy11outputs or automatically harmonized SCRUBD susceptibility targets.
+Venus nonReentrant modifiers and Neptune caller/privilege/initialization context
+remain material quality questions. Only explicit source class/CWE plus exact
+local linkage maps; guard tokens/rules do not create independent labels. All
+312patched rows stay unknown, as do266without specific links and62linked but
+unmapped rows. No negative cells, missing-label negatives or patched clean labels.
+The new observed cells are RE2/authority1/unchecked-call0; training/evaluation
+eligibility, independent gold and splits remain zero.
+
+Private seven-file derivative:
+`scafe_function_dataset_pilot/derivatives/coinfabrik_source_supervision_v1_20261105T1000UTC/`.
+It preserves all171findingobjects byte-for-byte,643code-only inputs and source-
+proxy rows, link checks, summary/card and manifest. All seven files replay byte-
+identically. Original18delivery files,6,969unknown staging cells,33SCRUBDproxies,
+prior groups/audits and annotations are unchanged. Declared raw upstream hashes
+and retained-object fingerprints are distinguished; no fresh upstream blob or
+underlying audit-report verification is claimed. Source payloads remain local.
+
+The exporter/diagnostic join and regression fixtures refuse unsupported mappings,
+ambiguous overload/anchor relations, patched promotion, missing-to-negative
+conversion, extra prose model fields, gold/eligibility promotion and training.
+The existing masked loss and SCRUBD-only loader are unchanged; a reviewed multi-
+source protocol remains necessary. Detailed scope/reproduction and definitions
+are in `docs/FUNCTION_COINFABRIK_SUPERVISION_20261105.md`.
+Applicable tests, both integrity validators, fresh isolated full TeX/BibTeX/visual
+checks, backed-up input-matched PDF refresh and final/staged privacy/Git evidence
+are recorded in the run report. Next target source quality/alignment on these
+cases and missing qualified contexts, plus independently reviewed grouped
+evaluation and matched baselines, without requiring blanket double relabeling
+or student delivery. Manuscript scientific claims and automation are unchanged.
