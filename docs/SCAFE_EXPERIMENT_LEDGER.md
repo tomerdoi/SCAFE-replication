@@ -1418,3 +1418,52 @@ source-supervised eligibility, independent grouped evaluation and license gates;
 then matched baselines and gated CodeBERT. No new blanket manual-review rule,
 student dependency, publication promise, manuscript scientific claim or automation
 change. The existing403publicationhold remains with no push/auth/remote retry.
+
+## 6 November 2026, 09:00 UTC — versioned native-UX send/call coverage
+
+Resumed from local cc2d33b after the prior disconnected read; both repositories
+were clean and no interrupted write/owned lock existed. Minimal process-name/PID
+checks only, refreshed input hashes, and exclusive task/shared-compute coordination.
+No repeat of pair/V6/source inventories or prior send compiles. Predeclared all14
+qualified nativeUX-positive bare send/call sites in10functions/6contexts using the
+existing source/call release, before compiling new contexts.
+
+Explicit v2 target scope: native-address send OR legacy call discarded bool result,
+supported by native UX=1. Ten weak-positive cells/14typed sites, preserving8prior
+functions and adding2unique functions: POOHMO.endRound and TwoCoinsOneMoonGame.withdraw.
+Participant.processPayment gains call evidence but remains one observed cell. Do
+not sum v1/v2 targets. Four cached compiler bundles are checked against pinned
+ancestry, exact source/settings/compiler/input/output/error identity and reused;
+only2new contexts compile per pass with unchanged installed0.4.25settings.
+Exact owner/function/member UTF-8 spans, native address/barecall types, bool outer
+result, direct ExpressionStatement and literal-preserving input retention are
+required. Only typed single gas/value wrappers are allowed; guards/assignments,
+custom calls and tuple-return variants remain unsupported/unobserved.
+
+All10retain existing-corpus/group quarantine, not independent test truth. The new
+POOHMOUXevidence does not resolve its separate RErationale issue; MonkeyScam and
+CoinFabrik contextual/repair questions remain unchanged. No negatives, independent
+gold, eligibility, splits, training/inference or score gain. Original18delivery
+files,6,969canonical unknown cells,33RE/3CoinFabrik claims and send-v1release remain
+unchanged. Default v1 protocol/definition is retained; explicit prior-layer input
+selects separately named v2. Native110UXclaims39positive/32negative/39unknown remain
+preserved. Source/compiler agreement is weak supervision, not an independent oracle.
+
+Private26filederivative:
+`scafe_function_dataset_pilot/derivatives/scrubd_lowlevel_source_supervision_v2_20261106T0900UTC/`.
+Final/replay are26/26byte-identical; prior raw-compiler dependency-order variability
+remains disclosed. An initial workspace protocol-variable shadowing error failed
+closed after2new context compiles; diagnostics preserved and no partial target
+release installed. Final/replay add4new compiles,total6; cached4contexts reused
+eachpass. Source/compiler payloads stay private. Exact method, scope, regression
+controls and reproduction are in `docs/FUNCTION_SCRUBD_LOWLEVEL_20261106.md`.
+
+Dataset value:2new source-supported functions/3call sites under an explicitly
+broadened target, not classification accuracy. Applicable tests, both validators,
+fresh isolated full TeX/BibTeX/visual checks, verified backed-up local PDF refresh,
+reviewed task-owned local commit and publication-hold state are in the run report.
+Next critical milestone2decision: targeted quality/target-alignment and justified
+source-training eligibility, real negative-class support, provenance/license and
+independent grouped evaluation. Baselines/CodeBERT remain gated, no blanket full-
+corpus double-review rule or student prerequisite. No manuscript claim, automation
+setting, source original or shared-feature target changed; no push retry.
