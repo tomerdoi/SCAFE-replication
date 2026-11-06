@@ -1467,3 +1467,66 @@ source-training eligibility, real negative-class support, provenance/license and
 independent grouped evaluation. Baselines/CodeBERT remain gated, no blanket full-
 corpus double-review rule or student prerequisite. No manuscript claim, automation
 setting, source original or shared-feature target changed; no push retry.
+
+## 6 November 2026, 10:00 UTC — conservative source-negative local contrast
+
+Continued from local commit e767edc with clean worktrees and safe PID/executable-
+name resource checks. Held the exclusive task lock and bounded shared compute
+leases. Reused existing evidence without old scans, pair audits or repackaged
+queues. The fixed frame contains all seven localized native UX=0 functions in
+six existing contexts. The admission policy followed source-visible inspection
+of all seven snippets, before compiler decisions; it is not blinded or random
+sampling, and does not estimate label quality.
+
+The explicit v3 local-result target preserves ten v2 positives and adds one
+source-specific weak negative: Wallet.confirm. Evidence combines native UX=0,
+exact compiler owner/function/UTF-8 spans, a native boolean call checked directly
+by builtin require, complete local target-call enumeration, guard retention in
+the code-only view, and no unresolved alias, inline-assembly or input conflict.
+An observed zero has a true mask; unknowns remain null with false masks. Scope
+is the named function body, excluding modifiers, callees, creation helpers and
+global CLEAN claims. Older releases and canonical labels remain unchanged. The
+diagnostic loader refuses training.
+
+The seven admission outcomes are one supported checked contrast, two no-call
+unknowns, three other/nonreverting-handling unknowns and one compiler-failed
+unknown. WalletLibrary.confirm's unchanged full context has legacy assembly
+declaration/stack errors under 0.4.25; it stays unknown. No source or pragma was
+patched and no error ignored. Other cases are not declared incorrectly labeled
+or unsafe. The POOHMO and MonkeyScam RE concerns remain unresolved.
+
+Five of six contexts compile. One immutable MonkeyScam AST bundle is reused
+after source/compiler/semantic-settings checks, preserving its AST-plus-bytecode
+output selection verbatim. Five new contexts compile per pass. Two prototype
+and two final passes total 20 small standard-JSON invocations, including four
+attempts on the same failing context; no model, training or inference ran. A
+pre-release inline-assembly completeness refinement left the frame and outcome
+unchanged. All 97 warnings are retained in each full six-context report. The
+final 26 files replay byte-for-byte. Prototype raw AST externalReferences order
+varied while typed bindings and all six decision/input/report files matched;
+both raw versions and their manifest hashes remain preserved. This is not a
+universal raw-compiler determinism claim.
+
+The private 26-file derivative is
+`scafe_function_dataset_pilot/derivatives/scrubd_local_result_source_supervision_v3_20261106T1000UTC/`.
+Support is ten positive, one negative and 99 unobserved local target cells among
+110 native rows. All eleven observed rows retain existing-corpus/group quarantine;
+they are not fresh test data. The 18 delivery files, 6,969 unknown canonical cells,
+33 RE proxies, three CoinFabrik claims and native UX counts (39 positive, 32
+negative, 39 unknown) are unchanged. Independent gold, eligibility and split counts
+remain zero. No absent-label, patched or synthetic negatives, independent
+adjudication, label-accuracy estimate or performance gain were introduced.
+Source/compiler agreement must not become its own evaluation oracle.
+
+Dataset value is the first tightly scoped source-supported weak negative in the
+local send/call-result layer, not classifier readiness. Software value is complete-
+body strong-check admission, code-retention/mask/unknown boundaries and conservative
+cache reuse. Method and limits are in
+`docs/FUNCTION_LOCAL_RESULT_CONTRAST_20261106.md`. Tests, both validators, fresh
+isolated full TeX/BibTeX/visual checks, backed-up input-matched PDF refresh and
+reviewed local Git state are recorded in the run report. No push retry or automation
+change occurred. The smallest next decision is qualified targeted acceptance or
+rejection of this local-body contrast/definition, followed by legitimate negative
+diversity, provenance/license checks and a separately reviewed grouped evaluation
+cohort. No blanket double review of every training function or student dependency
+is imposed. Matched baselines and CodeBERT remain gated.
