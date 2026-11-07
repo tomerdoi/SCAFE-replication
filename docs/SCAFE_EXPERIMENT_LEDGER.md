@@ -97,11 +97,11 @@ require new independent labels for every training function.
 
 | Outcome milestone | Concrete deliverable and completion checks | Dependencies / critical path | Conditional estimate |
 |---|---|---|---|
-| 1. Reusable source-supervision core | Deliver a versioned category crosswalk and source-label adapter with pinned provenance, exact function mappings, original meanings, supervision tiers and partial observation masks. Begin with justified native annotations (such as SCRUBD RE); leave other categories unknown. Report mapped/observed class supports, exclusions and source-training eligibility separately from independent review. | Highest-value next step: compatible target definitions, exact function linkage, existing source metadata and the current fail-closed intake. Resolve ambiguity; do not invent labels. The ten call-evidence priority functions are a targeted audit aid, not a mandatory manual pass over the whole training corpus. | Target one or two existing bounded sessions for a source-supervision export/protocol if definitions and local evidence suffice. If blocked, finish the supported subset and precise mapping/dependency decisions in that window; no training is started by this policy update. |
-| 2. Measured label quality and independent evaluation core | Audit a justified stratified sample of source/weak labels and adjudicate ambiguous/conflicting cases; report uncertainty, error rates and resulting exclusions. Separately create an independently reviewed/adjudicated evaluation cohort with project/clone-aware frozen splits. Preserve unknowns and quarantine, and document source-supervised training eligibility without calling it gold truth. | Milestone 1 plus sample design, qualified independent evaluation review, context/provenance/license sufficiency and legitimate grouped cohort gates. Two new reviews of every training row are not required. Missing review blocks the dependent evaluation claim, not all useful source-supervision work. | Target one bounded session for the audit/cohort protocol once the adapter is available; auditing/adjudication effort depends on sample size and actual ambiguity. Integrate complete review submissions in a bounded session when available. Reviewer turnaround is unconfirmed; set no invented calendar deadline and continue independent supported work. |
-| 3. Decisive source-supervised pipeline experiment | Run predefined matched-cohort majority/nuisance/rule/lexical baselines and, only when data/checkpoint/compute gates pass, a bounded CodeBERT pilot with a loss compatible with observation masks. Deliver reproducible inputs/checkpoints, grouped development selection, source-label versus reviewed-evaluation results, per-class supports/metrics/uncertainty, error analysis and a proceed/change/stop decision for integration. A negative result is a decision, not an accuracy gain. | Milestones 1–2 with sufficient class/project support and measured supervision quality, a frozen independently reviewed evaluation protocol, existing dependencies/checkpoint and an affordable measured runtime. Source/weak training supervision is permitted; no inspected external set becomes a fresh test and no extraction rule supplies its own correctness oracle. | Aim for one bounded baseline session after gates pass. Estimate the encoder pilot from actual volume/checkpoint/runtime; if blocked, deliver the runnable protocol and measured blocker rather than launch a large campaign or promise strong results. |
+| 1. Provenance-bound source supervision | Bounded core exports are implemented: 33 SCRUBD RE cells, three CoinFabrik claims and the latest local-result layer (10 positive/one weak negative). Preserve separate definitions, code-only inputs, partial masks and pinned manifests; do not sum versioned parents or call proxies gold. Canonical harmonization and eligibility are not established. | Reuse the implemented adapters, masked-loss support and verified artifacts. Revisit only changed inputs or a concrete mapping/regression decision; do not rebuild unchanged inventories or profiles as new progress. | Completed bounded exports are dated below. Further independent source/context improvements remain allowed when they address an actual gap. |
+| 2. Agreed target and qualified evaluation core — current critical path | Accept or reject target meanings/source-quality assumptions; obtain independent qualified review/adjudication and a legitimate grouped evaluation cohort with both classes, provenance/license eligibility and explicit unknowns. The 7 November decision records 47 cells/36 functions/35 code inputs across four separate definitions, no eligible independent evaluation and one negative group for the local-result target. Source weak labels remain distinct from evaluation truth. | The SCRUBD RE target alone passes the current necessary both-class group-count bound, making it a candidate first gated source-supervised pilot after target agreement. This does not replace the three-category suspicious-pattern objective. Preserve overlap restrictions and unresolved rationale cases; no blanket double manual review of every training example or student prerequisite. | Once complete review/context inputs are supplied, target one existing bounded session for ingestion, lineage/group checks and an updated affected gate decision. Qualified review turnaround is unconfirmed; no invented completion deadline. Continue other genuinely independent authorized work. |
+| 3. Decisive baseline and bounded CodeBERT experiment | After the preceding gates, run matched majority/nuisance/rule/lexical baselines with legitimate group separation, supports/uncertainty and a proceed/change/stop decision. Only then run a bounded existing-checkpoint CodeBERT pilot with partial-mask handling. Function-to-contract integration remains downstream of credible function evaluation. | Requires accepted target/source protocol, qualified evaluation, frozen groups, adequate support, licenses/provenance and measured affordable compute. Existing inspected data cannot become fresh confirmation through relabeling; source extraction rules cannot provide their own independent oracle. | Aim for one bounded CPU baseline session after gates pass. Estimate the encoder pilot from actual inputs/checkpoint/runtime; do not start it or promise strong results while gates are unmet. |
 
-### Latest adapter checkpoint — 4 November 2026, 10:00 UTC
+### Historical adapter checkpoint — 4 November 2026, 10:00 UTC
 
 Initial source-supervision adapter implemented in a separate versioned layer:
 33 exact-span RE proxies (14 positive/19 negative), preserving all 110 native RE
@@ -1530,3 +1530,55 @@ rejection of this local-body contrast/definition, followed by legitimate negativ
 diversity, provenance/license checks and a separately reviewed grouped evaluation
 cohort. No blanket double review of every training function or student dependency
 is imposed. Matched baselines and CodeBERT remain gated.
+
+## 7 November 2026, 09:00 UTC — decisive target/cohort readiness check
+
+Current source files and releases have no new review submissions. Both worktrees
+were clean at 475b33f/7e4cd05. The owned run/shared-compute leases protected a small
+stdlib analysis, with safe PID/executable-name checks and no source compilation,
+model, download, installation or old corpus/pair/literature scan.
+
+The predeclared question was whether the latest nonduplicated targets can support
+a grouped three-part cohort or fresh independent evaluation without pooling label
+meanings. Only SCRUBD RE v1, CoinFabrik v1 and local-result v3 count; earlier local
+v1/v2 are parents, not extra rows. Result: 47 observed cells, 36 functions and 35
+unique code inputs across four separate target definitions. RE source susceptibility
+and CoinFabrik order concern share a category key but have no reviewed harmonization.
+No semantic incompatibility is proved merely by different IDs; pooling is unjustified.
+
+SCRUBD RE has 14 positive/19 negative rows in 11/12 evidence-class groups (17 total,
+six mixed), or 10/11 strict-template groups (16 total, five mixed). It passes only
+the necessary counting bound. Local-result support is 10/1 in six/one groups;
+one negative group cannot populate three disjoint partitions. CoinFabrik RE is
+2/0 in one/zero groups; authority is 1/0 in one/zero. Three groups per class is
+necessary for that three-part class-presence design, not adequate power, splitting
+proof or training permission. All observed rows retain overlap/quarantine and all
+independent-gold, eligibility and split fields remain false/empty. No same-input
+opposing labels within a definition were found. No labels, masks, groups or inputs
+were changed, and no split or eligibility was assigned.
+
+Decision: no training or fresh evaluation from the current saved releases. The
+critical path is target agreement and qualified independent evaluation evidence,
+not another parser-specific proxy profile. SCRUBD RE is a candidate first gated
+source-supervised pilot based on class/group support, not an approved objective
+change or canonical suspicious-pattern relabeling. Retain the two RE concerns,
+source-quality/license gates, independent evaluation and later integration goals.
+Overlap is a fresh-evaluation restriction, not a new blanket source-training ban.
+The rolling milestones above now reflect the implemented core and this decision.
+
+The private three-file decision snapshot is
+`scafe_function_dataset_pilot/derivatives/cohort_readiness_decision_v1_20261107T0900UTC/`.
+It is metadata only and explicitly not training data. Exact target/class/group
+counts, parents and output hashes are pinned; an independent set-based cross-count
+confirms the calculation, not semantic truth. Method and limits are in
+`docs/FUNCTION_COHORT_READINESS_20261107.md`. Original data and all prior derivatives
+remain unchanged. No new labels, independent review, training or performance gain.
+
+Smallest missing input: an agreed target and qualified independently adjudicated
+review/context evidence for a legitimate grouped evaluation cohort. No blanket
+relabeling of every training row is required. Once supplied, target one bounded
+session to ingest and check it; reviewer turnaround is unknown. Reuse this decision
+unless relevant inputs change and continue other useful authorized construction.
+The schedule, original objectives and safeguards are unchanged. Required tests,
+both validators, fresh isolated paper build/visual checks, safe input-matched PDF
+refresh, reviewed local commit and held publication state are in the run report.
