@@ -56,6 +56,12 @@ audit evidence. Do not require manual independent relabeling of the entire train
 corpus before making justified source-supervised progress.
 
 Maintain a separate, independently reviewed and adjudicated evaluation cohort.
+Existing upstream qualified review/adjudication evidence may satisfy the declared
+protocol when bound to the retained revision, target and proposed cohort; do not
+require fresh review solely because it originated upstream. Source-protocol claims
+alone do not certify per-record coverage or fresh holdout status. Local zero-review
+fields do not mean the original source was never human reviewed. See the 7 November
+upstream-evidence decision before requesting duplicate annotation.
 Use qualified independent review, appropriate blinding and explicit unknowns for
 that cohort and for cases requiring adjudication. Keep project/clone-aware grouped
 splits and the existing near-clone, pair/version, source-overlap and external-set
@@ -1582,3 +1588,34 @@ unless relevant inputs change and continue other useful authorized construction.
 The schedule, original objectives and safeguards are unchanged. Required tests,
 both validators, fresh isolated paper build/visual checks, safe input-matched PDF
 refresh, reviewed local commit and held publication state are in the run report.
+
+## 7 November 2026, 10:00 UTC — upstream review prerequisite resolved in part
+
+The prior cohort decision raised qualified review as a critical dependency. A
+focused primary-source lookup now establishes documented upstream expert review
+at SCRUBD source-protocol level; see
+`docs/FUNCTION_UPSTREAM_REVIEW_EVIDENCE_20261107.md` for exact references, scope
+and acceptance checks. This resolves the question of whether upstream human review
+is documented, without claiming that retained later revisions have complete
+record-level adjudication lineage. The standing evaluation wording now explicitly
+allows qualifying upstream evidence; it does not require fresh manual review of
+every source-supervised training row. No immutable delivered instruction was edited.
+
+This is a scientific evidence/eligibility decision, not a completed new audit or
+increased label coverage. All source labels, target definitions, observation masks,
+independent evaluation fields, eligibility and splits are unchanged. No model
+training, inference, corpus download, restricted-route retry or performance claim.
+The local pilot and adapter input hashes were pinned and checked unchanged. Prior
+source-quality concerns, source-version uncertainty, overlap restrictions, licensing
+and quality/compute gates remain. Neither annotation-role flags nor author expertise
+alone prove that our reused subset qualifies as fresh independent confirmation.
+
+Next smallest deliverable: bind accepted upstream coverage evidence to retained
+rows and the agreed target, assess it against the existing evaluation protocol,
+and adjudicate only unresolved targeted cases. If that evidence is absent, identify
+its precise missing fields rather than repeat this lookup or create another proxy
+profile. One bounded ingestion/decision session is the conditional estimate after
+inputs exist; review/evidence turnaround is unknown. No student delivery dependency.
+Required focused tests, both validators, fresh isolated full paper build and visual
+checks, backed-up input-matched PDF refresh, reviewed local commit and publication
+hold are recorded in this run's checkpoint. No automation or remote setting changed.
