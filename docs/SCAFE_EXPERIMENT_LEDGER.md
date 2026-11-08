@@ -1619,3 +1619,37 @@ inputs exist; review/evidence turnaround is unknown. No student delivery depende
 Required focused tests, both validators, fresh isolated full paper build and visual
 checks, backed-up input-matched PDF refresh, reviewed local commit and publication
 hold are recorded in this run's checkpoint. No automation or remote setting changed.
+
+## 8 November 2026, 08:00 UTC — retained review-provenance binding implemented
+
+A concrete successor to the upstream protocol note now binds all 110 standalone
+SCRUBD candidates to unique byte-pinned records in the retained native staging
+artifact, without reconstructing the missing upstream CSV or repeating old scans.
+The new exporter preserves complete original-record equality, exact revision and
+function/source identity, native RE/UX values and masks, role metadata and code/
+context claims, with file/line/hash anchors. The delivery and all original inputs
+remain unchanged. No network retrieval, corpus download, source compilation or
+model work was needed. Shared compute was held only for bounded local commands;
+foreign jobs/locks and shared feature files were preserved.
+
+The private three-artifact release is
+`derivatives/review_provenance_links_v1_20261108T0800UTC/`. Its 110 links retain
+71 role-one/39 role-zero values, RE 52 positive/58 negative, UX 39 positive/32
+negative/39 unknown. Two invocations replay byte-for-byte; a separate anchor check
+reconciles all links against original artifacts. The role flags are not reviewer
+identities or adjudication proof. Each row explicitly retains unverified revised-
+label review coverage, false independent-gold/training/evaluation eligibility and
+no split. Qualified review coverage, new labels and training readiness do not rise.
+This is implemented provenance support, not a newly reviewed dataset or model gain.
+
+Method, command and boundaries are in `docs/FUNCTION_REVIEW_BINDING_20261108.md`.
+The 33 mapped RE proxies and earlier source-specific exports remain unchanged;
+the new metadata layer is not a replacement training release. The previously
+identified source-version and two RE rationale concerns remain unresolved. Next:
+verify retained-revision review/correction coverage for an agreed target or obtain
+qualified targeted cohort adjudication, then enforce existing overlap/group/license
+gates. No blanket manual relabeling or dependency on student delivery is imposed.
+Do not rerun this unchanged linkage as new progress. Mandatory focused tests, both
+validators, fresh full isolated TeX/BibTeX/visual checks, backed-up input-matched
+PDF refresh, final/staged review and local commit are recorded in the run report.
+The remote publication hold and automation settings remain unchanged.
