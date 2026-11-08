@@ -1806,3 +1806,37 @@ The qualified independent evaluation, target/source-quality and grouped-baseline
 CodeBERT gates remain. Mandatory focused tests, both validators, fresh isolated
 full manuscript build/visual checks, verified backed-up PDF refresh, final/staged
 review, local commit and held publication are recorded in the checkpoint.
+
+## 8 November 2026, 13:00 UTC — bounded real-project Venus origin alternative
+
+Rather than repeat SCRUBD's notice scan, a separate two-function Venus cohort now
+has source-documented audited-project origin decisions and direct file-specific
+BSD-3-Clause header evidence. The official dataset description and existing
+retained source/path/context/function/finding chain support the limited origin
+review. It is explicitly AI-assisted/source-documented, not independent deployment
+or audit reverification. Both original weak RE-positive claims, code-only inputs,
+all old target fields, group/quarantine and false readiness/eligibility are unchanged.
+No labels or negatives are added; no patched example is admitted.
+
+The retained Neptune header instead says BUSL-1.1 despite the dataset repository's
+MIT indication. That contrary scope evidence is preserved without promoting
+Neptune or concluding use is prohibited. Repository licensing is not substituted
+for file/import/annotation-specific terms; no legal allowed-use decision was made.
+The selected alternative is one positive-only project, not a ready evaluation or
+multi-source training set, and is not harmonized with SCRUBD target definitions.
+
+The private seven-artifact release is
+`derivatives/source_documented_real_Venus_cohort_v1_20261108T1300UTC/`.
+Method/limits: `docs/FUNCTION_VENUS_ORIGIN_COHORT_20261108.md`. Both model records
+and all original target fields except new origin metadata match the parent;
+BSD/BUSL notice hashes and seven-artifact final replay were checked. Final builder/
+helper identities are pinned, with initial preparation preserved. No new corpus,
+download, install, source compilation, model or synthetic example was involved.
+
+Next is substantive applicable-terms and target/source-quality review, qualified
+independent grouped evaluation and adequate real negative diversity before any
+learner migration/baseline/CodeBERT work. Do not repeat old pair/context audits or
+create repaired negatives without evidence. Preserve all real-only, privacy,
+compute, permission and scientific gates. Required focused tests, both validators,
+fresh isolated manuscript build/visual checks, safe backed-up PDF refresh, reviewed
+local commit, held publication and lock release are recorded in the checkpoint.
