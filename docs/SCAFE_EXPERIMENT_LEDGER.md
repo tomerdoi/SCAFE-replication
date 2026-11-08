@@ -1703,3 +1703,34 @@ baseline/CodeBERT gates remain. Required focused tests, both validators, fresh
 isolated full TeX/BibTeX/visual checks, safe backed-up input-matched PDF refresh,
 final/staged review, local commit, held publication and lock release are recorded
 in the run report. Automation settings and remote/account state are unchanged.
+
+## 8 November 2026, 10:00 UTC — real-public-origin training gate implemented
+
+The new user data restriction is now an executable prerequisite in the existing
+source-training loader, beyond the standing policy text. An otherwise eligible
+source row cannot be batched for training without an accepted origin decision
+bound to record, source revision and model-input hash, with pinned origin-evidence
+references and traceable review metadata. Source hosting alone, synthetic/unknown
+origin, unreviewed/nonpublic claims and absent/mismatched decisions are rejected.
+The code checks decision structure and binding, not truth or reviewer qualification;
+evidence still requires substantive review and all earlier readiness/license/
+label/independent-evaluation/group gates. No data decision was auto-populated.
+
+The validator supports an explicit evaluation purpose for future integration;
+this run integrates only the existing source-training path. It does not claim
+coverage of every legacy script or add an evaluation runner. Code-only inputs,
+partial masks and source-proxy boundaries are unchanged. Eight metadata-only unit
+tests and a revised batching integration test exercise fail-closed behavior; no
+research model received synthetic fixtures. A read-only check of the 110 native
+SCRUBD target rows confirms missing decisions are rejected, without changing any
+source data, label, mask, group, eligibility or split. This is a practical policy-
+enforcement improvement, not dataset qualification or a model-performance gain.
+
+Method and limits: `docs/FUNCTION_REAL_PUBLIC_ORIGIN_GATE_20261108.md`. Next is a
+verified real-origin evidence decision for a bounded cohort, alongside the existing
+target-quality and independent grouped evaluation gates; no corpus acquisition or
+training is authorized merely by this implementation. Preserve historical synthetic
+evidence, the new real-only direction, unresolved source concerns and push hold.
+Mandatory focused tests, both validators, fresh isolated full TeX/BibTeX/visual
+checks, backed-up verified PDF refresh, reviewed local commit and lock release
+are recorded in the run checkpoint. Automation settings remain unchanged.

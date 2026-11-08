@@ -114,7 +114,17 @@ class PartialSourceLossTests(unittest.TestCase):
     def test_default_training_gate_and_input_identity_fail_closed(self):
         with self.assertRaisesRegex(ValueError,'readiness'):collate_source_examples([example()])
         model,target=example(eligible=True)
-        self.assertTrue(collate_source_examples([(model,target)]).for_training)  # synthetic approved fixture only
+        with self.assertRaisesRegex(ValueError,'origin'):collate_source_examples([(model,target)])
+        # Schema-only software fixture; never supplied to a research model.
+        target['source_revision']='metadata-test-revision'
+        target['real_public_origin_decision']={
+            'policy':'real-public-function-origin-v1','status':'accepted','origin':'real_world',
+            'public_dataset':True,'public_dataset_url':'https://example.invalid/metadata-test',
+            'decision_id':'software-test-only','reviewer_id':'software-test-only',
+            **{key:target[key] for key in ('record_id','source','source_revision','model_code_sha256')},
+            'evidence':[{'kind':'real_project_source_lineage','artifact_sha256':'b'*64,
+                         'locator':'software test metadata, not a real provenance decision'}]}
+        self.assertTrue(collate_source_examples([(model,target)]).for_training)
         model['model_code']='changed'
         with self.assertRaises(ValueError):collate_source_examples([(model,target)])
 

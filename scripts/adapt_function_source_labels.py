@@ -9,6 +9,7 @@ import random
 from audit_function_pilot_handoff import jsonl_rows,sha256,verify_delivery,inspect_staging_rows
 from prepare_context_review import safe_file,verify_artifacts
 from prepare_function_review import CATEGORIES,text_hash,write_jsonl
+from function_real_public_origin import require_real_public_origin
 
 VERSION='function-source-reentrancy-adapter-v1'
 DEFINITION='scrubd-source-assessed-reentrancy-susceptibility-proxy-v1'
@@ -31,6 +32,7 @@ def masked_source_example(model,target, *, for_training=False):
     if set(target['labels'])!=set(CATEGORIES) or set(target['label_observation_mask'])!=set(CATEGORIES):raise ValueError('Category schema mismatch')
     if target['independent_gold'] is not False or target['human_review_status']!='unreviewed':raise ValueError('Source-proxy adapter cannot certify independent gold')
     if for_training and (target['training_eligible'] is not True or target['training_readiness_blockers']):raise ValueError('Training readiness gates have not passed')
+    if for_training:require_real_public_origin(model,target,purpose='training')
     if target['label_observation_mask']['reentrancy'] and (target['source']!=SOURCE or target['mapping_status']!='mapped_source_proxy' or not target['mapping_evidence'] or target['native_source_assessments']['RE'] is not target['labels']['reentrancy']):raise ValueError('Source target lacks matching native label/span evidence')
     values=[];masks=[]
     for category in CATEGORIES:
