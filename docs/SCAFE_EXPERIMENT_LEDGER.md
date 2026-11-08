@@ -1734,3 +1734,41 @@ evidence, the new real-only direction, unresolved source concerns and push hold.
 Mandatory focused tests, both validators, fresh isolated full TeX/BibTeX/visual
 checks, backed-up verified PDF refresh, reviewed local commit and lock release
 are recorded in the run checkpoint. Automation settings remain unchanged.
+
+## 8 November 2026, 11:00 UTC — source-documented real CD origin cohort
+
+The existing 33 exact-span SCRUBD RE source proxies now form a separate private
+cohort with explicit origin-only decisions. A source-specific primary-publication
+assessment was combined with pinned delivered/source/context manifests, CD-only
+revision/path/acquisition links and exact function/input hashes. Coverage is 33
+source-documented real-origin decisions in 18 retained contexts, not independent
+on-chain/deployment certification. The AI-assisted reviewer kind and limitations
+are recorded in every decision/card. No source hosting-only inference, generic
+cross-source promotion, synthetic generation, new acquisition or model was used.
+
+The private six-artifact release is
+`derivatives/source_documented_real_CD_cohort_v1_20261108T1100UTC/`.
+Method and acceptance limits:
+`docs/FUNCTION_REAL_CD_ORIGIN_COHORT_20261108.md`. All 33 original target fields
+except the new origin metadata, all model input dictionaries, fixed selection,
+14/19 native RE support, partial masks, groups, false eligibility, blockers and
+empty splits match the parent exactly. Original deliveries and prior derivatives
+are immutable. This advances saved source-origin support from zero to 33 decisions;
+it adds no labels, qualified semantic reviews or model-performance evidence.
+
+Two builds replay byte-for-byte; independent full-row comparison confirms no
+unintended promotion or input change. Origin-purpose checks pass, the pinned
+non-training loader admits 33 diagnostic rows, and the training loader still
+rejects existing readiness blockers. Neither API purpose nor source-origin approval
+makes an evaluation set independently qualified or fresh. Primary documentation
+predates the retained revision; later per-record correction/review history and
+acquisition/deployment authenticity remain outside the accepted source-tier claim.
+
+Next is existing license/allowed-use evidence plus target/source-quality and
+qualified grouped-evaluation readiness, not another origin export of the same
+frame. Other/unmapped records remain unassessed, not synthetic by default. Reuse
+this bounded result, continue independently of students and retain all real-only,
+compute/privacy, leakage, validation, PDF and Git safeguards. Required focused
+tests, both validators, fresh isolated full manuscript build/visual checks, safe
+input-matched PDF refresh, reviewed local commit and held publication are recorded
+in the run checkpoint. No automation or remote/account state changed.
