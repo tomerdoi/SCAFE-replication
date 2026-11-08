@@ -1772,3 +1772,37 @@ compute/privacy, leakage, validation, PDF and Git safeguards. Required focused
 tests, both validators, fresh isolated full manuscript build/visual checks, safe
 input-matched PDF refresh, reviewed local commit and held publication are recorded
 in the run checkpoint. No automation or remote/account state changed.
+
+## 8 November 2026, 12:00 UTC — retained notice scope blocks a blanket rights shortcut
+
+A bounded inspection addressed the saved real-CD cohort's explicit allowed-use
+prerequisite, rather than rerun provenance or model readiness. Of 18 retained
+contexts, 16 have no hits under the recorded broad license-marker search and two
+have scope-limited notices. The MIT block is explicitly inside solidity-cborutils,
+with separate helper notices, while the selected GAME.startRaffle is later in the
+flattened file. Two Apache notices explicitly concern individual methods, not the
+selected later KittyBreeding.giveBirth/KittyCore.withdrawBalance functions. Three
+selected functions reside in notice-bearing files. No whole-contract/selected-
+function coverage is established from those notices alone. The retained source
+manifest has no explicit license file entry; that is not an upstream absence claim.
+
+This is a material evidence-scope finding, not a legal allowed/prohibited-use
+opinion. Missing markers do not establish no lawful use. All 33 allowed-use
+statuses remain unresolved under the task's gate; no permission, license or
+eligibility was synthesized. The private four-artifact release is
+`derivatives/CD_notice_scope_evidence_v1_20261108T1200UTC/`.
+Method and boundaries: `docs/FUNCTION_CD_NOTICE_SCOPE_20261108.md`. Context/notice/
+function byte and line hashes were independently checked; two runs replay exactly.
+A narrower initial search missed the method-specific Apache wording, so only the
+broader final count is used. Original data, source-origin decisions, labels, masks,
+groups, eligibility and splits are unchanged. No model, source compilation,
+acquisition, outreach or synthetic example was involved.
+
+The exact remaining input is source-specific allowed-use evidence covering intended
+contract-code and annotation uses, or another already authorized real corpus with
+documented applicable terms. Do not repeat this scan or blanket-propagate a bundled
+notice. No external outreach, download permission or legal conclusion is implied.
+The qualified independent evaluation, target/source-quality and grouped-baseline/
+CodeBERT gates remain. Mandatory focused tests, both validators, fresh isolated
+full manuscript build/visual checks, verified backed-up PDF refresh, final/staged
+review, local commit and held publication are recorded in the checkpoint.
