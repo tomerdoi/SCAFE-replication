@@ -1653,3 +1653,35 @@ Do not rerun this unchanged linkage as new progress. Mandatory focused tests, bo
 validators, fresh full isolated TeX/BibTeX/visual checks, backed-up input-matched
 PDF refresh, final/staged review and local commit are recorded in the run report.
 The remote publication hold and automation settings remain unchanged.
+
+## 8 November 2026, 09:00 UTC — POOHMO local caller guard gap narrowed
+
+A follow-up to the unresolved RE0 rationale issue now covers the complete
+compiler-resolved local call/modifier graph for the preselected POOHMO.endRound
+case. The saved verified original-context AST was reused; no new compilation,
+corpus retrieval, broad scan, source-label adapter or model was run. Three direct
+callers and eight entry paths were found. Every reaching entry explicitly invokes
+isHuman; its sender/origin equality precedes the body, and each direct call has
+an immediately preceding same-block ended=true round marker. All three target
+Identifier references are accounted for. Forward and reverse reachability agree;
+source/candidate/AST spans and two-file replay are checked. This adds local caller
+coverage beyond the earlier lexical sample rather than repeating it.
+
+The private four-artifact derivative is
+`derivatives/poohmo_caller_guard_evidence_v1_20261108T0900UTC/`.
+Method and limitations are in `docs/FUNCTION_POOHMO_CALLER_GUARDS_20261108.md`.
+The scientific decision is to require any proposed mechanism to address the full
+resolved caller guards and pre-call marker, not infer a label error from call/write
+ordering or the source comment's omission. No RE label was proved right or wrong.
+Runtime callback/deployment and cross-function/read-only effects remain unverified;
+source-visible AI analysis is not independent adjudication or a safety certificate.
+All source labels, masks, inputs, groups, eligibility and split counts are unchanged.
+
+Next smallest dependency is qualified analysis of the actual callee/deployment
+mechanism in light of these guards, or context-required truth if that evidence is
+absent. Do not regenerate this unchanged graph or wait for student delivery. The
+separate source-revision, license, independently qualified evaluation and grouped
+baseline/CodeBERT gates remain. Required focused tests, both validators, fresh
+isolated full TeX/BibTeX/visual checks, safe backed-up input-matched PDF refresh,
+final/staged review, local commit, held publication and lock release are recorded
+in the run report. Automation settings and remote/account state are unchanged.
