@@ -38,6 +38,24 @@ eligibility, decisive experiments and reproducible evidence are outcome measures
 Candidate/source/rule proposals never become ground truth by relabeling, and
 training must never be implied when it did not occur.
 
+### Real-world public data only — user direction, 8 November 2026
+
+Research training and evaluation must use only real-world data from public
+datasets. Do not generate or use synthetic training or evaluation examples,
+including targeted augmentation, unless the user later changes this instruction.
+Continue the real function-dataset and CodeBERT objective. Public hosting alone
+does not establish real-world origin: retain per-source/example provenance and
+exclude unknown-origin examples from training/evaluation until supported. In
+particular, do not admit a synthesized benchmark merely because it is public.
+
+Preserve historical synthetic experiments and compiler controls as clearly labeled
+evidence; they do not become training/evaluation rows. All existing license and
+provenance checks, download authorization, independent evaluation, leakage/group
+controls, scientific validation, resource/privacy limits and Git/PDF safeguards
+remain in force. This instruction changes data eligibility policy, not measured
+results or existing immutable labels. No corpus acquisition or training is started
+by this policy update.
+
 ### Source-supervised training and independent evaluation — 4 November 2026
 
 Reuse existing upstream labels and audit findings efficiently as source claims,
