@@ -1960,3 +1960,34 @@ if no viable route closes in two bounded sessions, revise the task/evidence pack
 `docs/SCAFE_SCABENCH_USAGE_STOP_20261109.md` and the superseded-screen note record
 this concrete dependency. Conditional manuscript dates are delayed by this gate,
 not promised. Mandatory validation/PDF/Git/lock outcomes are in the run checkpoint.
+
+
+## 9 November 2026, 11:00 UTC — original-annotation CVE route and one exact source binding
+
+The Code4rena route remains held. A distinct publisher pins CVE claim-to-function
+localizations with CC BY 4.0 for original author annotations, separately preserving
+third-party source rights. Version 2026-08-14 at 1128b7aae666df541a5ffcf56782df17113c3d36
+was boundedly acquired for qualification, not model/evaluation use. A pre-value rule
+keeps 196/491 case IDs provisionally reserved; 295 development cases yield 303 coordinate
+records, 300 distinct artifact/function/line keys, 283 artifact references and 54 signature
+strings. Counts are not independent functions/projects or qualified ground truth.
+A mixed raw annotation file contains source snippets; it is quarantined and the
+working pointer projection excludes snippets/narratives. Initial recursive catalog
+hit 4 MiB cap and remained unparsed; targeted nonrecursive catalogs succeeded.
+
+One deterministically chosen development case, CVE-2025-57247, has a 62,499-byte pinned
+explorer artifact with explicit MIT source notice. The reported ERC20 function
+setColdWhiteList(address,bool) exactly matches lines 179–182 and its hashed body.
+The source is 42,547 UTF-8 bytes with no imports; this is static lexical qualification,
+not exploit/caller/deployment verification. Native source claim preserved; all
+canonical masks unobserved, training/evaluation/gold/split remain false/unknown.
+No exact fragment hash occurs in the initial pilot's recorded raw hashes; that is
+not a clone/historical overlap clearance. No model ran, no source was executed.
+
+`docs/SCAFE_CVE_LOCALIZATION_INTAKE_20261109.md` and private versioned release record
+this new usable annotation/source path. Next is a bounded explicitly licensed dev
+batch, project/clone families and complete review universe; reuse this intake,
+stop/pivot if actual qualified groups are inadequate, do not inspect reserved
+locations to rescue the task. Conditional manuscript milestones remain dependent
+on qualification, equivalent fair baselines and independent evaluation. Mandatory
+checks/PDF/Git/locks and exact limits are recorded in the session checkpoint.
