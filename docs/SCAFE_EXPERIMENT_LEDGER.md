@@ -1911,3 +1911,26 @@ admission/qualified task viability or pivot; no endless origin/schema audits.
 Mandatory focused tests, both validators, fresh isolated manuscript build/visual
 checks, verified backed-up PDF refresh, final/staged review and scoped local Git
 state are recorded in the checkpoint. The separate push/auth holds remain intact.
+
+
+## 9 November 2026, 09:00 UTC — new real-audit metadata feasibility screen
+
+ScaBench publisher metadata was pinned and bounded before acquisition (1,982,255
+bytes; exact Git blob and SHA256 verified). This is distinct from injected SC-Bench.
+Publisher MIT/real-audit claims permit only the recorded metadata-inspection scope;
+source/report terms and truth are not inherited. No source/model/scorer was fetched.
+A pre-description ID rule keeps 12/31 projects provisionally reserved and uninspected;
+19 development projects contain 313 findings. Only 12/19 codebases have full commits.
+Strict declared-revision links cover 37 findings / 7 projects / 62 locations;
+Solidity only is 24 findings / 4 projects / 41 links. These are not function labels.
+The old 30-function/10-project feasibility floor is not passed, no learner was fit,
+and no gold/eligibility/frozen split was added. Reserve overlap is still unverified.
+
+`docs/SCAFE_SCABENCH_ADMISSION_20261109.md` and the private versioned metadata release
+record the decision and next bounded source/report admission plus exact-function
+mapping gate. Reuse this screen; do not inspect reserve labels or mix languages to
+inflate feasibility. A mutable ref requires original version evidence. If qualified
+project coverage/universe is inadequate, pivot rather than prolong proxy audits.
+All real-public-only, evaluation, baseline, permission and push-hold gates remain.
+Mandatory test/build/visual/PDF, final/staged review, local Git and own-lock outcomes
+are recorded in the session checkpoint; no remote publication is asserted here.
