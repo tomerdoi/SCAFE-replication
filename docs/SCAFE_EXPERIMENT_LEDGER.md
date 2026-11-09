@@ -1991,3 +1991,35 @@ stop/pivot if actual qualified groups are inadequate, do not inspect reserved
 locations to rescue the task. Conditional manuscript milestones remain dependent
 on qualification, equivalent fair baselines and independent evaluation. Mandatory
 checks/PDF/Git/locks and exact limits are recorded in the session checkpoint.
+
+
+## 9 November 2026, 12:00 UTC — bounded CVE source batch and clone constraints
+
+The fixed 12-artifact plan (128 KiB/file, 1 MiB total) received all 12 after one initially
+empty timeout was verified and retried once; failure history retained. One prior
+artifact was reused; 308,311 new bytes downloaded with size/Git blob/SHA256 matches.
+No source/model execution, install, paid compute, reserve inspection or held C4
+content acquisition occurred. Four selected source files have explicit MIT notices
+matching explorer metadata; eight remain source-notice-unqualified under this tier,
+including one with MIT metadata but no direct notice. Missing notice is not a legal
+prohibition. A structured source bundle was resolved by exact target file path.
+
+Qualification grows from 1 source / 1 location to 4 sources / 5 locations across 4 CVE IDs.
+The comment-aware lexical scope census yields 176 named implemented functions,
+173 token hashes and 166 identifier-family hashes. Shared name/symbol/_msgData token
+bodies reduce four sources to three conservative split components. These are not
+verified independent projects. Four census raw hashes match the initial pilot;
+none of five located targets do, but no historical/near-clone clearance is claimed.
+The census is not a complete inherited/special-function review universe or AST.
+No compiler is installed, no training/evaluation eligibility or gold was added,
+all canonical masks remain unobserved, and unmentioned functions stay unknown.
+
+`docs/SCAFE_CVE_SOURCE_BATCH_20261109.md` and the private versioned release retain
+five exact scope/name/line/body bindings, sources/notices, constraints and replay.
+Stop this mini-cohort as a model benchmark; next is genuinely broader admitted
+source/group coverage plus a fair universe or an explicit task/data pivot. Reuse
+valid results; no repeated acquisition/clone audit. Source labels may be reused
+with justified partial mappings/targeted audit, not blanket manual relabeling;
+independent qualified evaluation and fair baselines remain. Conditional manuscript
+milestones remain blocked at data qualification. Mandatory tests, fresh build,
+visual/PDF refresh, final/staged review, local Git and lock states are checkpointed.
