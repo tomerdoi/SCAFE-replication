@@ -1934,3 +1934,29 @@ project coverage/universe is inadequate, pivot rather than prolong proxy audits.
 All real-public-only, evaluation, baseline, permission and push-hold gates remain.
 Mandatory test/build/visual/PDF, final/staged review, local Git and own-lock outcomes
 are recorded in the session checkpoint; no remote publication is asserted here.
+
+
+## 9 November 2026, 10:00 UTC — Code4rena report-use restriction and stop/pivot
+
+The original public SecondSwap H-02 report independently exposes the same three
+immutable source anchors as the prior candidate. It is a source provenance check,
+not exploit/adjudication proof. Its submission detail needs login; not accessed.
+The attempted pinned tree page failed retrieval and was not retried. A separately
+hosted file shows MIT SPDX, which cannot license report annotations/dependencies.
+Published Code4rena terms 8(g)/(h), observed today, restrict automated collection and
+ML training/evaluation/derived model datasets without separate written authorization.
+No applicable authorization is established. Further C4 collection/mapping stopped;
+no source corpus, code execution, training or evaluation occurred.
+
+All 37 matching findings / seven projects / 62 locations in the prior development aggregate
+are C4-derived, including all Solidity matches. Outside that scope six development
+projects have zero established matching links. No reserve findings were inspected.
+A private scoped admission hold preserves metadata/originals but permits no model
+use; no labels, masks, splits, eligibility or gold were added. Publisher MIT is not
+inherited rights for third-party reports. The candidate route is stopped, not an
+admitted benchmark. Next milestone is a real public source with explicit suitable
+annotation/code terms, immutable finding-source binding and a complete fair universe;
+if no viable route closes in two bounded sessions, revise the task/evidence package.
+`docs/SCAFE_SCABENCH_USAGE_STOP_20261109.md` and the superseded-screen note record
+this concrete dependency. Conditional manuscript dates are delayed by this gate,
+not promised. Mandatory validation/PDF/Git/lock outcomes are in the run checkpoint.

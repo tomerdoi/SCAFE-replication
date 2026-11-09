@@ -75,3 +75,14 @@ source candidate and a quantified qualification decision, not accuracy improveme
 
 Publisher: https://github.com/scabench-org/scabench
 Pinned metadata: https://github.com/scabench-org/scabench/blob/eec0020939a47bbc06a98a7348a90908b96f4b4d/datasets/curated-2025-08-18/curated-2025-08-18.json
+
+
+## Superseding 10:00 UTC admission decision
+
+The subsequent original-report/usage-terms check found explicit Code4rena
+restrictions on automated collection and ML training/evaluation/derived datasets.
+All 37 revision-matched development findings are within that source scope; none
+remain outside it. Stop this route pending applicable written permission and all
+other gates. No permission is inferred from the ScaBench MIT declaration. See
+`docs/SCAFE_SCABENCH_USAGE_STOP_20261109.md`; preserve this historical screen and
+its reserve boundary rather than rerun mapping or rescue it with reserved labels.
