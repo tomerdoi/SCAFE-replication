@@ -38,12 +38,40 @@ eligibility, decisive experiments and reproducible evidence are outcome measures
 Candidate/source/rule proposals never become ground truth by relabeling, and
 training must never be implied when it did not occur.
 
+### Outcome-led research flexibility and bounded acquisition — 8 November 2026, evening
+
+Optimize for two distinct defensible papers across SCAFE and data-centric, as fast
+as credible evidence permits. SCAFE's question, paper framing, code, features,
+method, models and datasets may change; preserve no technique merely because it
+was the previous plan. Keep at most three measured outcome milestones and an
+early continue/pivot/stop experiment. Submission readiness and journal review/
+acceptance are separate; no Q1 outcome is guaranteed. Do not duplicate claims or
+manufacture two papers from insufficient evidence. This supplements all scientific,
+privacy, resource, permission, coordination, validation and specific Git/auth holds.
+
+Bounded downloads of new real public datasets in existing authorized local storage
+are now allowed after official source/version, applicable terms/license, provenance,
+label/task scope, overlap/leakage, expected download/expanded size, free disk and
+bounded time/resource checks. Record URLs, retrieval dates, hashes and admission
+decisions. Ask before large downloads or resource-intensive expansion. No software
+installation, model download, paid compute/spending, credential change or private
+upload is authorized. Never execute dataset code/installers; preserve originals
+and shared read-only data. Do not weaken TLS/trust settings. Historical no-download
+clauses do not override this later bounded-data authorization; all other holds do.
+
+Only real public data may be used for research training/evaluation. Synthetic
+examples/augmentation remain prohibited. Source/weak labels, qualified evaluation,
+unknown handling, grouping/clones, fair baselines, leakage, uncertainty and lineage
+remain mandatory; adapt technique-specific steps only with equivalent scientific
+gates for the newly declared design. A prompt/plan change is not an experiment.
+
 ### Real-world public data only — user direction, 8 November 2026
 
 Research training and evaluation must use only real-world data from public
 datasets. Do not generate or use synthetic training or evaluation examples,
 including targeted augmentation, unless the user later changes this instruction.
-Continue the real function-dataset and CodeBERT objective. Public hosting alone
+The later outcome-led direction allows changing task, method and data; CodeBERT
+is optional. Public hosting alone
 does not establish real-world origin: retain per-source/example provenance and
 exclude unknown-origin examples from training/evaluation until supported. In
 particular, do not admit a synthesized benchmark merely because it is public.
@@ -83,8 +111,8 @@ upstream-evidence decision before requesting duplicate annotation.
 Use qualified independent review, appropriate blinding and explicit unknowns for
 that cohort and for cases requiring adjudication. Keep project/clone-aware grouped
 splits and the existing near-clone, pair/version, source-overlap and external-set
-controls. Compare rigorous matched majority/nuisance/rule/lexical baselines before
-a bounded CodeBERT pilot; source/weak labels are not independent test truth.
+controls. Compare rigorous matched majority/nuisance/rule/lexical baselines before any
+optional encoder experiment; source/weak labels are not independent test truth.
 
 Do not fabricate category mappings or synthetic negative labels. Patched functions
 and no-known-vulnerability examples are not blanket verified negatives; a verified
@@ -119,11 +147,16 @@ counts refer to the harmonized/independent-review fields, not an absence of upst
 annotations. Reuse justified source labels through a versioned adapter rather than
 require new independent labels for every training function.
 
-| Outcome milestone | Concrete deliverable and completion checks | Dependencies / critical path | Conditional estimate |
+| Outcome milestone | Deliverable / measurable checks | Current dependency / decision | Conditional target |
 |---|---|---|---|
-| 1. Provenance-bound source supervision | Bounded core exports are implemented: 33 SCRUBD RE cells, three CoinFabrik claims and the latest local-result layer (10 positive/one weak negative). Preserve separate definitions, code-only inputs, partial masks and pinned manifests; do not sum versioned parents or call proxies gold. Canonical harmonization and eligibility are not established. | Reuse the implemented adapters, masked-loss support and verified artifacts. Revisit only changed inputs or a concrete mapping/regression decision; do not rebuild unchanged inventories or profiles as new progress. | Completed bounded exports are dated below. Further independent source/context improvements remain allowed when they address an actual gap. |
-| 2. Agreed target and qualified evaluation core — current critical path | Accept or reject target meanings/source-quality assumptions; obtain independent qualified review/adjudication and a legitimate grouped evaluation cohort with both classes, provenance/license eligibility and explicit unknowns. The 7 November decision records 47 cells/36 functions/35 code inputs across four separate definitions, no eligible independent evaluation and one negative group for the local-result target. Source weak labels remain distinct from evaluation truth. | The SCRUBD RE target alone passes the current necessary both-class group-count bound, making it a candidate first gated source-supervised pilot after target agreement. This does not replace the three-category suspicious-pattern objective. Preserve overlap restrictions and unresolved rationale cases; no blanket double manual review of every training example or student prerequisite. | Once complete review/context inputs are supplied, target one existing bounded session for ingestion, lineage/group checks and an updated affected gate decision. Qualified review turnaround is unconfirmed; no invented completion deadline. Continue other genuinely independent authorized work. |
-| 3. Decisive baseline and bounded CodeBERT experiment | After the preceding gates, run matched majority/nuisance/rule/lexical baselines with legitimate group separation, supports/uncertainty and a proceed/change/stop decision. Only then run a bounded existing-checkpoint CodeBERT pilot with partial-mask handling. Function-to-contract integration remains downstream of credible function evaluation. | Requires accepted target/source protocol, qualified evaluation, frozen groups, adequate support, licenses/provenance and measured affordable compute. Existing inspected data cannot become fresh confirmation through relabeling; source extraction rules cannot provide their own independent oracle. | Aim for one bounded CPU baseline session after gates pass. Estimate the encoder pilot from actual inputs/checkpoint/runtime; do not start it or promise strong results while gates are unmet. |
+| 1. Admitted testable real-data task | Verified terms/provenance/context, explicit target/universe and qualified project/clone-separated evaluation; provisional screen >=30 anchored functions/>=10 projects is not power or eligibility. | Current pilot fails at8 functions / 4 projects. Use the bounded17-file, 165,688-byte admission plan after per-file terms checks. Continue/pivot/stop within two sessions; no more unchanged metadata repackaging. | Aim decision by Nov9; admission and review availability are conditions, not promises. |
+| 2. Decisive development method experiment | Freeze review-budget metric, matched random/length/name/provenance/rule baselines, context alternative, uncertainty and costs. Prospectively seek at least 5 points known-finding recall gain at 20% named-function budget beyond strongest cheap baseline with positive project-paired interval; justify power before use. | Only after milestone1; stop/pivot a failing method instead of architecture churn. No required old features, CodeBERT or three-category objective for a newly declared task. Existing labels keep their original meanings. | 3–5 bounded sessions after gates; aspirational Nov10–17 only if gate1 closes. |
+| 3. Distinct confirmatory contribution and manuscript | Qualified untainted real-cohort frozen test, fair ablations/uncertainty/runtime/failures/lineage, scoped manuscript and reproducible artifacts; no duplicate data-centric claims. | Requires milestone 2 go and independent/rights/overlap gates. If evidence cannot sustain two contributions, report that rather than split one weak result into two papers. | Conditional submission-ready target Nov18–29, not Q1 acceptance or review-time guarantee. Revise date/scope on concrete failed dependencies. |
+
+The detailed protocol and first negative feasibility result are in
+`docs/SCAFE_ACCELERATION_DECISION_20261108.md`. These are prospective decisions,
+not model outcomes. See the latest outcome-led direction below; historical entries
+and source-specific schema checks do not impose an architecture on a new design.
 
 ### Historical adapter checkpoint — 4 November 2026, 10:00 UTC
 
@@ -1840,3 +1873,41 @@ create repaired negatives without evidence. Preserve all real-only, privacy,
 compute, permission and scientific gates. Required focused tests, both validators,
 fresh isolated manuscript build/visual checks, safe backed-up PDF refresh, reviewed
 local commit, held publication and lock release are recorded in the checkpoint.
+
+## 8 November 2026, evening — outcome-led pivot screen and bounded metadata acquisition
+
+The user's newer direction permits method/task/data changes and bounded real-data
+acquisition after admission checks. Standing guidance and three outcome milestones
+now reflect that flexibility; CodeBERT is optional. A few-week evidence/manuscript
+package is conditional, not credible as a commitment before qualified evaluation
+and data gates close. A function/context audit-reported-location triage candidate
+was distinguished from data-centric's contract-level data interventions; no other
+project or automation definition was changed and no new contribution is asserted.
+
+The smallest new experiment tested whether retained CF data can support the
+candidate task, using all source finding classes without changing canonical labels.
+It found 171 finding records / 15 projects and 331 vulnerable-function candidates, but only
+10 exact symbol/span/line-consistent links to 8 functions in 4 projects; 52 functions have
+exact contexts, 83 producer-linked references lack exact contexts, and 2 lack unique
+pointer/anchor agreement. The fixed provisional 30-function / 10-project screen fails.
+Decision: stop this pilot as a method benchmark; no training/ranking score or new
+gold/labels/eligibility/splits. The floor is not a power or permission guarantee.
+
+A bounded official acquisition preflight downloaded 2,332,499 bytes of pinned LICENSE,
+README and Git-tree metadata only. Document hashes match the old source manifest;
+no contract source/model/archive was downloaded or executed. Python TLS verification
+failed before any file transfer; the installed system HTTPS client succeeded with
+normal TLS verification, without trust/credential/security changes or installation.
+The catalog identifies 17 missing files across 8 projects totaling 165,688 source bytes.
+The next admission plan caps 20 files, 512 KiB/file, 5 MiB total, no archive expansion;
+per-file/project/import/annotation terms must pass before source acquisition.
+Metadata/source URLs, dates, hashes, sizes, disk and nonadmission status are recorded.
+Old CF remains exploratory; independent untainted confirmation still needs admission.
+
+`docs/SCAFE_ACCELERATION_DECISION_20261108.md` records the experiment, distinctness
+proposal, exact next dependency and conditional Nov 9 / Nov 10–17 / Nov 18–29 gates. Reuse
+this negative result rather than repeat it. Next two bounded sessions must close
+admission/qualified task viability or pivot; no endless origin/schema audits.
+Mandatory focused tests, both validators, fresh isolated manuscript build/visual
+checks, verified backed-up PDF refresh, final/staged review and scoped local Git
+state are recorded in the checkpoint. The separate push/auth holds remain intact.
