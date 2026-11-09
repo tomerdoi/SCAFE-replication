@@ -2023,3 +2023,36 @@ with justified partial mappings/targeted audit, not blanket manual relabeling;
 independent qualified evaluation and fair baselines remain. Conditional manuscript
 milestones remain blocked at data qualification. Mandatory tests, fresh build,
 visual/PDF refresh, final/staged review, local Git and lock states are checkpointed.
+
+
+## 9 November 2026, 13:00 UTC — qualified CoinFabrik expansion and source supervision
+
+The CVE mini-cohort remains insufficient. This session executed the already-fixed
+CF plan rather than repeat its scan: 17 bounded source-header previews show 15 MIT
+files / seven projects and two BUSL Eesee files. Only 15 MIT full files / 135,638 bytes were
+acquired, with exact Git blob/size/prefix/original context hashes. Two existing
+MIT/BSD contexts were reused; older BUSL Dexalot/Neptune contexts stay outside this
+tier. No source/model execution, install, paid compute or reserved data use.
+
+The qualified tier expands from 3 functions / two projects to 29 functions / nine project IDs,
+39 source-finding links and 201 exact lexical scope matches. Nine source-positive
+proxy cells (6 RE, 3 authority-policy) are supported under existing definition IDs;
+78 other cells remain unobserved, zero negative. Original canonical labels unchanged.
+Code-only inputs/metadata separate; 29 inspection-loader checks pass and 29 training
+calls reject. Exact token/family checks leave nine named-project components but do not
+prove independence or clear historical/near-clone overlap. All are previously
+inspected development material, not fresh confirmation. Full review universe and
+independent semantic/evaluation gates remain unresolved; no classifier ran.
+
+The unchanged 30-function/10-project screen fails at 29/9. Do not move it or pool CVE
+cases/target definitions to manufacture a pass. Rejections remain 13 unqualified
+context links, 29 ambiguous/missing pointer-anchor, 10 outside-function anchors, four no-exact
+scope; not a semantic label-error rate. Next is targeted original evidence for a
+specific ambiguity (e.g. FarcanaVesting source pointers versus producer TokenVesting
+scope, plus punctuation), or an explicit data/task pivot; no invented alias/anchor
+or repeated full scan. Source labels may be reused with justified partial mappings
+and targeted audit, not blanket manual relabeling. Qualified evaluation, grouped
+baselines, uncertainty and all safety/permission/compute gates remain. Method note:
+`docs/SCAFE_CF_SOURCE_EXPANSION_20261109.md`. Private release, replay, required tests,
+fresh full paper build/visual/PDF refresh, local Git and own-lock outcomes are in
+the checkpoint. Existing C4 terms and remote 403 holds remain unchanged.
