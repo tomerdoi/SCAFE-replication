@@ -103,3 +103,18 @@ prior derivatives, other-paper files, schedules and remote push holds are preser
 Mandatory focused tests, both integrity validators, fresh isolated full manuscript
 build/visual checks and safe PDF refresh, final/staged review and local Git/lock
 outcomes are recorded in the run checkpoint.
+
+
+## 10 November documentary qualification update
+
+The targeted Farcana check resolves its file/TokenVesting namespace historically,
+but the original Hacken report marks the findings Fixed and describes code versus
+documentation remediation. The retained vulnerable/patched role files are byte-
+identical; original revision binding is unverified (public API 404). No classifier
+promotion or negative was added. The weak source layer stays 29/9; the separate
+document-resolved historical structural count is 31 functions / 10 project IDs.
+Numerical traceability does not establish classifier admission or independent groups. Curator
+and report author are distinct; root MIT does not license all third-party reports.
+See `docs/SCAFE_FARCANA_REVISION_HOLD_20261110.md`. Do not repeat that branch without
+materially new revision evidence or turn historical source concerns into current
+vulnerability truth. All prior source cells remain weak claims with false eligibility.

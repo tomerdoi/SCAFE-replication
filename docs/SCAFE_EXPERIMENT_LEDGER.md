@@ -2056,3 +2056,47 @@ baselines, uncertainty and all safety/permission/compute gates remain. Method no
 `docs/SCAFE_CF_SOURCE_EXPANSION_20261109.md`. Private release, replay, required tests,
 fresh full paper build/visual/PDF refresh, local Git and own-lock outcomes are in
 the checkpoint. Existing C4 terms and remote 403 holds remain unchanged.
+
+
+## 10 November 2026, 08:00 UTC — Farcana namespace resolved; revision promotion held
+
+A bounded 7,142-byte MIT source and 1,537,952-byte original report were acquired at the
+existing CF pin and verified against exact Git blobs/hashes. Original report author
+is Hacken, not curator CoinFabrik; initial first-party receipt wording is superseded.
+Separate report disclosure text was visually checked; report prose is not model data
+and the full report remains outside dataset/public Git. Source executed: no.
+
+Pages 9/11 name TokenVesting and FarcanaVesting.sol, resolving two historical namespace
+links. Both findings are Fixed; p10 reports validation changes at 3a8a187, pp11-12
+reports documentation-only remediation with unchanged function; initial scope hash
+is on p26. The retained source has mitigation/purpose indicators, and curator vulnerable/
+patched file paths share one verified blob. This is not proof of exact pre-/post-fix
+revision, safety, exploitability or a semantic label-error rate. One public original-
+revision API request returned 404 Not Found; no auth, alternate route or retry.
+
+Two historical records are retained with positive/negative classifier promotions
+held and all eligibility false. Accepted weak layer of 29 functions / nine projects / nine source
+concern cells is unchanged. Separate original-document namespace repair gives a
+historical structural diagnostic of 31 functions / 10 named project IDs / 41 links,
+numerically meeting the original 30/10 mapping count. This is not classifier
+admission, independent grouping, power or evaluation readiness. No alias rule or threshold
+relaxed, no labels/negatives/gold/splits added, no classifier ran. Preserve curator,
+auditor, audited/revised commits, status and current applicability separately.
+Source/weak claims may be reused under explicit definitions, targeted stratified
+review and masks; no blanket double manual review of every training function.
+Historical location and current-code classification must not be conflated.
+
+`docs/SCAFE_FARCANA_REVISION_HOLD_20261110.md` and the versioned private decision
+record original evidence and exact remaining revision dependency. Stop unchanged
+Farcana/report/404 rechecks; reopen only with materially new provenance or choose
+another decisive source/task route. Qualified evaluation/group/universe/baseline
+and all real-only/permission/terms/compute/push gates remain. Mandatory tests,
+fresh full paper build/visual/PDF refresh, local Git and own-lock outcomes are in
+the checkpoint. Dataset qualification remains the conditional manuscript blocker.
+
+
+The acceleration note now explicitly supersedes the old dated admission target:
+next session must choose/gate a concrete useful route, then produce a decisive
+result only after actual input gates pass. Historical structural quantity is not
+classifier readiness. The November manuscript window is an earlier conditional
+aspiration, not a current promise; no indefinite curation or duplicate-paper claims.

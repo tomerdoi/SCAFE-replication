@@ -100,3 +100,49 @@ synthetic example, qualified gold or performance result. No automation/model/run
 setting or data-centric file was changed. Preserve run/shared-compute locks, actual
 permissions, all tests, full fresh manuscript/PDF safeguards and specific push/auth
 holds. The broader research/download direction does not clear those holds.
+
+
+## 10 November checkpoint — supersedes earlier dated admission expectations
+
+Milestone 1 did not close as a qualified current-code classification task by the
+conditional November 9 checkpoint. Original-document namespace repair now gives
+31 historical linked functions / 10 named project IDs, but those counts are not
+independent projects, current-vulnerability labels, power or training admission.
+The weak source layer remains 29 functions / nine projects / nine concern cells;
+there is no independent gold or ready learner. Do not spend more sessions merely
+filling a numerical count that no longer resolves the actual dependency.
+
+The Farcana case separates curator from report author, fixed historical findings
+from current applicability, and source folder roles from immutable audit versions.
+Its original-revision public endpoint returns 404, with no retry/access workaround.
+Stop that branch until materially new evidence arrives. It is not a whole-corpus
+error-rate estimate, and does not turn historical weak concerns into safe negatives.
+
+The rolling outcomes are now:
+
+1. **Next existing session: a gated route decision.** Choose and predeclare one
+   scientifically meaningful source/task route with an actual admissible input,
+   exact label meaning, current critical dependency, a smallest decisive test and
+   continue/pivot/stop criteria. A historical report-location/traceability study
+   would need its own useful contribution, provenance/terms and qualified review;
+   it cannot claim current vulnerability detection. A current suspicious-pattern
+   classifier needs a defensible source/version and evaluation frame; upstream
+   weak labels can be reused with targeted auditing rather than manual double
+   relabeling of every training function. Neither route is selected as novel or
+   Q1-ready merely by this note. Do not repeat the completed source inventories.
+2. **After that input gate: one decisive development result.** Retain the existing
+   fair simple/nuisance baselines, grouping/clone controls, uncertainty and separate
+   evaluation gates. Produce one implemented, reproducible experiment only when
+   its actual inputs and purpose pass; otherwise close/pivot the route with the
+   precise missing evidence. The earlier 3–5-session estimate starts only after
+   admission, not retroactively. CodeBERT and the old feature recipe remain optional.
+3. **Evidence package/manuscript after a go result.** Re-estimate the conditional
+   submission-ready window from the actual route, qualified evaluation and capacity.
+   November 18–29 is an earlier aspiration, not a current commitment or acceptance
+   deadline. Keep SCAFE's substantive contribution distinct from the data-centric
+   paper; insufficient evidence must not be split into two claimed Q1 papers.
+
+This is a smaller concrete next deliverable after a slipped dependency, not an
+open-ended months-long curation plan. All real-public-only, permission/terms,
+independent-evaluation, resource/lock, per-change validation/PDF and specific remote
+holds remain. No automation schedule/prompt/model setting was changed.
