@@ -212,3 +212,25 @@ proposed, not completed or a training-admission shortcut. Do not repeat the old
 annotation-window diagnostic. No synthetic functions, model campaigns or new
 publication promise; source/quality/grouping/uncertainty and all specific holds,
 privacy, compute, per-change validation/PDF and Git constraints remain unchanged.
+
+
+## 10 November 12:00 outcome — comment-control prototype validated, no model gain
+
+The proposed bounded diagnostic ran on 19 admitted real source contexts. Frozen
+code counters depend on comments on 14/19 files (31/266 focus comparisons), while
+all token/literal/line checks pass and relational controls change on 0/19. The
+separate opt-in comment-masked API reduces that dependency to 0/19; original feature
+recipes, data, models and paper claims stay unchanged. All 244-field comparisons
+and limitations are in SCAFE_COMMENT_CONTROL_20261110.md. This is a mechanical
+correctness result, not classification performance, novelty or Q1 readiness.
+
+The three rolling outcomes: (1) completed diagnostic and usable opt-in prototype;
+(2) next bounded session, establish versioned cache/lineage and a prespecified
+matched existing-corpus development comparison, gated on admitted real source,
+justified target/evaluation, common groups, fair style/nuisance baselines, budget
+and uncertainty; (3) only after a meaningful comparison and independent evaluation,
+re-estimate the manuscript package. Do not repeat invariance checks without changed
+inputs, feed the new view to old models, overwrite shared feature caches or reopen
+the stopped alarm-admission route without new evidence. No learner/resource gate
+is waived; all source-use, real-only, privacy, lock, test/build/PDF and remote holds
+remain. A submission-ready date is still not established by this prototype.

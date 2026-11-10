@@ -2199,3 +2199,37 @@ has not run and does not establish evaluation/accuracy. Preserve distinct papers
 all scientific gates and real-only/terms/privacy/resource/remote holds; no credible
 Q1 submission date yet. Tests, both validators, fresh full build/visual/PDF refresh,
 local Git and own-lock evidence are checkpointed; original paper claims unchanged.
+
+
+## 10 November 2026, 12:00 UTC — real-source comment control and opt-in remedy
+
+Executed the predeclared model-free diagnostic on all 19 admitted MIT/BSD source
+contexts / 216,879 bytes, not the stopped alarm-admission scan. All code tokens,
+strings, non-comment character positions and CR/LF match under comment masking;
+relational negative control changes 0/19. The frozen primary extractor changes
+focus code counters on 14/19 files (31/266 comparisons): n_functions 10, n_contracts 10,
+n_assignments 6, n_events 2, n_require_assert 2, n_delegatecall 1. Across all 244 fields,
+87 names change somewhere, including intended style effects, not 87 defects. A
+real source has delegatecall count/indicator 1 to 0 when its comment-only mention is
+masked. No security labels, models or predictions used; inspected files are not
+independent projects or fresh confirmation.
+
+Implemented separate opt-in src/ml/comment_feature_control.py and ten regressions.
+The new view removes the 14/19 focus-counter dependency (0/19 afterward, 0/266), with
+metadata separated and raw/processed/implementation hashes and compatibility flags.
+Strings remain, other approximations remain, and style channels also change. This
+is extraction robustness, not accuracy gain or permission to reuse old models.
+Legacy extractor/sanitizer, CSVs, baselines and tables unchanged. An initial Counter
+aggregation bug and sub-1e-15 cross-process entropy roundoff check were preserved;
+final replay uses recorded hash seed 0 and 1e-12 finite numeric tolerance, no cohort/
+focus/gate selection. All 19 final pairs and opt-in remedy checks complete.
+
+Method: docs/SCAFE_COMMENT_CONTROL_20261110.md; private versioned
+comment_feature_control_v1_20261110T1200UTC retains protocol, numeric records and
+lineage, not a generated program/model dataset. Next is one bounded cache/lineage
+and matched-development comparison admission plan using appropriate existing real
+source/target/group/baseline/evaluation gates, not repeating the invariance audit.
+No learner until gates pass, no full-corpus overwrite, stopped source route stays
+stopped. No Q1/accuracy promise; keep the papers substantively distinct. Mandatory
+tests, both validators, fresh full build/visual/PDF refresh, final/staged review,
+local Git and own-lock outcomes are checkpointed; original paper claims unchanged.
