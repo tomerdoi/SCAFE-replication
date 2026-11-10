@@ -146,3 +146,25 @@ This is a smaller concrete next deliverable after a slipped dependency, not an
 open-ended months-long curation plan. All real-public-only, permission/terms,
 independent-evaluation, resource/lock, per-change validation/PDF and specific remote
 holds remain. No automation schedule/prompt/model setting was changed.
+
+
+## 10 November 09:00 route decision — compiler geometry is utility, not contribution
+
+The predeclared four-source exact-compiler check gave 1 successful snapshot / 40 functions
+against a 3-snapshot / 50-function utility gate. Current and legacy recipes both match
+40/40 exact owner/name/byte spans; parity supplies no extraction advantage. Three
+exact required compiler versions are absent from the cache; other cached compilers exist,
+superseding earlier universal-absence statements. No installs or source execution.
+See SCAFE_COMPILER_CENSUS_DECISION_20261110.md for the complete negative gate outcome.
+Stop expanding this parser check merely to fill a count; do not portray it as a
+novel contribution, qualified security labels, or classifier admission.
+
+The next milestone is one bounded existing-session admission decision on an actual
+real-public supervised task with exact target semantics, usable immutable source
+versions, permitted use and a qualified held-out evaluation frame. Reuse valid
+metadata; no broad inventory as a substitute. If no such frame is evidenced, report
+that the current few-week submission trajectory is not credible and choose an
+explicit different target or stop. Decisive matched learner comparisons and a
+conditional manuscript estimate follow admission, never precede it. The existing
+no-synthetic, partial-mask, source-vs-gold, grouping, fair-baseline, uncertainty,
+privacy, compute, validation/PDF and specific source-use/remote holds remain.

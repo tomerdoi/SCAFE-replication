@@ -2100,3 +2100,32 @@ next session must choose/gate a concrete useful route, then produce a decisive
 result only after actual input gates pass. Historical structural quantity is not
 classifier readiness. The November manuscript window is an earlier conditional
 aspiration, not a current promise; no indefinite curation or duplicate-paper claims.
+
+
+## 10 November 2026, 09:00 UTC — exact-compiler census check; broader route no-go
+
+Corrected an incomplete tooling probe: cached project-venv Solidity binaries exist;
+three of the four admitted CVE sources still lack their exact metadata versions.
+No install, download, pragma rewrite or source/model execution. Before compilation,
+fixed the source-frame unit and >=3 snapshots / >=50 functions / >=95% exact P/R gate.
+On the sole exact available snapshot (CVE-2021-3004, solc 0.8.0+commit.c7dfd78e), both
+current and legacy extraction match all 40 named implemented member functions in
+owner/name/UTF8 byte geometry. Compiler excludes 43 abstract, 2 constructor, 2 modifier
+nodes. Exit 0, no diagnostics; replay is byte-identical. No baseline advantage.
+
+AST-checked source geometry rises from 0 to 40/176 entries and from 0 to 1/4 snapshots, not semantic
+labels. The fixed screen FAILS at 1/3 snapshots and 40/50 functions; three cases remain
+explicitly uncompiled (0.8.26, 0.8.17, 0.8.19 absent). Stop this as a parser novelty or
+classifier-go claim; no labels, negatives, gold, training eligibility, splits or
+model gains added. Old 'no compiler installed' assertions are superseded, not erased.
+Method/decision: docs/SCAFE_COMPILER_CENSUS_DECISION_20261110.md; private versioned
+compiler_census_v1_20261110T0900UTC retains protocol, geometry, results/replay hashes.
+No new public corpus was admitted; existing source-use and GitHub 403 holds remain.
+
+Current-code classifier still needs justified source-version applicability and a
+qualified held-out evaluation frame. Next bounded outcome is a concrete real-public
+supervised-task admission decision, not more unchanged inventories/collection. Stop
+or pivot with the exact absent gate; do not promise a few-week submission from this
+small structural success. Source supervision with targeted auditing remains allowed;
+no blanket double manual training review. All per-change tests, both validators,
+fresh full build/visual/PDF refresh, local Git and own-lock results are checkpointed.
