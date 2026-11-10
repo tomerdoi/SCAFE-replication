@@ -2233,3 +2233,35 @@ No learner until gates pass, no full-corpus overwrite, stopped source route stay
 stopped. No Q1/accuracy promise; keep the papers substantively distinct. Mandatory
 tests, both validators, fresh full build/visual/PDF refresh, final/staged review,
 local Git and own-lock outcomes are checkpointed; original paper claims unchanged.
+
+
+## 10 November 2026, 13:00 UTC — compiler reference confirms limited count correction
+
+Advanced beyond preprocessing invariance to an independent compiler reference.
+Fixed both already-bound MIT contexts with exact cached solc 0.6.12+commit.27d51765,
+explicit construct units and an error-decrease/no-regression gate before compiling.
+No new acquisition, labels, reserve outcomes, source execution or model fit/scoring.
+Both original inline source units compile AST-only, exit 0/no diagnostics; exact
+binary/source/input/output hashes retained. No imports, selectors, installs or
+paid resources; shared compute exclusively leased for the 3.70-second comparison.
+
+Across four prespecified construct fields on two inspected development sources,
+original exact agreement 5/8 becomes 8/8 with the opt-in view; total absolute error
+13 to 0, no regressions. n_contracts 5 to 2 and n_functions 136 to 130 on one file;
+n_functions 27 to 23 on the other. Function proxy includes named declarations plus
+function types, not executable functions; the two cases have no function types,
+three excluded constructors, 11 interfaces and 2 libraries. Not 13 independent defects,
+statistical/generalization evidence, full AST equivalence or classifier accuracy.
+No gold, eligibility, splits or primary recipe/table/model changes.
+
+Delivered bounded src/evaluation/ast_counter_reference.py, eight software regressions
+and method note docs/SCAFE_COMPILER_COUNT_REFERENCE_20261110.md. Private versioned
+compiler_count_reference_v1_20261110T1300UTC retains protocol, AST/provenance/numeric
+evidence; independent saved-AST recount checks all eight cells. This is an independent
+reference, not a new cohort. Next is the bounded cache/lineage and matched existing-
+corpus development comparison admission plan under appropriate real-source/native-
+target/group/baseline/evaluation/resource gates. Do not repeat completed count
+checks or feed the new view to old models. The stopped alarm learner stays stopped;
+Q1/accuracy readiness remains unestablished. Mandatory tests, both validators,
+fresh full build/visual/PDF refresh, final/staged review, local Git and own-lock
+states are checkpointed; paper claims and automation unchanged.

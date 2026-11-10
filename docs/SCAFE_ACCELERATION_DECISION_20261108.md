@@ -234,3 +234,23 @@ inputs, feed the new view to old models, overwrite shared feature caches or reop
 the stopped alarm-admission route without new evidence. No learner/resource gate
 is waived; all source-use, real-only, privacy, lock, test/build/PDF and remote holds
 remain. A submission-ready date is still not established by this prototype.
+
+
+## 10 November 13:00 outcome — limited absolute-count reference passes
+
+The opt-in view now has an independent exact-version compiler check, not just
+idempotent preprocessing: four construct units on two already-bound MIT sources,
+absolute error 13 to 0, exact matches 5/8 to 8/8, no regressions. Units and limits are in
+SCAFE_COMPILER_COUNT_REFERENCE_20261110.md; this is not a new independent cohort,
+full AST equivalence, executable-function truth or classifier performance. No
+source/model/data eligibility or primary table changed. Do not repeat this check
+without new relevant inputs or merge it with the earlier failed CVE utility screen.
+
+The three rolling outcomes remain: (1) completed opt-in prototype with paired and
+limited absolute-count evidence; (2) next bounded session, a versioned cache/lineage
+and matched-development comparison admission plan with appropriate real-source,
+native-target/evaluation, grouping, style/nuisance, budget and uncertainty gates;
+(3) only after a meaningful matched result and qualified independent evaluation,
+re-estimate the manuscript evidence package. No old-model/new-feature reuse, shared
+cache overwrite, stopped alarm-source-route revival, training shortcut or new Q1
+promise. All privacy, source-use, resource/lock, validation/PDF and remote holds stay.
