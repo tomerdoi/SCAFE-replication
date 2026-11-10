@@ -1371,7 +1371,7 @@ or student delivery. Manuscript scientific claims and automation are unchanged.
 
 ## 5 November 2026, 11:00 UTC — measured CoinFabrik role-pair input limits
 
-Continued from locally validated a0731cd; the existing GitHub403publication hold
+Continued from locally validated a0731cd; the existing GitHub 403publication hold
 remains, with no push/account/remote retry. Reused the prior filename inventory
 instead of repeating the eight missing-context lookup or110000path/V6 scans.
 Workspace `scafe_iteration_20261105_1100UTC/run.json` predeclared all643CoinFabrik
@@ -1412,7 +1412,7 @@ checks, fresh isolated full TeX/BibTeX/visual build, backed-up input-matched PDF
 refresh and reviewed local Git outcome are recorded in the run report; publication
 remains held, not successful. Manuscript claims and automation are unchanged.
 
-Current critical path stays milestone2: source-quality/target-alignment decisions
+Current critical path stays milestone 2: source-quality/target-alignment decisions
 and separate independent grouped evaluation, not repeated inventories/tools.
 Small next deliverable: finding-specific context/adjudication for changed pairs,
 with a declared source-supervised eligibility decision and precise remaining
@@ -1470,7 +1470,7 @@ and typed-span/code-retention boundary regressions, reusing existing source/call
 and token evidence rather than a new scan/queue. Required tests, both validators,
 fresh isolated full TeX/BibTeX/visual checks and backed-up input-matched PDF refresh,
 reviewed local commit and held-publication state are recorded in the run report.
-Next milestone2criticalstep: targeted quality/target-alignment decision and declared
+Next milestone 2criticalstep: targeted quality/target-alignment decision and declared
 source-supervised eligibility, independent grouped evaluation and license gates;
 then matched baselines and gated CodeBERT. No new blanket manual-review rule,
 student dependency, publication promise, manuscript scientific claim or automation
@@ -1519,7 +1519,7 @@ Dataset value:2new source-supported functions/3call sites under an explicitly
 broadened target, not classification accuracy. Applicable tests, both validators,
 fresh isolated full TeX/BibTeX/visual checks, verified backed-up local PDF refresh,
 reviewed task-owned local commit and publication-hold state are in the run report.
-Next critical milestone2decision: targeted quality/target-alignment and justified
+Next critical milestone 2decision: targeted quality/target-alignment and justified
 source-training eligibility, real negative-class support, provenance/license and
 independent grouped evaluation. Baselines/CodeBERT remain gated, no blanket full-
 corpus double-review rule or student prerequisite. No manuscript claim, automation
@@ -2129,3 +2129,36 @@ or pivot with the exact absent gate; do not promise a few-week submission from t
 small structural success. Source supervision with targeted auditing remains allowed;
 no blanket double manual training review. All per-change tests, both validators,
 fresh full build/visual/PDF refresh, local Git and own-lock results are checkpointed.
+
+
+## 10 November 2026, 10:00 UTC — real-contract alarm-review pivot and safe native claims
+
+The prior exact-compiler/parser result is complete and was not repeated. Selected
+ReentrancyStudy's real Etherscan contract alarm-review claims as a narrower candidate
+instead of promoting the blocked function classifier. Official revision
+e3e089c4d119ac4de1398345c525f06dc4f2ef96, root Apache metadata license and paper
+review protocol were inspected; four files / 9,143,614 bytes acquired with exact
+Git blob/size/SHA checks, no source corpus or scripts executed. Third-party source
+rights/code binding remain unqualified. No training, gold or eligibility added.
+
+Before native outcome inspection, fixed provisional address roles: 83,532 development,
+55,892 reserve, not grouped frozen splits. Development contains 20 native positives,
+12,767 alarm-linked negative claims, 61,043 native-zero/no-alarm records and 9,702
+unanalyzed unknowns. The paper's manual frame is alarm-selected, so no-alarm zeros
+are unknown rather than reviewed negatives. Native labels are preserved: this is
+not a label-error count. Reserve label/tool values stay uninspected.
+
+Implemented strict source-specific contract claim export with observation masks,
+exact input hash, deterministic roles, no-alarm-zero rejection as observed negatives,
+no canonical function mapping, all eligibility false and no model inputs. Two exports
+replay identically; ten regressions cover the critical negative trap and failures.
+Private versioned reentrancy_study_claims_v1_20261110T1000UTC retains metadata/protocol
+and claims/exclusions. Method and three rolling outcomes:
+docs/SCAFE_REENTRANCY_STUDY_ROUTE_20261110.md. Next 1-2 bounded sessions must bind exact
+permitted source versions, overlap/groups and qualified evaluation; stop/pivot if
+not viable, not another open-ended inventory. Only then a 3-5-session matched
+context-aware alarm-triage test; no few-week publication promise. Source review
+scope/sample/expert limitations remain explicit, no fresh double manual relabeling
+of every training example. Candidate claim counts are not independent gold.
+Mandatory tests, both validators, fresh full build/visual/PDF refresh, Git and own-
+lock results are checkpointed; source-use and GitHub 403 holds remain unchanged.

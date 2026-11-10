@@ -65,7 +65,7 @@ No new software, model download, paid resource or private upload is authorized.
 |---|---|---|---|
 | 1. Admitted, testable real-data task | Close the bounded source/terms/context admission; verify label-to-function links and universe completeness; establish enough project/clone-separated cases, qualified evaluation evidence and an explicit target. Reassess the 30-function/10-project screening floor without treating it as power. Preserve unknowns and source review tiers. | Current critical path is missing exact contexts plus rights/qualified evaluation, not CodeBERT. If these are not credibly closable within two bounded sessions, stop this candidate design and choose a different data/task path; do not extend unchanged audits. | Next two existing sessions, aim for a continue/pivot/stop decision by Nov 9. Not a promised data qualification date. |
 | 2. Decisive development method test | Freeze groups, budget metric and thresholds before outcomes. Compare random, length/token, name/provenance and rule baselines with a small context-aware alternative; use development selection, project-level paired uncertainty and resource costs. Initial minimum useful effect: 5 percentage points in known-finding recall at a 20% named-function review budget beyond the strongest cheap baseline, with a positive paired project interval. Verify source/report links rather than evaluate an extraction rule against itself. | Requires milestone1 and enough groups for meaningful uncertainty. If the context method fails, pivot/stop the architecture instead of trying encoders repeatedly. A scoped negative result is retained; it is not hidden or repackaged as accuracy improvement. CodeBERT/graphs/old features are optional, existing dependencies/checkpoints only. | Roughly 3–5 bounded sessions after gate1; aspirational window Nov10–17 if gate1 closes. Otherwise revise target explicitly. |
-| 3. Separate confirmatory evidence and manuscript | Run the frozen test on an independently qualified, untainted real cohort; equivalent fair baselines, ablations, uncertainty, runtime, failure cases and full artifact lineage; rewrite claims/manuscript around actual results. Confirm contribution/venue fit and reproducibility. | Requires milestone2 go, independent-evaluation/terms/overlap gates and credible contribution beyond prior localization/ranking work. No inspected set becomes fresh confirmation. If evidence is insufficient for two papers, do not duplicate claims to manufacture two. | Conditional submission-ready package target Nov18–29. This is not an acceptance/review-time guarantee; missed dependencies require a smaller deliverable or revised date. |
+| 3. Separate confirmatory evidence and manuscript | Run the frozen test on an independently qualified, untainted real cohort; equivalent fair baselines, ablations, uncertainty, runtime, failure cases and full artifact lineage; rewrite claims/manuscript around actual results. Confirm contribution/venue fit and reproducibility. | Requires milestone 2 go, independent-evaluation/terms/overlap gates and credible contribution beyond prior localization/ranking work. No inspected set becomes fresh confirmation. If evidence is insufficient for two papers, do not duplicate claims to manufacture two. | Conditional submission-ready package target Nov18–29. This is not an acceptance/review-time guarantee; missed dependencies require a smaller deliverable or revised date. |
 
 The 5-point/budget rule is a prospective development decision, not a result or a
 promise of statistical power. Exact budget universe, protocol and adequate sample
@@ -168,3 +168,24 @@ explicit different target or stop. Decisive matched learner comparisons and a
 conditional manuscript estimate follow admission, never precede it. The existing
 no-synthetic, partial-mask, source-vs-gold, grouping, fair-baseline, uncertainty,
 privacy, compute, validation/PDF and specific source-use/remote holds remain.
+
+
+## 10 November 10:00 candidate pivot — real-contract alarm triage
+
+The active candidate shifts from the blocked function classifier/parser novelty to
+source-context ranking of legacy reentrancy alarms using ReentrancyStudy's native
+review claims. This is contract-level alarm triage, not function gold or universal
+vulnerability detection. The first concrete deliverable is a strict metadata adapter:
+20 development positives and 12,767 alarm-linked negative claims; 61,043 no-alarm
+native zeros plus 9,702 unanalyzed records remain masked. Reserve outcomes uninspected.
+Metadata/source-scope decision passes, classifier/evaluation admission still held.
+
+The three rolling outcomes and exact stop gates now reside in
+SCAFE_REENTRANCY_STUDY_ROUTE_20261110.md: current reproducible native-claim adapter;
+next 1-2 bounded sessions for permitted source/version/group and qualified evaluation
+binding (stop/pivot if absent); only after that, a 3-5-session decisive matched
+context-versus-simple-baseline experiment with uncertainty. No model training yet.
+These replace the unchanged generic admission loop, not the scientific safeguards.
+Source claims remain distinct from independent gold; absent/no-alarm is not negative.
+The two papers need distinct contributions, and a Q1-ready date is not credible
+until useful results and evaluation qualify. All holds and validation gates persist.
