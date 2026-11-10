@@ -2162,3 +2162,40 @@ scope/sample/expert limitations remain explicit, no fresh double manual relabeli
 of every training example. Candidate claim counts are not independent gold.
 Mandatory tests, both validators, fresh full build/visual/PDF refresh, Git and own-
 lock results are checkpointed; source-use and GitHub 403 holds remain unchanged.
+
+
+## 10 November 2026, 11:00 UTC — source binding screen fails; alarm route stopped
+
+Fixed 20 development positives plus 20 hash-selected negative alarm claims before
+bounded source requests. All 40 pinned original source previews were reachable;
+70,699 bytes within 2-KB/file, 81,920-byte/180-second budgets. Only three previews
+have SPDX notices. The official 40,129,988-byte explorer-metadata table was size/
+Git-blob/SHA verified and joins all 40 selected addresses uniquely; no reserve
+label/tool values inspected. Root Apache applies to metadata, not all third-party
+source. Of positives, 14 license fields are blank and five literally None. The
+remaining case's SPDX GPL-3.0 conflicts with explorer GNU LGPLv3; retained as a
+literal provenance discrepancy, not resolved rights or a vulnerability-label error.
+Missing preview notices do not prove absence of permission.
+
+Two negative cases have consistent MIT evidence and exact pinned source binding:
+51,184 bytes, path/size/Git blob/full SHA/preview/all-notice checks pass. Source
+bindings rise 0 to 2/40 (0 positives, 2 negatives); metadata joins rise 0 to 40/40.
+The fixed five-per-class screen FAILS. Previous native claims remain unchanged;
+no model, safe/function labels, gold, eligibility or frozen splits added. Implemented
+small literal-evidence checker plus nine regressions, with strict identity/size/
+unknown/conflict handling and all model flags false. Offline replay verifies all
+40 decisions; private reentrancy_source_bindings_v1_20261110T1100UTC retains original
+metadata, quarantined previews, two MIT contexts and provenance. No source or downloaded code executed.
+
+Method/decision: docs/SCAFE_REENTRANCY_SOURCE_GATE_20261110.md. STOP this immediate
+alarm-triage learner route under admitted evidence; do not fill counts with more
+negative scans, widen caps or automatically resolve notices. Reopen only with
+materially new authoritative positive source/grant/version evidence or a different
+explicit design. Next proposed bounded scientific step is one model-free comment-
+handling/control diagnostic on already admitted real contexts for the existing
+source-record-ranking question, separating intended style fields from code-derived
+fields; implement fixes only for measured unintended effects, retain nulls. This
+has not run and does not establish evaluation/accuracy. Preserve distinct papers,
+all scientific gates and real-only/terms/privacy/resource/remote holds; no credible
+Q1 submission date yet. Tests, both validators, fresh full build/visual/PDF refresh,
+local Git and own-lock evidence are checkpointed; original paper claims unchanged.

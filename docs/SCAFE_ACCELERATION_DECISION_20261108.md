@@ -189,3 +189,26 @@ These replace the unchanged generic admission loop, not the scientific safeguard
 Source claims remain distinct from independent gold; absent/no-alarm is not negative.
 The two papers need distinct contributions, and a Q1-ready date is not credible
 until useful results and evaluation qualify. All holds and validation gates persist.
+
+
+## 10 November 11:00 gate closes — stop immediate alarm-triage learner route
+
+This supersedes the previous candidate's next source-admission milestone: a fixed
+40-case development selection gives two exact MIT negative-source bindings and no
+positive binding after literal notice/explorer comparison; the five-per-class
+screen fails. All source/metadata were bounded and pinned; the one positive
+GPL/LGPL discrepancy stays unresolved. No label-error or model result is implied.
+See SCAFE_REENTRANCY_SOURCE_GATE_20261110.md; do not spend another run filling counts,
+repeating scans, widening caps or reinterpreting missing/conflicting notices.
+
+The at-most-three rolling outcomes are now: (1) completed source-binding gate and
+explicit stop, retaining reusable evidence; (2) next bounded session, predeclare
+and execute one model-free comment/control diagnostic on admitted real contexts
+for the existing source-record-ranking question, with intended-style versus code-
+feature distinctions and a null/fix stop decision; (3) only after a substantive
+result and appropriate independent evaluation gates, choose a decisive matched
+learner/control comparison and re-estimate a manuscript package. The diagnostic is
+proposed, not completed or a training-admission shortcut. Do not repeat the old
+annotation-window diagnostic. No synthetic functions, model campaigns or new
+publication promise; source/quality/grouping/uncertainty and all specific holds,
+privacy, compute, per-change validation/PDF and Git constraints remain unchanged.
