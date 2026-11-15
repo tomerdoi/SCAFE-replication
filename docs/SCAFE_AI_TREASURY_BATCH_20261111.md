@@ -1,0 +1,25 @@
+# Official treasury-file AI batch — 11 November 2026, 13:00 UTC
+
+This release adds seven versioned real-public treasury function rows to the unchanged 2,323-row parent, preserving all 53 source assertions. It assesses a second source-project family, Warped Games, under the same three-category pattern rubric. It does not establish a second independently qualified evaluation group or training eligibility.
+
+## Exact source and admission scope
+
+The official source is `warpedgames/contracts-warped-token`, file `contracts/WarpedTreasuryHandler.sol`, retrieved 11 November 2026. Its 11,973 bytes hash to `b1dd84950120b58d8da8e33ca803bab13d6f5de8ebd26a7e7a820a63f213b629`. The file carries SPDX MIT. Two official interface files add 2,343 bytes with individual notices/hashes. No audit annotations or report text are reused; new judgments are AI-assigned proposals on real code. Source data was not executed.
+
+The version is explicitly `content-sha256:<file hash>`, not a claimed upstream Git commit. Neither commit ancestry nor an atomic common dependency revision was established. This is a declared inspection intake protocol, `official-file-content-pinned-AI-cohort-v1`, not a change to model-loader eligibility. The exact official full file differs from the retained patched context (`475d930167a901ea1151a28964b4ad1ba802dd9a34514cfe95eade82e5bdd68d`); labels are not transferred between them. New rows preserve separate version identities and comment-masked, offset-bound code-only inputs, identified by `official-comment-masked-exact-span-v1`.
+
+Selection includes all seven named direct external non-view/pure functions, excluding constructor, receive and internal helpers. It does not filter by label/model outcome. The declared repository and five-token near-clone screen found no selected threshold hit against 21,457 content-pinned reserved files, 145,734 function occurrences. Fourteen saved maximum-similarity witnesses were independently recomputed. This supports provisional weak AI assessment only; it is not proof of complete semantic-fork/family independence. The inherited 119 unresolved/non-GitHub repository strings and all existing reserve gates remain limitations. No restricted source route was retried or bypassed.
+
+Four of the seven functions have token-identical counterparts in prior rows (eight counterpart rows); they are version/context observations, not new independent syntax examples. A separate group table conservatively binds all forty retained WarpedGames00 rows and seven new version rows into one family, without transferring labels. Original normalized rows remain unchanged.
+
+## Actual assessment outcome
+
+New pattern decisions: eight present, zero absent, thirteen unknown. Seven functions contain asset-flow or risk/configuration operations (authorization-sensitive pattern). `processTreasury` additionally has a witnessed non-view router exchange path and relevant mutable configuration/balance use. These are not missing-guard claims or proven reentrancy. Named `onlyOwner` guards remain visible; exact inherited implementations and deployed policy are unresolved. All seven unchecked-call decisions remain unknown because imported helper success handling is incomplete. All twenty-one contextual-suspicion and twenty-one supported-vulnerability cells remain unknown.
+
+The cumulative release has 2,330 rows, twenty distinct assessed function identities, twenty-five linked rows and two assessed source families. Cumulative unique pattern cells: eighteen present, eleven absent, thirty-one unknown. By category (present/absent/unknown): reentrancy 5/2/13; unchecked external call 0/2/18; authorization 13/7/0. Masks distinguish every unknown from a negative. AI rationales, source metadata and label cues are excluded from model inputs. Canonical labels remain unpromoted; training/evaluation eligibility, independently qualified evaluation groups and independent gold remain zero. No split, model training, inference or generated examples were produced.
+
+## Artifacts, limits and next decision
+
+The private derivative is `unified_AI_treasury_v1_20261111T1300UTC`, containing normalized functions, cumulative/new AI assessments, source/context receipts, selection/screen evidence, masks and conservative project-family links. Its manifest pins all payloads. Do not stage this dataset/source material in Git. Workspace `scafe_iteration_20261111_1300UTC/run.json` records exact final tests, validators, manuscript/PDF, Git and lock states; structural checks do not independently adjudicate the labels.
+
+The next connected quality step is a bounded context/quality audit of the operation cohorts: bind the missing inherited helper/caller evidence where available, measure label ambiguity under the declared axes, and obtain the separate qualified independent evaluation review. Freeze project/clone groups only after reserve/rights/context gates pass. A third source or additional negatives are useful only when they resolve a concrete measured support gap. No training pilot or submission-date claim follows from these weak annotations.

@@ -1,0 +1,19 @@
+# Exact-version operation-bearing AI assessment — 11 November 2026
+
+This batch extends the unified normalized function release with eight unique real-public DeXe functions, selected before assessment: all six external non-view/pure named members of the retained trader snapshot and two view contrasts selected by the fixed SHA256 rule in the protocol. It preserves 2,323 normalized rows and 53 source assertions. The eight functions link to eight rows; the preceding five library functions link to ten duplicate rows. Cumulative coverage is thirteen distinct functions, eighteen linked rows, one project group.
+
+## Evidence and measured decisions
+
+The official DeXe-Protocol revision is bd1044eba1007aa2aceed28b4e9e6a070aa7ef5a. The complete trader source hash is b845fbb2e74d435aa3d85cde033ab6182cb94a862b32917ede52fb6c1cfa126f. It matches only the retained patched context. No annotation transfers to the different vulnerable snapshot. Four additional exact-revision MIT source files (34,955 bytes) bind the parent guard/state, price-feed interface/wrappers and view callees. Receipts retain URLs, retrieval times, hashes and source notices. No source code was executed.
+
+The new AI-assigned pattern decisions are ten present, two absent and twelve unknown: six authorization-sensitive operations and four external-control-transfer/state patterns are present; two view queries lack the defined authorization-sensitive operation. All eight unchecked-call decisions remain unknown. All twenty-four contextual-suspicion and twenty-four supported-vulnerability decisions remain unknown. Recorded caller/admin/BABT guards are evidence; authorization-sensitive operation presence is not a missing-guard claim. External-control-transfer/state pattern presence is not proof of exploitable reentrancy. Patched status never supplies a negative.
+
+Cumulative unique-function pattern decisions are ten present, eleven absent and eighteen unknown. Reentrancy: 4/2/7; unchecked external call: 0/2/11; authorization: 6/7/0 (present/absent/unknown). Unknowns have explicit false observation masks, never negative labels. Source claims and AI pattern axes remain separate; metadata/rationales stay out of code-only model inputs.
+
+## Reserve and quality limits
+
+Exact revision/context binding, per-file notices, existing content screening, the repository index and the declared identifier-normalized five-token near-clone screen support this bounded AI-proposal scope. The screen checked 21,457 content-pinned reserved files and 145,734 function occurrences; no selected function crossed the predeclared similarity thresholds. The repository index independently reproduced 702 metadata rows, including 119 non-GitHub or unresolved entries. Nonmatch is not complete family independence: semantic clones, unlisted forks and unresolved metadata remain limitations. The 1,261 unresolved candidates are not cleared. DAppSCAN and its related families remain excluded from model construction.
+
+The derivative is `unified_AI_operations_v1_20261111T1200UTC` in the private pilot derivatives directory. Its manifest binds normalized rows, assessments, links, explicit masks, source contexts, selection/admission protocols and receipts. Reproduction/evidence checks are retained in task workspace `scafe_iteration_20261111_1200UTC`; the dataset and code contexts must not be staged in Git.
+
+This is weak AI annotation progress, not independent adjudication, a training-ready release or a measured precision/recall improvement. Training/evaluation eligibility and independent-gold counts remain zero, with no splits or learner run. Missing implementation closures, external target policy and deployment/caller state remain explicit unknowns. A different real-project cohort and targeted supervision-quality review are needed before grouped experiments; the independent evaluation and baseline gates remain unchanged.

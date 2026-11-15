@@ -1,0 +1,39 @@
+# SCAFE authorization source pair — 13 November 2026, 10:00 UTC
+
+## Concrete outcome
+
+A new exact-source inspection cohort adds two AI-proposed contextual authorization positives and their two finding-specific repaired contrasts: four function-revision records, two function identities, one finding/project family. The two functions are `AllowlistModule.preUserOpValidationHook` and `checkAllowlistCalldata`. Other judgments comprise eight scoped no-dispatch negatives for reentrancy/unchecked-call handling and two repair-path authorization negatives. No unknown was forced, source claim replaced, model trained, exploit reproduced or independent gold established.
+
+The private derivative `context_allowlist_pair_v1_20261113T1000UTC` preserves the parent 2,376 normalized rows, 57 contextual records and 53 native source assertions byte-for-byte. It appends four distinct comment-masked function texts and four sidecar assessments. New cumulative coverage: 2,380 normalized rows; 61 contextual records; three proposed positives, 54 scoped negatives and 126 context-required cells. All three proposed positives are authorization; reentrancy/unchecked-call positives remain zero. Original native definitions and pattern-presence diagnostics remain separate.
+
+Both revisions and both functions must remain in one project/clone/finding group. Four records are not four independent incidents, projects or observations of generalization. Training/evaluation eligibility, fully qualified independent groups, independent gold, splits and model runs remain zero. This is a scientific feasibility advance in contextual source evidence, not measured detection performance or a finalized dataset.
+
+## Source binding and scoped mechanism
+
+Direct project advisory: https://github.com/alchemyplatform/modular-account/security/advisories/GHSA-jhp7-7cq9-m4pv (CVE-2025-46834). The SDK advisory GHSA-wfm2-rq5g-f8v5 links an address-replacement commit; that SDK diff alone does not locate a Solidity defect. Following the direct Solidity advisory and official file history bound the repair to `5e6f540d249afcaeaf76ab95517d0359fde883b0` and its immediate parent `fb3816fa964b4f8f1ce86ad5393b088e06229834`.
+
+Recovered original `AllowlistModule`, `ModuleBase`, account validation/execution context and `ExecutionLib`; per-file copyright and GPL-3.0-or-later notices, plus full LICENSE-GPL, are retained. The account base is byte-identical between the two commits; the repair metadata shows ExecutionLib unchanged. No current/main source was substituted for an affected revision. Advisory identifiers/locator facts are evidence references; its narrative is not a dataset input or copied annotation. Exact function localization and common-target judgments are explicitly AI-assigned proposals.
+
+Source review identifies a mismatch between the validation-phase outer selector and the selector consumed by the allowlist checker. The repair binds the inner payload to the existing permission predicate. Assessments are restricted to the documented well-formed, single-wrapper session-key configuration and this specific repaired path, with a genuinely installed hook and otherwise valid session-key signature. Repaired code is not labeled globally safe. The reentrancy and unchecked-call negatives cover only the local view/pure validation closure, not later account execution. The full account/runtime is not independently verified.
+
+## Quality, rights and exclusion checks
+
+The frozen four-record content screen verified 21,457 reserved file hashes and examined 145,734 function occurrences in 24.256 seconds; none of these four selected fragments crossed the existing thresholds. Eight maximum-similarity witnesses were independently replayed against pinned source bytes. Project metadata searches found no corresponding Alchemy/Modular Account/ERC6900 strings, but this does not clear complete project/fork ancestry. No reserved labels or outcomes guided assessments, and no independent project group was manufactured. Full contexts are evidence, not admitted model inputs.
+
+A targeted second AI pass checked before/after dispatch, the unchanged permission predicate, the actual account call chain, contrast scope and pair grouping. The existing fail-closed adapter replayed all four assessments against exact spans/context hashes. This is not independent adjudication or an audited population label-error estimate. Source and label explanations remain outside function inputs, which use the existing comment-masking protocol.
+
+The first bounded candidate, an official Kernel session-key release, was not admitted: its local change from a signer mismatch revert to a false return did not by itself demonstrate a retained-category defect, and its original GPL notice lacked a version. No label or model-input row was added from that route. An official security-fix title is not enough to create a function-positive label. Unchanged restricted Tezoro/Nudge/Treehouse and failed Aperture routes were not retried or bypassed.
+
+This run's prespecified caps were two project families, 30 functions, 512 KiB total source/metadata, 40 minutes and 180 seconds shared compute. Actual acquisition was 317,708 bytes. No archive, installation, model download, paid compute, generated training example or downloaded code/test execution occurred. The four-record batch is deliberately small because its two function identities form one causal repair pair; padding unrelated negatives would not address the positive-support bottleneck.
+
+## Rolling outcomes and decision
+
+1. **This session:** finish the source-bound pair, grouping, quality/evidence replay and mandatory tests/build/PDF checkpoint. Preserve the one-finding unit and all parent data.
+2. **Next 1–3 bounded sessions if accessible evidence permits:** prioritize additional independent authorization findings and contrasting contexts, resolve family/source qualifications and measure supervision quality. Consider an explicitly narrowed authorization-first exploratory target rather than pretend that the empty RE/unchecked-call positive classes can support a three-class pilot. A pivot requires a declared versioned protocol; this pair alone does not authorize a fit or determine a model.
+3. **Following 2–4 sessions only after the remaining training gates pass:** freeze isolated evaluation groups, grouped training/development, matched simple baselines and the smallest exploratory function-model comparison. Independent evaluation labeling may finish in parallel; final confirmation remains mandatory before generalization claims. Source rights, family/clone separation, masks/loader, label quality, baselines and compute gates remain. A few-week submission-ready function-model evidence package is still unestablished at current group/class coverage; journal acceptance is separate and cannot be promised.
+
+## Preservation and evidence
+
+Workspace `scafe_iteration_20261113_1000UTC` contains source URLs/hashes/receipts, exact revisions, native claim reference, no-label Kernel decision, screen and eight-witness replay, private release manifest, quality notes and final run checkpoint. Original/staged files remain preserved; only this new companion, the new private derivative and the freshly validated local manuscript PDF are project changes. Mandatory focused tests, both integrity validators, isolated direct TeX/BibTeX passes, representative visual checks and exact-input backed-up PDF refresh outcomes are recorded in final `run.json`. No staging, commit or push; specific existing holds persist.
+
+No new cross-paper handoff is needed for this finding's security mechanism; it must not become a duplicated independent claim. The previously recorded dependency-lock provenance lesson remains separate and pending coordinating-parent delivery. No reserved examples, labels, outcomes or adaptive choices were shared.
