@@ -2265,3 +2265,37 @@ checks or feed the new view to old models. The stopped alarm learner stays stopp
 Q1/accuracy readiness remains unestablished. Mandatory tests, both validators,
 fresh full build/visual/PDF refresh, final/staged review, local Git and own-lock
 states are checkpointed; paper claims and automation unchanged.
+
+
+## 11 November 2026, 08:00 UTC — unified function/source-label release
+
+Implemented one consolidated 2,323-function inspection release joining the existing
+normalized views and current SCRUBD RE, local-result and CoinFabrik expansion labels.
+53 observed source assertion cells / 42 records bind exactly to current code hashes:
+RE native 14 positive/19 negative, CF RE concerns six positive, local result ten
+positive/one negative, CF authority three positive. Definitions remain distinct;
+canonical labels are not silently promoted. All 18 delivery files and selected
+parent manifests verified, deterministic replay agrees. Original deliveries stay
+unchanged; private payloads are not Git data. Ten software regressions cover join,
+mask, definition, conflict, provenance, code-binding and eligibility boundaries.
+
+This is a dataset construction advance, not new semantic labels/model performance.
+No AI assessment, gold, training/evaluation eligibility, split or model fit added.
+316 rows retain old-corpus overlap/quarantine flags and 2,007 have unresolved
+reserved membership; no row is cleared from DAppSCAN exclusion by absent flags.
+Next bounded priority is actual reserved DAppSCAN project/version/clone exclusion
+and justified common-target definitions, then evidence-backed AI assessment on
+admitted real functions, source expansion, quality checks, grouped baselines and
+gated fine-tuning/integration. Not another normalization rebuild or blanket manual
+review of every training function. See docs/SCAFE_UNIFIED_FUNCTION_RELEASE_20261111.md.
+
+Latest user direction explicitly permits generated functions only as a bounded
+training fallback when suitable real public functions cannot reasonably fill a gap,
+clearly separated by code_origin and tested against real-only training on real
+validation. All final testing stays real; no reserved-case reconstruction, fake
+labels or expanded spending/install/download authority. Development miss-analysis
+should identify missing families/context, collect real evidence, enrich/retrain and
+measure improvements and regressions; preserve untouched final confirmation.
+The original source/terms and GitHub 403 holds remain. Mandatory tests, both
+validators, fresh full build/visual/PDF refresh and local Git/own-lock evidence
+are in the run checkpoint. No scientific manuscript claims changed.
