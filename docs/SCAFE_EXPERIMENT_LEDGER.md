@@ -2299,3 +2299,17 @@ measure improvements and regressions; preserve untouched final confirmation.
 The original source/terms and GitHub 403 holds remain. Mandatory tests, both
 validators, fresh full build/visual/PDF refresh and local Git/own-lock evidence
 are in the run checkpoint. No scientific manuscript claims changed.
+
+
+## 16 November 2026, 16:45 UTC — current C4 source-use applicability hold
+
+Adopt the data-centric C4Audit rights handoff as a conservative prospective gate: no C4-derived report/submission/annotation acquisition or model-related use/promotion until applicable original rights/authorization or concrete scope evidence resolves the reported provider-terms conflict. Historical applicability and independently licensed original code are separate unresolved questions; no universal prohibition, license revocation or semantic-label invalidation is asserted. Code-only model strings and AI-label origin do not erase C4-guided selection/corroboration history.
+
+See docs/SCAFE_C4_SOURCE_USE_HOLD_20261116.md and restriction-only source_use_hold_v1_20261116T1645UTC, manifest5302dc5b31e7dbd3c81447fbd3ce9945973a5ea30e3ee2609813deaddd199402. Pin with the current Llama inspection release and apply to relevant descendants. Identified Llama/Revert routes need applicability review before further C4-dependent annotation/features/training/evaluation; existing source/software rights and other holds remain separate. No C4Audit payload/sample acquired, data/labels changed, model run or external contact. Current ML eligibility stays0. Earlier entries retain their historical meaning and do not override this gate. Origin evidence and receiver assessment are in scafe_c4_source_use_handoff_20261116_1645UTC.
+
+
+## 16 November 2026, 19:52 UTC — finish the retrospective paper; defer blocked extension
+
+Selected the existing retrospective source-record/corpus-shift empirical paper as the shortest supported submission candidate. The function/fusion extension is deferred as a manuscript prerequisite, not trained through its zero-eligibility/rights/context gates. No new performance or Q1-readiness claim. See docs/SCAFE_SUBMISSION_ROUTE_20261116.md for compared routes, exact dependencies and at most three conditional outcome milestones; calendar weeks remain unsupported while independent contribution review, artifact rights and publication holds are unresolved.
+
+Applied a substantive local manuscript revision integrating previously verified comment-intervention and compiler-reference methods, results/table, limitations and lineage. Recounted 40 fixed numeric records without source/evaluation-content access: 14/19 legacy source pairs and 31/266 focus cells change versus zero in the controlled view; AST exact agreement 5/8 to 8/8 and absolute error 13 to zero, no regression. Two AST sources are a subset, not independent confirmation. Historical models/tables stay unchanged; no new data/labels/eligibility/model runs. Corrected the draft's unverified companion-archive availability statement to local artifacts with distribution review pending. This is a completed evidence-to-manuscript advance, not a new experiment or public release. Validation/build/visual/exact-input PDF and ownership/preservation evidence: scafe_submission_pivot_20261116_1952UTC/run.json. All C4, reserved-evaluation, source/access, Git/Overleaf and publication holds remain.

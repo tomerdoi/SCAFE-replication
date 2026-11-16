@@ -1,0 +1,37 @@
+# SCAFE submission-route decision — 16 November 2026
+
+## Decision and delivered result
+
+Defer the function-model/fusion extension as a prerequisite for the present submission candidate. Finish a retrospective empirical paper about a compilation-free source representation under corpus shift, with measured nuisance controls, failed combinations, and bounded extraction-correctness evidence. This is a manuscript-scope decision within existing change authority, not clearance to train, publish, or claim a Q1-ready contribution.
+
+The revised local manuscript now carries the previously completed comment intervention and exact-version AST reference through methods, an explicit results table, interpretation, limitations, and artifact lineage. Forty saved numeric records (19 original, 19 controlled, 2 compiler-reference) were recounted without source-body access, source acquisition, classifier predictions, or reserved outcomes. The result is historical development evidence newly integrated into the paper, not a new experiment: 14/19 source pairs and 31/266 focus cells change in the legacy view, versus zero in the controlled view; exact AST agreement is 5/8 versus 8/8, absolute count error 13 versus zero, with no regression. The AST cohort is contained in the 19-source frame. No independent-project, classifier-performance or vulnerability-truth inference is made.
+
+The draft also replaces an unverified statement that an anonymized companion archive is provided with an accurate local-artifact/release-pending statement. Actual release and submission remain blocked by their existing reviews and holds. Numeric feature correction is not inserted into historical caches or models.
+
+## Why this route is shorter
+
+| Route | Actual supporting state | Critical dependencies | Decision |
+|---|---|---|---|
+| Function model and fusion | 2,388 inspection rows, 69 context assessments, five proposed positives; zero training eligibility, splits or model runs | Multiple admissible real groups and contrasts, rights/applicability, observable revision-correct context, supervision audit, grouped partial-label protocol and matched baselines; fixed Alchemy carrier held; Llama/Revert promotion additionally held | Preserve useful artifacts, defer as this manuscript's prerequisite. No completion date is supported. Do not reopen held variants or use generation to bypass gates. |
+| Retrospective source-record empirical paper | Existing 34-page draft before revision, five-seed SCAFE and nuisance results, exploratory matched samples, failed ensembles, parser audits; now integrated bounded comment/AST evidence | Coherent claim/evidence audit, contribution challenge, rights-safe local artifact package, substantive independent review, explicit publication permission | Selected local completion path. Stronger detector performance and a function model are not promised or required by the scoped descriptive claim. |
+| Entirely new method/dataset | No qualified decisive experiment established | Would restart acquisition, evaluation, novelty and resource dependencies | Do not launch another speculative route merely to replace the blocked function campaign. Reconsider only on concrete stronger evidence. |
+
+The selected path does not make weak transfer into strong detection: historical ROC-AUC is approximately 0.523/0.582 on the two named targets, and the nuisance control beats full SCAFE on one. Those are constraints and informative negative results. Whether this empirical contribution meets a particular journal's bar remains unestablished. We will not trade integrity for a deadline or split the same finding into multiple papers.
+
+## Three bounded outcomes and real dependencies
+
+1. **This session:** applied coherent local manuscript revision, exact numeric recount and lineage, applicable tests, both validators, fresh isolated direct TeX/BibTeX build, rendered inspection, and backed-up exact-input PDF refresh. Completion states belong to the run record, not this prospective checklist.
+2. **Next 2–3 focused sessions:** challenge the contribution against the already verified closest references; finish a claim-to-artifact and rights/distribution matrix for the actual revised manuscript; prepare a local reviewable release candidate without raw source/report redistribution. Check existing reference evidence first; browse primary sources only for a concrete unresolved claim. Stop calling it submission-ready if the contribution is insufficient or essential artifacts cannot be released. Do not repeat source curation, fit models, or rerun completed diagnostics as substitutes.
+3. **A further 1–2 focused sessions only after outcome 2 passes:** resolve a substantive independent critique, finalize the candidate and its verification. Human review, rights/authorization questions, existing denied-commit and Overleaf/publication holds have unknown elapsed duration. No credible calendar-week commitment or journal acceptance/review estimate follows from these session estimates.
+
+This supersedes the rolling assumption that source expansion, contextual fine-tuning and fusion must finish before this existing paper can be assessed for submission. The broader user objective remains intact; preserved function work can resume only through its own meaningful gate. Independent final labeling alone is not the exploratory pilot blocker, and we have not imposed manual gold for every training record.
+
+## Reproducibility and boundaries
+
+Comment-control release `comment_feature_control_v1_20261110T1200UTC`, manifest SHA-256 `a1f9c289dcc42e233d516a96913d7f3c15ebc359a2525a0a6c0f476ba78cbd90`; all nine manifest files verified. Compiler-reference release `compiler_count_reference_v1_20261110T1300UTC`, manifest `0b96cd530a0106e631fde1fb2ee348f4a657d7ea1058630a9e5208a4eb80968a`; all eleven files verified. The prior source-qualification and diagnostic records establish their limited structural-use scope; this revision does not newly qualify security labels or authorize another model-related source use. Aggregates and provenance are reused, with no source bodies or reserved evaluation details reproduced.
+
+The current function inspection parent remains `context_llama_snapshot_pair_v1_20261116T1310UTC`, manifest `ca2e9a81fb158ffa4fb7e84048894df26787ded7e8f6068c2a69966754ece64a`, with C4 restriction overlay `source_use_hold_v1_20261116T1645UTC`, manifest `5302dc5b31e7dbd3c81447fbd3ce9945973a5ea30e3ee2609813deaddd199402`. Data counts/masks/labels and all rights, family/clone, reserved DAppSCAN, quality, admission and evaluation gates remain unchanged. New data, models, splits, eligibility and independent gold: zero. Historical inspected outcomes remain retrospective/adaptive evidence, never fresh confirmation.
+
+The data-centric paper's current abstract concerns label cleaning, acquisition/pruning and subset ordering with fixed models, plus grouping limits. This SCAFE revision concerns representation/extraction behavior and corpus-shift comparisons, not reuse of those intervention results. No foreign manuscript or ledger was edited. Any later claim overlap requires reconciliation before submission.
+
+Workspace: `scafe_submission_pivot_20261116_1952UTC`. No installation, download, paid API, provider access, process probe, source execution, new schedule, staging, commit, push, Overleaf synchronization or submission is part of this result. Lock ownership, preservation, final hashes, validation and PDF states are in `run.json`.
