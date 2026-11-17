@@ -1,3 +1,33 @@
+# Current bounded aggregate review candidate — 17 November 2026
+
+The current package builder exports canonical sanitized-v1 aggregate evidence,
+minimal metadata projections and the complete literal manuscript dependency closure.
+It refuses existing output directories and excludes raw sources/reports, per-record
+predictions/labels/IDs, matrices, checkpoints, histories and private ledgers.
+
+```bash
+python3 scripts/build_anonymous_artifact.py \
+  --output /absolute/new/local-review-candidate \
+  --local-extraction-evidence /authorized/local/structural_numeric_evidence.json
+cd /absolute/new/local-review-candidate/sc_review
+python3 scripts/validate_experiment_integrity.py
+python3 scripts/validate_submission_artifacts.py
+cd ../local_extraction
+python3 verify.py
+```
+
+Use the already available pinned pandas environment. No install, source retrieval,
+training or model download is required by these evidence checks. The fixed numeric
+slice SHA-256 is `720f1d86a195cfc5cb623877c9427ca544bc7a58406641b4d2473c26635293be`.
+SOURCE_LINEAGE.json records original and projected hashes; all release/source-use
+eligibility flags remain false. See docs/SCAFE_AGGREGATE_REVIEW_PACKAGE_20261117.md
+for the scope and distribution matrix. This is not a full training replication.
+
+The commands below document the historical contract-level experiments. They do not
+authorize rerunning held source-use routes, new function-model training on reserved
+DAppSCAN, installations, downloads, or adaptation of evaluation cohorts. Current
+rights, permissions, resources and protocol gates still apply.
+
 # SCAFE submission reproduction
 
 Run commands from the repository root after:
