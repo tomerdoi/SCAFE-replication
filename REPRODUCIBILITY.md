@@ -153,3 +153,20 @@ python3 scripts/validate_experiment_integrity.py
 python3 scripts/validate_submission_artifacts.py
 python3 -m pytest -q
 ```
+
+
+## Fixed-score paired nuisance diagnostic — 17 November 2026
+
+With the already retained authorized prediction caches and existing environment:
+
+```bash
+python3 scripts/paired_nuisance.py --root . --output /new/authorized/local/paired-result
+```
+
+This reads only target outcomes for DIVE and Empirical-Analysis, validates exact
+identity/seed/label matching, and runs 1,000 paired iid-record draws at fixed seed 20261117.
+It performs no source acquisition, fitting or selection. The output is aggregate
+retrospective diagnostic evidence, not independent label truth or confirmation.
+Mean-probability metrics differ from mean per-seed metrics; parser/mean near-tie
+roundoff is documented in docs/SCAFE_PAIRED_NUISANCE_20261117.md. An existing output
+is refused. Do not use these inspected outcomes to select new models or data.
