@@ -79,9 +79,11 @@ upstream reproduction environment is described separately in the owning repo.
 
 ## Scope and rights
 
-No raw Solidity/corpus/report, per-record predictions or labels, source/project
-identifiers, feature matrix, checkpoints, credentials, Git history, or private
-research ledger is included. Metadata projections omit source IDs, local paths,
+No raw Solidity/corpus/report, structured per-record prediction/label exports,
+source/project identity tables, feature matrix, checkpoints, credentials, Git
+history, or private research ledger is included. The full manuscript retains its
+existing local attribution-case illustrations; this package is NOT case-free and
+those illustrated outputs still require distribution review. Metadata projections omit source IDs, local paths,
 SHAP cases and unneeded fields; SOURCE_LINEAGE.json records original-file hashes,
 projection rules and packaged hashes. Aggregate exports and source-code provenance
 still require artifact-level distribution review; absence of raw code is not a
@@ -168,7 +170,7 @@ def build(output: Path, numeric: Path, repo: Path=REPO, paper: Path=PAPER) -> di
  local=output/'local_extraction';local.mkdir();shutil.copyfile(numeric,local/'structural_numeric_evidence.json');(local/'verify.py').write_text(VERIFY_NUMERIC)
  (output/'README.md').write_text(README)
  (output/'SOURCE_LINEAGE.json').write_text(json.dumps({'files':lineage,'fixed_numeric_sha256':LOCAL_NUMERIC_SHA},indent=2)+'\n')
- meta={'profile':'current-sanitized-v1-aggregate-review-v1','publication_eligible':False,'source_use_clearance':False,'full_training_reproduction':False,'per_record_predictions_or_labels_included':False,'local_structural_snapshot_rows':19,'local_structural_ast_subset_rows':2,'raw_sources_included':False,'manuscript_dependency_count':len(closure),'copied_or_projected_inputs':len(inputs),'metadata_projection_count':len(JSON_FIELDS)}
+ meta={'profile':'current-sanitized-v1-aggregate-review-v2','publication_eligible':False,'source_use_clearance':False,'full_training_reproduction':False,'structured_per_record_prediction_or_label_exports_included':False,'manuscript_case_illustrations_retained':True,'case_free':False,'local_structural_snapshot_rows':19,'local_structural_ast_subset_rows':2,'raw_sources_included':False,'manuscript_dependency_count':len(closure),'copied_or_projected_inputs':len(inputs),'metadata_projection_count':len(JSON_FIELDS)}
  (output/'ARTIFACT_METADATA.json').write_text(json.dumps(meta,indent=2)+'\n')
  files=[p for p in output.rglob('*') if p.is_file()]
  if len(files)>100 or sum(p.stat().st_size for p in files)>30*1024*1024:raise ValueError('Package exceeds bounded review budget')

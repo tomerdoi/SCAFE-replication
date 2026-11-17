@@ -3,7 +3,9 @@
 The current package builder exports canonical sanitized-v1 aggregate evidence,
 minimal metadata projections and the complete literal manuscript dependency closure.
 It refuses existing output directories and excludes raw sources/reports, per-record
-predictions/labels/IDs, matrices, checkpoints, histories and private ledgers.
+prediction/label/ID exports, matrices, checkpoints, histories and private ledgers.
+Existing manuscript attribution illustrations are retained: the candidate is not
+case-free, and those illustrated outputs still require distribution review.
 
 ```bash
 python3 scripts/build_anonymous_artifact.py \
