@@ -1,0 +1,55 @@
+# Reconnection catch-up: sensitivity certificate and route decision
+
+## Reconciled state and scope
+
+On18November2026,17:29UTC, both repositories were clean at codeb6071a6 and manuscript360125e; subsequent actual remote reads agreed. The interrupted09:05run had saved its protocol and analysis module, but no test file, analysis freeze/log/results or run checkpoint existed. Both actual flocks were free, the original native session/tool cells no longer existed, and only our exact previous owner metadata remained. Archived that record under the new atomically acquired run lease; no foreign job or lock was removed. Missing scheduled sessions are consolidated into this catch-up, not replayed.
+
+The09:09:25UTC protocol is unchanged and predates every new sensitivity outcome. Recreated the absent test file only after checking non-execution. The first observed controls/calculation ran at17:32UTC under shared compute. No code/model/threshold/corpus selection or dataset relabeling occurs. Only existing DIVE and Empirical-Analysis cache targets enter the unchanged strict five-seed pairing; DAppSCAN rows are skipped before outcome interpretation. Historical target use remains retrospective/regression evidence.
+
+## Exact fixed-ranking sensitivity
+
+Let P and Q be the observed class counts, and d the difference of the two ascending twice-midranks, with average ranks for exact ties. The AUC difference is sum(d over positives)/(2PQ): each view's common rank offset cancels. For j positive/negative label swaps, the minimum removes the j largest positive d values and adds the j smallest negative d values; the maximum reverses these choices. Taking extrema over prefixes0throughk yields exact at-most-k bounds. This is elementary rank algebra, not a new optimizer or robust-learning algorithm.
+
+All1%,5%,10%changed-record budgets were declared before outcomes; k=floor(fN/2), capped at min(P,Q). Swaps preserve native prevalence and both class totals. Scores stay fixed; adversarial assignments are temporary numeric sensitivity states, never accepted/corrected labels or training data. No alternative labels, record IDs or native sources are exported. Bounds are finite-cohort certificates, not confidence/prediction intervals, empirical error-rate estimates or guarantees after refitting. They allow rank-aware targeted, class-dependent changes without project constraints; plausibility is not established.
+
+| Target | Maximum requested changed fraction | Available changed-record budget | Exact lower delta AUC | Exact upper delta AUC |
+|---|---:|---:|---:|---:|
+| DIVE | 1% | 218 | -0.092573 | +0.054978 |
+| DIVE | 5% | 1096 | -0.326608 | +0.267830 |
+| DIVE | 10% | 2192 | -0.514426 | +0.464198 |
+| Empirical-Analysis | 1% | 20 | +0.082289 | +0.131084 |
+| Empirical-Analysis | 5% | 108 | -0.002544 | +0.203584 |
+| Empirical-Analysis | 10% | 216 | -0.087997 | +0.266268 |
+
+Native full-minus-nuisance differences are-0.01982214(DIVE) and+0.10795991(Empirical-Analysis). DIVE requires27swaps/54changedrecords(0.246137%of21939), exchanging0.139694%of native positives and1.034087%of native negatives, for strict sign reversal. At26swaps delta remains-0.0006086645; at27it is+0.0000939554. Empirical-Analysis needs53swaps/106records(4.880295%of2172):3.455020%of native positives and8.307210%of native negatives. At52swaps delta is+0.0009640418; at53it is-0.0007913623. Thus robustness is asymmetric, and the predeclared1%screen fails for DIVE. No claim that54or106actual annotations are erroneous follows. Conditional native-label bootstrap intervals answer a different question and are not invalidated by this sensitivity experiment.
+
+Thirteen controls pass, including exhaustive alternative class assignments for small tied/untied numerical fixtures, class/view complements, monotonicity, row invariance, exact minimum crossing, denominators and mutation/overwrite refusal. Independent scipy midranks plus explicit extremal temporary assignments and direct sklearn AUC replay all12bounds within1.7e-16 and verify each minimum and its predecessor. Real identical-score controls are exactly zero. Primary CPU0.574seconds, own-child peakRSS274743296bytes(~262MiB). Numerical arrays are software fixtures, not generated function examples. No model is fitted or scored anew.
+
+## Closest competitor: exact scope, not assumed duplication
+
+Khalid et al., ESEM2026, DOI10.4230/LIPIcs.ESEM.2026.45,§3pp45:4–10/§4.4pp45:14–15: seven fixed tools; SmartBugsCurated143/FORGE173; category detection, within-contract category top-K, execution status and benchmark comparisons. Our binary LODO, corpus-record budgets and label-sensitivity bounds differ. Generic transfer/robustness alone is therefore not novel. Sections3.1.2/3.1.3 disagree on empty-output scoring; code was not audited. No cases/scores imported.
+Primary: https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ESEM.2026.45
+
+Risse,Liu,Boehme's ISSTA2025 work(DOI10.1145/3728887), primary conference metadata and author preprint2408.12986v2pp1–2/§IV-B, already establishes context-dependence and word-count nuisance concerns on Devign/BigVul/DiverseVul. This is not a Solidity-matched numerical baseline or proof that every SCAFE association is spurious. It blocks claiming generic context/nuisance observations as our innovation. The author preprint is14pages and differs from the23-page published edition; edition identities are not conflated. https://arxiv.org/pdf/2408.12986v2 and https://conf.researchr.org/details/issta-2025/issta-2025-papers/18/Top-Score-on-the-Wrong-Exam-On-Benchmarking-in-Machine-Learning-for-Vulnerability-De
+
+Earlier TRACE/iAudit/parser-library evidence remains applicable. No benchmark label, example or reported tool outcome is transferred into adaptive training/selection. The added references improve positioning; they do not constitute a new experiment, novelty certification or rights clearance.
+
+## Concrete independent-cohort/oracle feasibility decision
+
+Assessed SolBench's official README/license/commit and Zenodo15555541 metadata only. Repository head39b183c5e7ee51646cd52908162825e46b38131d, code MIT; Zenodo metadata declares CC-BY4.0. Those declarations do not clear every upstream deployed source or establish independent project/family identities or our three-category security labels. The primary paper§3–4 studies function completion/context retrieval and functional correctness, not suspiciousness gold or whole-inventory AST validity.
+
+The base file is752972441bytes; eight listed files total5661724813bytes, with duplicate base/zero-context checksums. They are not eight independent corpora. No corpus bytes were requested. The supplied README uses modified Diffusc/Echidna and installation/compiler setup, which were not executed or installed. Exact source/compiler, per-original rights and reserved/project/clone binding for a bounded subset have not been established here. Decision:HOLD for our structural/model cohort, not a legal finding that the public dataset is unusable. Qualified independent assessment groups/functions added:0/0. Do not silently turn completion outcomes or generated repair examples into security labels or real-source evaluation.
+
+Python metadata requests initially failed certificate verification before bytes; recorded failures. One secure system-curl alternative with normal verification retrieved17321metadata bytes. TLS was never disabled. Current receipts/hashes, including all declared file sizes/checksums, are in public_metadata/secure_system_receipts.json. This is a real bounded candidate decision, not a download request or a reason to expand resources. The previous two-context parser test and four-case compiler census were not rerun. https://github.com/ZaoyuChen/SolBench and https://doi.org/10.5281/zenodo.15555541
+
+## Adversarial go/no-go and concrete alternative
+
+- Current retrospective pitch: NO-GO as an established innovative Q1 submission route. Broad topic overlap and the native-label sensitivity prevent elevating the observed reversal into a label-robust explanation. The measurements remain valid conditional results; neither this sensitivity calculation nor another table alone establishes publication novelty.
+- Context-aware function/model route: NO-GO for fitting now. Function/model qualification remains an active priority, but independently admitted fitting groups, eligible functions, independent gold, frozen splits and model runs are still0. All2392inspection rows/73contexts/7proposed positives/68scoped negatives/144context-required cells,53nativeassertions and42/21exclusion/hold counts are unchanged. No held carrier is reopened and no generated substitute is warranted.
+- Parser observation route: NO-GO as a stand-alone novel paper based on the existing engineering correction. No independently qualified structural cohort/oracle was added; SolBench is a concrete held candidate. Keep the tested fix, not an unsupported novelty narrative.
+
+No examined route currently passes both a distinctive contribution and a feasible independent assessment gate. This is a current bounded decision, not proof that every possible research question or source is exhausted. The few-week innovative-Q1 target is not evidence-backed at this point, and this catch-up does not manufacture an ETA. Preserve the current manuscript as a versioned replication/negative-results baseline.
+
+Concrete fallback proposal: complete an explicitly scoped replication/negative-results evidence report from the existing native-label contrasts, exact sensitivity certificates and extraction diagnostics, assess an appropriate empirical replication venue, and make no new detector/Q1-ready claim. That is a smaller honest deliverable, not a silent replacement of the user's Q1 objective. A further substantial redesign needs a named, bounded, independently admissible assessment source before another implementation campaign. For a structural question, a small first-party/source-level index with exact compiler/source hashes, per-original license and project/family identities is the next useful gate; then prespecify independent count-oracle units and legacy/status-only/masked-view comparisons. For the function question, additionally require evidence-backed category observations, targeted supervision audit, isolated evaluation roles and matched grouped baselines. Do not request a multi-gigabyte corpus or repeat broad source hunts while these requirements are unsubstantiated.
+
+At most three outcomes: (1)this catch-up's exact diagnostic/competitor/feasibility decision through mandatory validation; (2)one bounded independent-assessment feasibility decision if new concrete evidence is available, with stop if it cannot yield admissible groups; (3)only after that gate, a predeclared decisive experiment and manuscript redesign, conditionally2–4sessions. Submission readiness and journal acceptance are separate and unpromised. SCAFE's fixed-score/extraction questions remain distinct from the data-centric paper's annotation/acquisition/evaluation-selection claims; no inspected target outcomes are handed off.
