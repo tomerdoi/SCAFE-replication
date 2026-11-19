@@ -2472,3 +2472,45 @@ Executed the independent quantitative fallback instead of stopping at that negat
 Thus no supplied eligible multi-file pilot remains: the unchanged fixed Mountain scope is rejected and the reference-frame alternative lacks the necessary file-context stimulus. Wider one-week bet remains pending, not scientifically refuted. Current at-most3outcomes: one distinct affirmatively admitted natural multi-file frame with real query support/source/context/oracle path (timing conditional on available evidence, no new closed search); only after it passes a matched strong-baseline pilot in1–2bounded sessions; original November26go/pivot/no-go with untouched qualified confirmation before generalization. No new eligible groups/ASTs/paired method results or publishability improvement claimed, and no submission ETA invented. Do not ask for blanket positive approval of the unchanged failed scope or rerun the completed screens/bounds as progress.
 
 Added the lexical intake helper and13software controls for scope correctness and fail-closed states, not generated model examples or parser research. Initial context-hash verification failed on a wrong local dependency-directory binding before any header/decision count; corrected using the reviewed acquisition producer layout and retained the failed script/diagnostic. No permission denial bypass or reference retry. Exact tests, both canonical validators, fresh full current TeX/PDF/layout/refresh, explicit reviewed Git/remote, restricted artifacts, ownership, elapsed/remaining budget and exact stop: `scafe_eligibility_20261119_1100UTC/run.json`. No source-specific held signal shared to another paper; no foreign edits, installs, security/access/schedule changes, deploy, exploit or publication work. All original holds remain.
+
+## 19 November 2026, evening Israel — SCAFE-Evidence feasibility pilot and corrective confirmation
+
+Reconciled clean starting code `362f657` and manuscript `4c509ed`; no active terminal job or live recorded lock owner. Froze `docs/SCAFE_EVIDENCE_PROTOCOL_20261119.md` before the paired method results. The research question is narrow compiler-checkable modifier-declaration resolution from partial Solidity source with exact-source retrieval, explicit unknowns, and replayable source-hash/span certificates. It is not authorization correctness, vulnerability truth, parser coverage, generic repository retrieval, or a learned detector. Repoformer, DraCo, TRACE, and compiler/Slither name binding bound the novelty claim to fail-closed evidence sufficiency and certificates.
+
+Acquired pinned non-fork public repositories without running project code, installs, tests, contracts or deployment. Four official macOS Solidity compilers (0.8.15/0.8.19/0.8.23/0.8.26) were executed only after their SHA-256 values matched the freshly retrieved official manifest and their version output matched. Seven initial real project groups produced 86 compiler-resolved first-party modifier queries, 36 cross-source. The compiler input closure, root/per-file licenses, exact revisions, source/compiler hashes and AST outputs remain local/ignored. DAppSCAN labels/findings were never loaded.
+
+An exclusion-only regression rehashed all21,457reserved source files/107,970,249bytes and145,734named function occurrences. Query functions with exact/token/template matches and exact-matched files were excluded before any method result; eight development queries were removed. Nonmatch is not independence proof. A broad project-name substring signal was not treated as family proof. Five development groups retained51eligible queries,18cross-source. The development-selected resolver fixed UTF-8 byte/character span confusion, import re-exports and unique reachable-inheritance resolution while retaining unknown on genuinely distinct inherited declarations.
+
+Frozen development result: file-only33correct/0wrong/18unknown; selected and strong traversal each51correct/0wrong/0unknown. Selected median evidence15,566bytes versus142,460, an89.1% saving; five project median savings include DN404 at0%, and the project-bootstrap mean-saving interval is28.9%–84.0%. Every certificate replayed; all prespecified development gate components passed. Exact local artifact: `data/derived/scafe_evidence_development_pilot_v4_20261119.json`.
+
+The first confirmation was retained rather than overwritten. Multibridge passed24/24 with0wrong/unknown. Worldcoin returned unknown on two `onlyOwner` queries because the resolver treated duplicate import paths to one declaration as ambiguity. Independently, `src/VestingWallet.sol` carries an `UNLICENSED` notice, so Worldcoin is not counted as qualified confirmation. The generic defect was corrected by deduplicating identical path/name/span declarations while preserving unknown for distinct declarations. No Worldcoin or Multibridge rerun occurred.
+
+Before any replacement method output, a corrective freeze bound the new resolver and a single rights-qualified non-fork replacement: WebAuthn Owner Plugin, pinned GPL root/AGPL first-party source, eight compiler-confirmed cross-source queries, no detected reserved file/function/template/alias match. It was evaluated once:8correct/0wrong/0unknown, selected median12,567bytes versus159,354,92.1%saving, all certificates replayed. The qualified confirmation transparently combines retained Multibridge with this replacement:2groups,32queries,17cross-source; selected32/32correct,0wrong/unknown,100%coverage per project; median12,567versus41,876bytes,70.0%saving; project savings58.3%/92.1%;19non-common-library queries retain70.8%saving. All frozen gate components pass. Exact summary: `data/derived/scafe_evidence_qualified_confirmation_20261119.json`.
+
+Across qualified development/confirmation:7groups,83eligible queries,35cross-source, zero observed wrong selected answers and complete certificate replay. These are pilot counts, not proof of zero error or population generalization. The selected method has no unknown on qualified natural queries; fail-closed behavior is exercised by software controls and the retained Worldcoin diagnostic, not a broad real-project abstention cohort. Two confirmation groups and project-level dependence are insufficient for a full Q1 empirical claim. Import-closure/full-source cost rows, a larger independent corpus and a predeclared real/controlled insufficient-evidence stress cohort remain necessary. Therefore the legacy manuscript was deliberately not rewritten around these pilot numbers. See `docs/SCAFE_EVIDENCE_PILOT_CHECKPOINT_20261119.md` for the exact result, limitations and shortest credible Mac-sized extension.
+
+Before acquiring or evaluating the larger cohort, froze
+`docs/SCAFE_EVIDENCE_SCALED_PROTOCOL_20261119.md`.  After closest-work review
+identified GraphLedger as an additional conceptual threat, tightened it before
+any scaled outcomes:20--30admitted project groups with at least8untouched
+confirmation groups, at least300natural queries/75cross-source queries,
+deterministic BM25 plus import-closure/strong-traversal/full-source rows,
+distinct-target and leave-one-project-out sensitivity, deterministic
+missing-target abstention stress, and certificate-tamper rejection.  The
+confirmation gate requires at least150answered queries with zero observed
+wrong answers, coverage within two points of strong traversal, at least30%
+median/20%project-weighted byte saving and a project-bootstrap lower bound
+above10%. No scaled source, oracle, method outcome, manuscript claim, or
+publication decision exists at this checkpoint.
+
+Read-only corpus planning confirmed runtime is not the constraint: the current
+oracle builder supports at most seven projects per manifest.  The scaled
+protocol now requires the full registry/split to be frozen before any batch
+outcome and hash-verified project-level aggregation across multiple manifests.
+The planning pass admitted zero additional projects.  Previously recorded
+Mountain fixed-scope NO-GO and Nexus/MetaSwap/Llama/Alchemy/Revert and other
+rights, context, or family holds are not reopened by repository availability,
+root-license guesses, or likely modifier yield.  New qualification must stop
+cheaply on canonical identity, applicable per-file rights, immutable revision,
+compiler compatibility, query yield, closure, and family exclusion in that
+order.
